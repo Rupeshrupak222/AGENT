@@ -1,0 +1,45 @@
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import * as bcrypt       from 'bcryptjs';
+
+@Injectable()
+export class UsersService {
+  constructor(private prisma: PrismaService) {}
+
+  async findAll(tenantId: string) {
+    return this.prisma.user.findMany({
+      where:   { tenantId, isActive: true },
+      select:  { id: true, name: true, email: true, role: true, createdAt: true, lastLoginAt: true, avatar: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findOne(tenantId: string, id: string) {
+    const u = await this.prisma.user.findFirst({
+      where:  { id, tenantId },
+      select: { id: true, name: true, email: true, role: true, createdAt: true, avatar: true },
+    });
+    if (!u) throw new NotFoundException('User not found');
+    return u;
+  }
+
+  async invite(tenantId: string, data: { name: string; email: string; role: string }) {
+    const tempPwd = Math.random().toString(36).slice(-10);
+    const hashed  = await bcrypt.hash(tempPwd, 12);
+    const user = await this.prisma.user.create({
+      data: { ...data, password: hashed, tenantId, role: data.role as any },
+    });
+    // In production: send invite email with tempPwd
+    return { ...user, tempPassword: tempPwd };
+  }
+
+  async updateRole(tenantId: string, id: string, role: string) {
+    await this.findOne(tenantId, id);
+    return this.prisma.user.update({ where: { id }, data: { role: role as any } });
+  }
+
+  async deactivate(tenantId: string, id: string) {
+    await this.findOne(tenantId, id);
+    return this.prisma.user.update({ where: { id }, data: { isActive: false } });
+  }
+}

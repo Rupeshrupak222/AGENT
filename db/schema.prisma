@@ -1,0 +1,513 @@
+// ============================================================
+// AgentCall AI — Prisma Schema
+// Database: PostgreSQL (Supabase)
+// ORM: Prisma 5.x
+// ============================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ────────────────────────────────────────────────────
+
+enum Plan {
+  starter
+  growth
+  business
+  enterprise
+}
+
+enum Role {
+  super_admin
+  company_admin
+  manager
+  agent
+  viewer
+}
+
+enum AgentRole {
+  telecaller
+  recruiter
+  receptionist
+  collection
+  sales
+  support
+  appointment_setter
+}
+
+enum AgentStatus {
+  draft
+  training
+  active
+  paused
+  archived
+}
+
+enum AgentLanguage {
+  hindi
+  english
+  hinglish
+  tamil
+  telugu
+  marathi
+  bengali
+  gujarati
+  kannada
+  punjabi
+}
+
+enum LeadStatus {
+  new
+  contacted
+  interested
+  qualified
+  appointment
+  closed_won
+  closed_lost
+}
+
+enum CallStatus {
+  queued
+  ringing
+  in_progress
+  completed
+  missed
+  failed
+  transferred
+}
+
+enum CallDirection {
+  inbound
+  outbound
+}
+
+enum AutomationType {
+  whatsapp
+  sms
+  email
+}
+
+enum AutomationStatus {
+  queued
+  sent
+  delivered
+  failed
+}
+
+enum CampaignStatus {
+  draft
+  scheduled
+  running
+  paused
+  completed
+  cancelled
+}
+
+enum IntegrationProvider {
+  salesforce
+  hubspot
+  zoho
+  pipedrive
+  google_sheets
+  slack
+  teams
+  google_calendar
+  outlook_calendar
+}
+
+// ── Tenant (Company / Workspace) ────────────────────────────
+
+model Tenant {
+  id              String    @id @default(cuid())
+  name            String
+  slug            String    @unique
+  logo            String?
+  website         String?
+  industry        String?
+  plan            Plan      @default(starter)
+  isActive        Boolean   @default(true)
+  subscriptionId  String?
+  planExpiresAt   DateTime?
+  settings        Json?     @default("{}")
+  whitelabelDomain String?
+
+  // Relations
+  users         User[]
+  agents        AIAgent[]
+  leads         Lead[]
+  calls         Call[]
+  campaigns     Campaign[]
+  automations   AutomationLog[]
+  integrations  Integration[]
+  invoices      Invoice[]
+  apiKeys       ApiKey[]
+  webhooks      Webhook[]
+  auditLogs     AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@map("Tenant")
+}
+
+// ── User ─────────────────────────────────────────────────────
+
+model User {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  password    String
+  role        Role     @default(agent)
+  avatar      String?
+  phone       String?
+  isActive    Boolean  @default(true)
+  lastLoginAt DateTime?
+  settings    Json?    @default("{}")
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Created resources
+  createdAgents   AIAgent[]      @relation("AgentCreatedBy")
+  assignedLeads   Lead[]         @relation("LeadAssignedTo")
+  auditLogs       AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([email])
+  @@map("User")
+}
+
+// ── AI Agent ──────────────────────────────────────────────────
+
+model AIAgent {
+  id                 String        @id @default(cuid())
+  name               String
+  role               AgentRole
+  language           AgentLanguage @default(english)
+  voiceId            String
+  businessGoal       String
+  openingScript      String?       @db.Text
+  qualificationRules String?       @db.Text
+  knowledgeBase      String?       @db.Text
+  status             AgentStatus   @default(draft)
+  settings           Json?         @default("{}")
+  deletedAt          DateTime?
+
+  tenantId    String
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User    @relation("AgentCreatedBy", fields: [createdById], references: [id])
+
+  // Relations
+  calls       Call[]
+  campaigns   Campaign[]
+  leads       Lead[]       @relation("LeadAssignedAgent")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+  @@map("AIAgent")
+}
+
+// ── Lead ──────────────────────────────────────────────────────
+
+model Lead {
+  id          String     @id @default(cuid())
+  name        String
+  phone       String
+  email       String?
+  company     String?
+  designation String?
+  source      String?
+  status      LeadStatus @default(new)
+  score       Int        @default(0)
+  notes       String?    @db.Text
+  tags        String[]   @default([])
+  metadata    Json?      @default("{}")
+  deletedAt   DateTime?
+
+  tenantId         String
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  assignedAgentId  String?
+  assignedAgent    AIAgent? @relation("LeadAssignedAgent", fields: [assignedAgentId], references: [id])
+
+  assignedToId     String?
+  assignedTo       User?    @relation("LeadAssignedTo", fields: [assignedToId], references: [id])
+
+  // Relations
+  calls       Call[]
+  activities  Activity[]
+  automations AutomationLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([phone])
+  @@index([score])
+  @@map("Lead")
+}
+
+// ── Call ──────────────────────────────────────────────────────
+
+model Call {
+  id              String        @id @default(cuid())
+  phone           String
+  direction       CallDirection @default(outbound)
+  status          CallStatus    @default(queued)
+  duration        Int?          // seconds
+  recordingUrl    String?
+  outcome         String?
+  sentimentScore  Float?
+  qualityScore    Float?
+  intentScore     Float?
+  transferredTo   String?       // team or phone number
+  providerCallId  String?       // Twilio/Exotel SID
+  metadata        Json?         @default("{}")
+
+  tenantId  String
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  leadId    String
+  lead      Lead    @relation(fields: [leadId], references: [id])
+
+  agentId   String
+  agent     AIAgent @relation(fields: [agentId], references: [id])
+
+  campaignId String?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id])
+
+  // Relations
+  transcript  CallTranscript?
+  automations AutomationLog[]
+
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  @@index([tenantId])
+  @@index([leadId])
+  @@index([agentId])
+  @@index([status])
+  @@index([startedAt])
+  @@map("Call")
+}
+
+// ── Call Transcript ───────────────────────────────────────────
+
+model CallTranscript {
+  id       String @id @default(cuid())
+  callId   String @unique
+  call     Call   @relation(fields: [callId], references: [id], onDelete: Cascade)
+  segments Json   // array of { speaker, text, startTime, endTime }
+  summary  String? @db.Text
+  keywords String[] @default([])
+
+  createdAt DateTime @default(now())
+
+  @@map("CallTranscript")
+}
+
+// ── Campaign ──────────────────────────────────────────────────
+
+model Campaign {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  status      CampaignStatus @default(draft)
+  scheduledAt DateTime?
+  maxCalls    Int?
+  callsPerDay Int?
+  startTime   String?        // "09:00"
+  endTime     String?        // "18:00"
+  daysOfWeek  Int[]          @default([1, 2, 3, 4, 5]) // 0=Sun..6=Sat
+  metadata    Json?          @default("{}")
+
+  tenantId  String
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  agentId   String
+  agent     AIAgent @relation(fields: [agentId], references: [id])
+
+  // Relations
+  calls Call[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+  @@map("Campaign")
+}
+
+// ── Activity (CRM timeline) ───────────────────────────────────
+
+model Activity {
+  id      String @id @default(cuid())
+  type    String // call, note, email, status_change, score_update, whatsapp
+  title   String
+  body    String? @db.Text
+  metadata Json?  @default("{}")
+
+  leadId  String
+  lead    Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  tenantId String
+
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+  @@index([tenantId])
+  @@map("Activity")
+}
+
+// ── Automation Log ─────────────────────────────────────────────
+
+model AutomationLog {
+  id        String           @id @default(cuid())
+  type      AutomationType
+  template  String
+  message   String           @db.Text
+  status    AutomationStatus @default(queued)
+  error     String?
+  metadata  Json?            @default("{}")
+
+  tenantId  String
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  leadId    String?
+  lead      Lead?  @relation(fields: [leadId], references: [id])
+
+  callId    String?
+  call      Call?  @relation(fields: [callId], references: [id])
+
+  createdAt DateTime @default(now())
+  sentAt    DateTime?
+
+  @@index([tenantId])
+  @@index([type])
+  @@index([status])
+  @@map("AutomationLog")
+}
+
+// ── Integration ────────────────────────────────────────────────
+
+model Integration {
+  id          String              @id @default(cuid())
+  provider    IntegrationProvider
+  isActive    Boolean             @default(false)
+  credentials Json                // encrypted in production
+  settings    Json?               @default("{}")
+  lastSyncAt  DateTime?
+
+  tenantId    String
+  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, provider])
+  @@map("Integration")
+}
+
+// ── Invoice / Billing ──────────────────────────────────────────
+
+model Invoice {
+  id            String   @id @default(cuid())
+  amount        Int      // in paise
+  currency      String   @default("INR")
+  status        String   @default("pending") // pending | paid | failed
+  plan          Plan
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  paidAt        DateTime?
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@map("Invoice")
+}
+
+// ── API Key ────────────────────────────────────────────────────
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  name       String
+  keyHash    String    @unique  // bcrypt hash of the actual key
+  prefix     String             // first 8 chars shown in UI
+  scopes     String[]  @default([])
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  isActive   Boolean   @default(true)
+
+  tenantId   String
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId])
+  @@map("ApiKey")
+}
+
+// ── Webhook ────────────────────────────────────────────────────
+
+model Webhook {
+  id         String   @id @default(cuid())
+  name       String
+  url        String
+  events     String[] // call.completed, lead.qualified, etc.
+  secret     String
+  isActive   Boolean  @default(true)
+  failCount  Int      @default(0)
+
+  tenantId   String
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([tenantId])
+  @@map("Webhook")
+}
+
+// ── Audit Log ──────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String   // CREATE_AGENT, DELETE_LEAD, UPGRADE_PLAN, etc.
+  resource   String
+  resourceId String?
+  details    Json?    @default("{}")
+  ipAddress  String?
+  userAgent  String?
+
+  tenantId   String
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  userId     String?
+  user       User?  @relation(fields: [userId], references: [id])
+
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([action])
+  @@map("AuditLog")
+}
