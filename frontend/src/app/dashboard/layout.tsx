@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const R = "#D42027";
 
@@ -222,6 +223,9 @@ export default function DashboardLayout({ children }: { children:React.ReactNode
                 )}
               </AnimatePresence>
             </div>
+
+            {/* Theme Toggle */}
+            <ThemeToggle />
 
             {/* Notifications */}
             <div className="relative" onClick={e=>e.stopPropagation()}>

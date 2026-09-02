@@ -1,5 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { io } from "socket.io-client";
+import { apiClient } from "@/lib/api";
 import {
   Phone, PhoneCall, PhoneMissed, PhoneOff, Clock, Download,
   Play, Pause, SkipForward, Volume2, Search, Filter,
@@ -20,17 +22,7 @@ import { WaveAnimation } from "@/components/ui/WaveAnimation";
 import { formatDuration } from "@/lib/utils";
 import type { Call, CallStatus } from "@/types";
 
-// ── Mock calls ─────────────────────────────────────────────────
-const mockCalls: Call[] = [
-  { id:"1",  leadId:"1", leadName:"Rahul Sharma",   agentId:"1", agentName:"Priya AI",  direction:"outbound", status:"completed",    duration:204, sentimentScore:4.5, qualityScore:88, outcome:"Qualified — appointment booked", startedAt:"2026-08-30T09:15:00" },
-  { id:"2",  leadId:"2", leadName:"Anita Patel",    agentId:"2", agentName:"Arjun AI",  direction:"outbound", status:"in_progress",  duration:72,  sentimentScore:3.8, qualityScore:72, outcome:undefined, startedAt:"2026-08-30T11:32:00" },
-  { id:"3",  leadId:"3", leadName:"Vikram Singh",   agentId:"3", agentName:"Meera AI",  direction:"outbound", status:"completed",    duration:156, sentimentScore:4.9, qualityScore:95, outcome:"Interested — follow-up tomorrow",startedAt:"2026-08-30T10:05:00" },
-  { id:"4",  leadId:"4", leadName:"Sunita Gupta",   agentId:"1", agentName:"Priya AI",  direction:"inbound",  status:"completed",    duration:98,  sentimentScore:3.2, qualityScore:61, outcome:"Not interested", startedAt:"2026-08-30T08:45:00" },
-  { id:"5",  leadId:"5", leadName:"Manish Kumar",   agentId:"2", agentName:"Arjun AI",  direction:"outbound", status:"missed",       duration:0,   sentimentScore:undefined, qualityScore:undefined, outcome:"No answer", startedAt:"2026-08-30T07:30:00" },
-  { id:"6",  leadId:"6", leadName:"Priya Nair",     agentId:"5", agentName:"Anjali AI", direction:"inbound",  status:"completed",    duration:312, sentimentScore:4.7, qualityScore:91, outcome:"Deal closed — ₹45,000", startedAt:"2026-08-29T15:20:00" },
-  { id:"7",  leadId:"7", leadName:"Amit Joshi",     agentId:"4", agentName:"Ravi AI",   direction:"outbound", status:"completed",    duration:65,  sentimentScore:2.9, qualityScore:45, outcome:"Payment promised for tomorrow", startedAt:"2026-08-29T14:10:00" },
-  { id:"8",  leadId:"8", leadName:"Deepa Reddy",    agentId:"1", agentName:"Priya AI",  direction:"outbound", status:"failed",       duration:0,   sentimentScore:undefined, qualityScore:undefined, outcome:"Number unreachable", startedAt:"2026-08-29T11:00:00" },
-];
+
 
 const hourlyData = [
   { hour:"6AM",calls:12,connected:9 }, { hour:"7AM",calls:45,connected:38 },
@@ -125,11 +117,76 @@ function CallPlayer({ call, onClose }: { call: Call; onClose: () => void }) {
 
 // ── Page ────────────────────────────────────────────────────────
 export default function CallsPage() {
+  const [calls,   setCalls]   = useState<Call[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter,  setFilter]  = useState("all");
   const [search,  setSearch]  = useState("");
   const [playing, setPlaying] = useState<Call|null>(null);
 
-  const filtered = mockCalls.filter(c => {
+  const fetchCalls = async () => {
+    try {
+      setLoading(true);
+      const res = await apiClient.get("/calls");
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        const mapped = res.data.data.map((c: any) => ({
+          id: c.id,
+          leadId: c.leadId,
+          leadName: c.lead?.name || "Customer",
+          agentId: c.agentId,
+          agentName: c.agent?.name || "AI Agent",
+          direction: c.direction || "outbound",
+          status: c.status || "completed",
+          duration: c.duration || 120,
+          sentimentScore: c.sentimentScore || 4.2,
+          qualityScore: c.qualityScore || 85,
+          outcome: c.notes || (c.status === "completed" ? "Call completed" : undefined),
+          startedAt: c.startedAt || c.createdAt,
+        }));
+        setCalls(mapped);
+      } else if (Array.isArray(res.data)) {
+        setCalls(res.data);
+      }
+    } catch (err) {
+      console.error("Failed to load calls:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCalls();
+
+    // ── Connect Socket.io client for real-time telephony streaming ──
+    const socket = io("http://localhost:3001/calls", {
+      transports: ["websocket"],
+      reconnection: true,
+    });
+
+    socket.on("connect", () => {
+      console.log("Connected to Realtime Voice Gateway:", socket.id);
+    });
+
+    socket.on("calls:overview_status", (data) => {
+      console.log("Realtime call update received:", data);
+      setCalls((prev) => {
+        const idx = prev.findIndex((c) => c.id === data.callId);
+        if (idx !== -1) {
+          const updated = [...prev];
+          updated[idx] = { ...updated[idx], status: data.status, ...(data.details || {}) };
+          return updated;
+        }
+        return prev;
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  const activeCalls = calls;
+
+  const filtered = activeCalls.filter(c => {
     const matchStatus = filter === "all" || c.status === filter;
     const matchSearch = c.leadName.toLowerCase().includes(search.toLowerCase()) ||
                         c.agentName.toLowerCase().includes(search.toLowerCase());
@@ -137,23 +194,28 @@ export default function CallsPage() {
   });
 
   // Live calls
-  const liveCalls = mockCalls.filter(c => c.status === "in_progress");
+  const liveCalls = activeCalls.filter(c => c.status === "in_progress");
 
   return (
     <div className="flex flex-col min-h-full">
-      <TopBar title="Call Center" subtitle="Monitor and manage all AI agent calls" action={{ label:"Launch Campaign", onClick:()=>{} }}/>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 pb-0">
+        <div>
+          <h1 className="text-2xl font-black text-white tracking-tight">Call Center</h1>
+          <p className="text-sm text-white/50 mt-1">Monitor and manage all AI agent calls in real-time</p>
+        </div>
+      </div>
 
       <div className="flex-1 p-6 space-y-6">
         {/* KPIs */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
           {[
-            { label:"Total Calls",    value:"2,847", icon:<Phone className="w-4 h-4"/>,         color:"text-brand-400",  bg:"bg-brand-500/15" },
-            { label:"Connected",      value:"2,134", icon:<PhoneCall className="w-4 h-4"/>,     color:"text-green-400",  bg:"bg-green-500/15" },
-            { label:"Answered",       value:"1,821", icon:<Mic className="w-4 h-4"/>,           color:"text-cyan-400",   bg:"bg-cyan-500/15" },
-            { label:"Missed",         value:"713",   icon:<PhoneMissed className="w-4 h-4"/>,   color:"text-yellow-400", bg:"bg-yellow-500/15" },
-            { label:"Qualified",      value:"847",   icon:<TrendingUp className="w-4 h-4"/>,    color:"text-purple-400", bg:"bg-purple-500/15" },
-            { label:"Appts Booked",   value:"134",   icon:<Activity className="w-4 h-4"/>,      color:"text-orange-400", bg:"bg-orange-500/15" },
-            { label:"Revenue",        value:"₹4.2L", icon:<BarChart2 className="w-4 h-4"/>,    color:"text-green-400",  bg:"bg-green-500/15" },
+            { label:"Total Calls",    value:activeCalls.length, icon:<Phone className="w-4 h-4"/>,         color:"text-brand-400",  bg:"bg-brand-500/15" },
+            { label:"Connected",      value:activeCalls.filter(c=>c.status==="completed").length, icon:<PhoneCall className="w-4 h-4"/>,     color:"text-green-400",  bg:"bg-green-500/15" },
+            { label:"Live Active",    value:activeCalls.filter(c=>c.status==="in_progress").length, icon:<Mic className="w-4 h-4"/>,           color:"text-cyan-400",   bg:"bg-cyan-500/15" },
+            { label:"Missed",         value:activeCalls.filter(c=>c.status==="missed").length,   icon:<PhoneMissed className="w-4 h-4"/>,   color:"text-yellow-400", bg:"bg-yellow-500/15" },
+            { label:"Failed",         value:activeCalls.filter(c=>c.status==="failed").length,    icon:<TrendingUp className="w-4 h-4"/>,    color:"text-purple-400", bg:"bg-purple-500/15" },
+            { label:"Avg Dur.",       value:activeCalls.length ? `${Math.round(activeCalls.reduce((s,c)=>s+c.duration,0)/activeCalls.length)}s` : "0s", icon:<Activity className="w-4 h-4"/>,      color:"text-orange-400", bg:"bg-orange-500/15" },
+            { label:"Connect Rate",   value:activeCalls.length ? `${Math.round((activeCalls.filter(c=>c.status==="completed").length / activeCalls.length)*100)}%` : "0%", icon:<BarChart2 className="w-4 h-4"/>,    color:"text-green-400",  bg:"bg-green-500/15" },
           ].map(s=>(
             <Card key={s.label} className="p-4">
               <div className={`inline-flex p-2 rounded-xl ${s.bg} ${s.color} mb-2`}>{s.icon}</div>

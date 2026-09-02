@@ -69,11 +69,11 @@ export class AnalyticsService {
       },
     });
 
-    return agents.map(a => {
+    return agents.map((a: any) => {
       const completedCalls = a.calls.length;
-      const avgDuration    = completedCalls ? a.calls.reduce((s, c) => s + (c.duration ?? 0), 0) / completedCalls : 0;
-      const avgSentiment   = completedCalls ? a.calls.reduce((s, c) => s + (c.sentimentScore ?? 0), 0) / completedCalls : 0;
-      const avgQuality     = completedCalls ? a.calls.reduce((s, c) => s + (c.qualityScore ?? 0), 0) / completedCalls : 0;
+      const avgDuration    = completedCalls ? a.calls.reduce((s: number, c: any) => s + (c.duration ?? 0), 0) / completedCalls : 0;
+      const avgSentiment   = completedCalls ? a.calls.reduce((s: number, c: any) => s + (c.sentimentScore ?? 0), 0) / completedCalls : 0;
+      const avgQuality     = completedCalls ? a.calls.reduce((s: number, c: any) => s + (c.qualityScore ?? 0), 0) / completedCalls : 0;
 
       return {
         id:            a.id,
@@ -96,13 +96,13 @@ export class AnalyticsService {
       _count: { status: true },
     });
 
-    const map = counts.reduce((acc, c) => { acc[c.status] = c._count.status; return acc; }, {} as Record<string, number>);
-    const total = Object.values(map).reduce((s, n) => s + n, 0);
+    const map = counts.reduce((acc: Record<string, number>, c: any) => { acc[c.status] = c._count.status; return acc; }, {} as Record<string, number>);
+    const total = Object.values(map).reduce((s: number, n: number) => s + n, 0);
 
     return statuses.map(s => ({
       stage: s,
       count: map[s] ?? 0,
-      pct:   total ? +((map[s] ?? 0) / total * 100).toFixed(1) : 0,
+      pct:   total ? +(((map[s] ?? 0) / (total as number)) * 100).toFixed(1) : 0,
     }));
   }
 

@@ -26,7 +26,7 @@ export class AuthService {
     // Create tenant + admin user in a transaction
     const slug = dto.companyName.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
 
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx: any) => {
       const tenant = await tx.tenant.create({
         data: {
           name: dto.companyName,

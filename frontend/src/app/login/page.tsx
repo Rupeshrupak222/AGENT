@@ -24,11 +24,50 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(""); setLoading(true);
-    await new Promise(r => setTimeout(r, 900));
-    const found = DEMO_USERS.find(u => u.email === email.trim().toLowerCase() && u.password === password);
+    setError("");
+    setLoading(true);
+    try {
+      // 1. Attempt live login with backend API
+      const res = await fetch("http://localhost:3001/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success && data.data?.accessToken) {
+        login(
+          {
+            id: data.data.user.id,
+            name: data.data.user.name,
+            email: data.data.user.email,
+            role: data.data.user.role,
+            tenantId: data.data.user.tenantId,
+          },
+          data.data.accessToken
+        );
+        router.push("/dashboard/overview");
+        return;
+      }
+    } catch (err) {
+      // Backend unavailable or network error, check local fallback
+    }
+
+    // 2. Fallback to local demo accounts
+    const found = DEMO_USERS.find(
+      (u) => u.email === email.trim().toLowerCase() && u.password === password
+    );
     if (found) {
-      login({ id:"demo-"+found.role, name:found.name, email:found.email, role:found.role, tenantId:found.tenantId }, "demo-jwt-"+Date.now());
+      login(
+        {
+          id: "demo-" + found.role,
+          name: found.name,
+          email: found.email,
+          role: found.role,
+          tenantId: found.tenantId,
+        },
+        "demo-jwt-" + Date.now()
+      );
       router.push("/dashboard/overview");
     } else {
       setError("Invalid credentials. Try admin@acmecorp.com / Demo@1234");
