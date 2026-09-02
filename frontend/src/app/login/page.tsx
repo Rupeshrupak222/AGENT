@@ -5,13 +5,9 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Zap, Mail, Lock, Eye, EyeOff, ArrowRight, Phone, TrendingUp } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
+import { authApi, normalizeApiError } from "@/lib/api";
 
 const R = "#D42027";
-
-const DEMO_USERS = [
-  { email:"admin@acmecorp.com",   password:"Demo@1234", role:"company_admin", name:"Admin User",    tenantId:"demo-1" },
-  { email:"manager@acmecorp.com", password:"Demo@1234", role:"manager",       name:"Sales Manager", tenantId:"demo-1" },
-];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -27,52 +23,18 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      // 1. Attempt live login with backend API
-      const res = await fetch("http://localhost:3001/api/v1/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+      const data = await authApi.login({
+        email: email.trim().toLowerCase(),
+        password,
       });
-      const data = await res.json();
 
-      if (res.ok && data.success && data.data?.accessToken) {
-        login(
-          {
-            id: data.data.user.id,
-            name: data.data.user.name,
-            email: data.data.user.email,
-            role: data.data.user.role,
-            tenantId: data.data.user.tenantId,
-          },
-          data.data.accessToken
-        );
-        router.push("/dashboard/overview");
-        return;
-      }
-    } catch (err) {
-      // Backend unavailable or network error, check local fallback
-    }
-
-    // 2. Fallback to local demo accounts
-    const found = DEMO_USERS.find(
-      (u) => u.email === email.trim().toLowerCase() && u.password === password
-    );
-    if (found) {
-      login(
-        {
-          id: "demo-" + found.role,
-          name: found.name,
-          email: found.email,
-          role: found.role,
-          tenantId: found.tenantId,
-        },
-        "demo-jwt-" + Date.now()
-      );
+      login(data.user, data.tenant, data.accessToken, data.refreshToken);
       router.push("/dashboard/overview");
-    } else {
-      setError("Invalid credentials. Try admin@acmecorp.com / Demo@1234");
+    } catch (err: unknown) {
+      setError(normalizeApiError(err));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
@@ -245,6 +207,16 @@ export default function LoginPage() {
                 {s.label}
               </button>
             ))}
+          </div>
+
+          {/* Development Seed Helper */}
+          <div className="mt-5 p-3 rounded-xl text-xs flex items-center justify-between"
+            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.45)" }}>
+            <span>Seeded Admin: <strong className="text-white">admin@acmecorp.com</strong> / <strong className="text-white">Demo@1234</strong></span>
+            <button type="button" onClick={() => { setEmail("admin@acmecorp.com"); setPassword("Demo@1234"); }}
+              className="text-[11px] font-semibold underline transition-colors" style={{ color: R }}>
+              Fill
+            </button>
           </div>
 
           <p className="text-center text-sm mt-8" style={{ color:"rgba(255,255,255,0.38)" }}>

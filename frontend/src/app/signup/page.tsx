@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap, Mail, Lock, Eye, EyeOff, User, Building2, ArrowRight, ArrowLeft, Check, Phone, Globe } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
+import { authApi, normalizeApiError } from "@/lib/api";
 
 const R = "#D42027";
 const STEPS = ["Account","Company","Plan","Done"];
 
 const PLANS = [
-  { id:"starter",  name:"Starter",  price:"₹2,999", detail:"2 agents · 500 calls/mo",   popular:false },
-  { id:"growth",   name:"Growth",   price:"₹9,999", detail:"10 agents · 5,000 calls/mo", popular:true  },
+  { id:"starter",  name:"Starter",  price:"₹4,999", detail:"Up to 3 agents · 2,500 calls/mo", popular:false },
+  { id:"growth",   name:"Growth",   price:"₹11,999",detail:"Up to 10 agents · 10,000 calls/mo",popular:true  },
   { id:"business", name:"Business", price:"₹29,999",detail:"Unlimited · 50K calls/mo",   popular:false },
 ];
 
@@ -48,10 +49,23 @@ export default function SignupPage() {
 
   async function finish() {
     setLoading(true);
-    await new Promise(r=>setTimeout(r,1200));
-    loginFn({ id:"new-"+Date.now(), name:form.name, email:form.email, role:"company_admin", tenantId:"tenant-"+Date.now() }, "demo-jwt-"+Date.now());
-    setStep(3); setLoading(false);
-    setTimeout(()=>router.push("/dashboard/overview"),1800);
+    setErrors({});
+    try {
+      const data = await authApi.register({
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+        companyName: form.company.trim(),
+      });
+
+      loginFn(data.user, data.tenant, data.accessToken, data.refreshToken);
+      setStep(3);
+      setTimeout(() => router.push("/dashboard/overview"), 1500);
+    } catch (err: unknown) {
+      setErrors({ global: normalizeApiError(err) });
+    } finally {
+      setLoading(false);
+    }
   }
 
   const inputCls = "w-full h-11 rounded-xl px-4 text-sm text-white placeholder:text-white/20 outline-none transition-all";
@@ -245,6 +259,14 @@ export default function SignupPage() {
             )}
 
           </AnimatePresence>
+
+          {/* Global API Error */}
+          {errors.global && (
+            <div className="mt-4 p-3 rounded-xl text-xs flex items-center gap-2"
+              style={{ background: "rgba(212,32,39,0.12)", border: "1px solid rgba(212,32,39,0.35)", color: "#ff8080" }}>
+              <span>{errors.global}</span>
+            </div>
+          )}
 
           {/* Navigation */}
           {step<3 && (

@@ -132,13 +132,24 @@ function SidebarContent({ collapsed=false, mobile=false, onClose }: { collapsed?
 
 export default function DashboardLayout({ children }: { children:React.ReactNode }) {
   const pathname = usePathname();
-  const { user, logout } = useAuthStore();
+  const { user, accessToken, isAuthenticated, logout } = useAuthStore();
   const router = useRouter();
+  const [mounted,     setMounted]     = useState(false);
   const [collapsed,   setCollapsed]   = useState(false);
   const [mobileOpen,  setMobileOpen]  = useState(false);
   const [notifOpen,   setNotifOpen]   = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchOpen,  setSearchOpen]  = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && (!isAuthenticated || !accessToken)) {
+      router.replace("/login");
+    }
+  }, [mounted, isAuthenticated, accessToken, router]);
 
   useEffect(()=>{ setMobileOpen(false); }, [pathname]);
   useEffect(()=>{
@@ -146,6 +157,23 @@ export default function DashboardLayout({ children }: { children:React.ReactNode
     document.addEventListener("click", fn);
     return ()=>document.removeEventListener("click", fn);
   },[]);
+
+  // Guard against unauthenticated layout rendering during hydration
+  if (!mounted || (!isAuthenticated && !accessToken)) {
+    return (
+      <div className="flex h-screen items-center justify-center" style={{ background: "#0c0102" }}>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center animate-pulse"
+            style={{ background: `linear-gradient(135deg,${R},#9b1219)`, boxShadow: "0 0 24px rgba(212,32,39,0.4)" }}>
+            <Zap className="w-5 h-5 text-white fill-white" />
+          </div>
+          <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>
+            Authenticating session...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const unread = NOTIFS.filter(n=>n.unread).length;
   const pageLabel = pathname.split("/").pop()?.replace(/-/g," ")||"Dashboard";
