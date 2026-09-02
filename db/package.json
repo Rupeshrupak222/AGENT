@@ -6,21 +6,23 @@
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} seed.ts"
   },
   "scripts": {
-    "migrate:dev":    "prisma migrate dev --schema=./schema.prisma",
+    "migrate:dev": "prisma migrate dev --schema=./schema.prisma",
     "migrate:deploy": "prisma migrate deploy --schema=./schema.prisma",
-    "generate":       "prisma generate --schema=./schema.prisma",
-    "studio":         "prisma studio --schema=./schema.prisma",
-    "seed":           "ts-node seed.ts",
-    "reset":          "prisma migrate reset --schema=./schema.prisma"
+    "generate": "prisma generate --schema=./schema.prisma",
+    "studio": "prisma studio --schema=./schema.prisma",
+    "seed": "ts-node seed.ts",
+    "reset": "prisma migrate reset --schema=./schema.prisma"
   },
   "dependencies": {
     "@prisma/client": "^5.17.0",
-    "bcryptjs":       "^2.4.3"
+    "@types/dotenv": "^6.1.1",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^17.4.2"
   },
   "devDependencies": {
-    "prisma":    "^5.17.0",
-    "ts-node":   "^10.9.2",
-    "typescript": "^5.5.3",
-    "@types/bcryptjs": "^2.4.6"
+    "@types/bcryptjs": "^2.4.6",
+    "prisma": "^5.17.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.3"
   }
 }

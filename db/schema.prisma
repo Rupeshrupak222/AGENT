@@ -256,6 +256,7 @@ model Lead {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([tenantId, phone])
   @@index([tenantId])
   @@index([status])
   @@index([phone])

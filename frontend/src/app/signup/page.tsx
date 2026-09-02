@@ -161,7 +161,7 @@ export default function SignupPage() {
               <motion.div key="s1" initial={{ opacity:0,x:30 }} animate={{ opacity:1,x:0 }} exit={{ opacity:0,x:-30 }} className="space-y-5">
                 <div>
                   <h2 className="text-2xl font-extrabold text-white mb-1">About your company</h2>
-                  <p className="text-sm" style={{ color:"rgba(255,255,255,0.42)" }}>We'll customise AgentCall AI for your business</p>
+                  <p className="text-sm" style={{ color:"rgba(255,255,255,0.42)" }}>We&apos;ll customise AgentCall AI for your business</p>
                 </div>
                 {[
                   { k:"company", label:"Company Name",        type:"text", icon:<Building2 className="w-4 h-4"/>, ph:"Acme Corp" },

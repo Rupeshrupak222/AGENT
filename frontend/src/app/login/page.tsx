@@ -85,7 +85,7 @@ export default function LoginPage() {
             className="mt-8 rounded-2xl p-5"
             style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(212,32,39,0.16)", backdropFilter:"blur(12px)" }}>
             <p className="text-sm italic leading-relaxed mb-3" style={{ color:"rgba(255,255,255,0.65)" }}>
-              "AgentCall AI replaced our 10-person call center. Conversion went from 12% to 31% in the first month."
+              &ldquo;AgentCall AI replaced our 10-person call center. Conversion went from 12% to 31% in the first month.&rdquo;
             </p>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"

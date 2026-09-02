@@ -13,8 +13,10 @@ import { CallsModule }     from './modules/calls/calls.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { BillingModule }   from './modules/billing/billing.module';
 import { AutomationsModule } from './modules/automations/automations.module';
+import { AppController }    from './app.controller';
 
 @Module({
+  controllers: [AppController],
   imports: [
     // ── Config ────────────────────────────────────────────────
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env', '.env.local'] }),
@@ -34,7 +36,9 @@ import { AutomationsModule } from './modules/automations/automations.module';
         redis: {
           host:     cfg.get('REDIS_HOST', 'localhost'),
           port:     cfg.get<number>('REDIS_PORT', 6379),
-          password: cfg.get('REDIS_PASSWORD'),
+          password: cfg.get('REDIS_PASSWORD') || undefined,
+          lazyConnect: true,
+          retryStrategy: () => null,
         },
       }),
     }),

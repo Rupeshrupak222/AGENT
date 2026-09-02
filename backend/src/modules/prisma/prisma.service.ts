@@ -16,8 +16,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleInit() {
-    await this.$connect();
-    this.logger.log('Database connected');
+    try {
+      await this.$connect();
+      this.logger.log('Database connected');
+    } catch (err: any) {
+      this.logger.warn(`Database connection deferred (PostgreSQL not reachable at localhost:5432): ${err.message}`);
+    }
   }
 
   async onModuleDestroy() {

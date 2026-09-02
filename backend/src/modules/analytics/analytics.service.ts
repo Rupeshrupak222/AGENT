@@ -50,7 +50,7 @@ export class AnalyticsService {
         AVG("sentimentScore")          AS avg_sentiment
       FROM "Call"
       WHERE "tenantId" = ${tenantId}
-        AND "startedAt" >= NOW() - INTERVAL '${days} days'
+        AND "startedAt" >= NOW() - (${days} * INTERVAL '1 day')
       GROUP BY 1
       ORDER BY 1
     `;

@@ -77,7 +77,7 @@ export class AuthService {
   async refresh(dto: RefreshTokenDto) {
     try {
       const payload = this.jwt.verify(dto.refreshToken, {
-        secret: this.config.get('JWT_REFRESH_SECRET'),
+        secret: this.config.get('JWT_REFRESH_SECRET', 'adyapan-dev-refresh-secret-key-change-in-production-2026'),
       });
       const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
       if (!user || !user.isActive) throw new Error();
@@ -93,11 +93,11 @@ export class AuthService {
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwt.signAsync(payload, {
-        secret:    this.config.get('JWT_SECRET'),
+        secret:    this.config.get('JWT_SECRET', 'adyapan-dev-jwt-secret-key-change-in-production-2026'),
         expiresIn: this.config.get('JWT_EXPIRES_IN', '7d'),
       }),
       this.jwt.signAsync(payload, {
-        secret:    this.config.get('JWT_REFRESH_SECRET'),
+        secret:    this.config.get('JWT_REFRESH_SECRET', 'adyapan-dev-refresh-secret-key-change-in-production-2026'),
         expiresIn: this.config.get('JWT_REFRESH_EXPIRES_IN', '30d'),
       }),
     ]);
