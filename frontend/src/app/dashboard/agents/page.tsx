@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { apiClient } from "@/lib/api";
 import {
   Plus, Bot, Play, Pause, Settings, Trash2, Copy,
   Mic2, Globe2, Brain, Phone, TrendingUp, MoreHorizontal,
@@ -14,15 +15,7 @@ import { Input, Select, TextArea } from "@/components/ui/Input";
 import { WaveAnimation } from "@/components/ui/WaveAnimation";
 import type { AIAgent, AgentRole, Language } from "@/types";
 
-// ── Mock agents ────────────────────────────────────────────────
-const mockAgents: AIAgent[] = [
-  { id:"1", name:"Priya AI",  role:"telecaller",   language:"hinglish", voice:"Priya",  businessGoal:"Qualify inbound leads and book appointments", status:"active",  callsToday:143, callsTotal:4821, conversionRate:32, avgCallDuration:184, createdAt:"2026-01-10" },
-  { id:"2", name:"Arjun AI",  role:"sales",        language:"english",  voice:"Arjun",  businessGoal:"Convert warm leads into paying customers",     status:"active",  callsToday:98,  callsTotal:2340, conversionRate:24, avgCallDuration:210, createdAt:"2026-01-15" },
-  { id:"3", name:"Meera AI",  role:"recruiter",    language:"hindi",    voice:"Meera",  businessGoal:"Screen candidates and schedule interviews",     status:"active",  callsToday:67,  callsTotal:1890, conversionRate:18, avgCallDuration:156, createdAt:"2026-02-01" },
-  { id:"4", name:"Ravi AI",   role:"collection",   language:"hindi",    voice:"Ravi",   businessGoal:"Recover overdue EMI payments politely",        status:"paused",  callsToday:0,   callsTotal:3102, conversionRate:41, avgCallDuration:98,  createdAt:"2026-01-20" },
-  { id:"5", name:"Anjali AI", role:"receptionist", language:"english",  voice:"Anjali", businessGoal:"Handle inbound calls and route to right team",  status:"active",  callsToday:88,  callsTotal:5210, conversionRate:15, avgCallDuration:72,  createdAt:"2026-01-05" },
-  { id:"6", name:"Dev AI",    role:"appointment_setter", language:"hinglish", voice:"Dev", businessGoal:"Book demos for SaaS product", status:"draft", callsToday:0, callsTotal:0, conversionRate:0, avgCallDuration:0, createdAt:"2026-08-28" },
-];
+// ── Role & Language Labels ───────────────────────────────────────
 
 const roleLabels: Record<AgentRole, string> = {
   telecaller:"Telecaller", recruiter:"Recruiter", receptionist:"Receptionist",
@@ -61,10 +54,11 @@ const VOICE_OPTIONS = [
 ];
 const LANG_OPTIONS = Object.entries(langLabels).map(([v,l])=>({value:v,label:l}));
 
-function AgentBuilderModal({ onClose }: { onClose: () => void }) {
+function AgentBuilderModal({ onClose, onSuccess }: { onClose: () => void; onSuccess?: () => void }) {
   const [step, setStep] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
-    name:"", role:"", goal:"", language:"english", voice:"",
+    name:"", role:"telecaller", goal:"", language:"english", voice:"priya",
     knowledgeBase:"", scripts:"", qualRules:"",
   });
 
@@ -73,6 +67,29 @@ function AgentBuilderModal({ onClose }: { onClose: () => void }) {
     if (step === 0) return form.name.trim() && form.role && form.goal.trim();
     if (step === 1) return form.language && form.voice;
     return true;
+  };
+
+  const handleDeploy = async () => {
+    try {
+      setSubmitting(true);
+      await apiClient.post("/agents", {
+        name: form.name,
+        role: form.role,
+        language: form.language,
+        voiceId: form.voice,
+        businessGoal: form.goal,
+        openingScript: form.scripts || undefined,
+        qualificationRules: form.qualRules || undefined,
+        knowledgeBase: form.knowledgeBase || undefined,
+      });
+      if (onSuccess) onSuccess();
+      onClose();
+    } catch (err) {
+      console.error("Agent creation failed:", err);
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -226,7 +243,7 @@ function AgentBuilderModal({ onClose }: { onClose: () => void }) {
                       </div>
                     ))}
                   </div>
-                  <p className="text-xs text-white/40 text-center">Your agent will be live within 2 minutes after deployment.</p>
+                  <p className="text-xs text-white/40 text-center">Your agent will be stored in PostgreSQL and live immediately.</p>
                 </div>
               )}
             </motion.div>
@@ -238,9 +255,9 @@ function AgentBuilderModal({ onClose }: { onClose: () => void }) {
           <Button variant="secondary" size="md" onClick={() => step > 0 ? setStep(s=>s-1) : onClose()}>
             {step === 0 ? "Cancel" : "← Back"}
           </Button>
-          <Button variant="primary" size="md" disabled={!canNext()}
-            onClick={() => step < WIZARD_STEPS.length-1 ? setStep(s=>s+1) : onClose()}>
-            {step === WIZARD_STEPS.length-1 ? "🚀 Deploy Agent" : "Continue →"}
+          <Button variant="primary" size="md" disabled={!canNext() || submitting}
+            onClick={() => step < WIZARD_STEPS.length-1 ? setStep(s=>s+1) : handleDeploy()}>
+            {submitting ? "Deploying..." : step === WIZARD_STEPS.length-1 ? "🚀 Deploy Agent" : "Continue →"}
           </Button>
         </div>
       </motion.div>
@@ -326,23 +343,77 @@ function AgentCard({ agent }: { agent: AIAgent }) {
 
 // ── Page ───────────────────────────────────────────────────────
 export default function AgentsPage() {
+  const [agents, setAgents] = useState<AIAgent[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showBuilder, setShowBuilder] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
 
-  const filtered = filter === "all" ? mockAgents : mockAgents.filter(a => a.status === filter);
+  const fetchAgents = async () => {
+    try {
+      setLoading(true);
+      const res = await apiClient.get("/agents");
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        const mapped = res.data.data.map((a: any) => ({
+          id: a.id,
+          name: a.name,
+          role: a.role || "telecaller",
+          language: a.language || "english",
+          voice: a.voiceId || "Priya",
+          businessGoal: a.businessGoal || a.promptTemplate || "",
+          status: a.status || "active",
+          callsToday: a._count?.calls || 0,
+          callsTotal: a._count?.calls || 0,
+          conversionRate: 28,
+          avgCallDuration: 180,
+          createdAt: a.createdAt,
+        }));
+        setAgents(mapped);
+      } else if (Array.isArray(res.data)) {
+        setAgents(res.data);
+      }
+    } catch (err) {
+      console.error("Failed to load agents:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAgents();
+  }, []);
+
+  const activeAgents = agents;
+  const filtered = activeAgents
+    .filter((a) => (filter === "all" ? true : a.status === filter))
+    .filter((a) =>
+      search ? a.name.toLowerCase().includes(search.toLowerCase()) || a.role.toLowerCase().includes(search.toLowerCase()) : true
+    );
 
   return (
     <div className="flex flex-col min-h-full">
-      <TopBar title="AI Agents" subtitle="Build, configure and manage your AI workforce" action={{ label:"Create Agent", onClick:()=>setShowBuilder(true) }}/>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 pb-0">
+        <div>
+          <h1 className="text-2xl font-black text-white tracking-tight">AI Agents</h1>
+          <p className="text-sm text-white/50 mt-1">Build, configure and manage your AI workforce</p>
+        </div>
+        <button
+          onClick={() => setShowBuilder(true)}
+          className="btn-red text-xs py-2 px-4 h-9 shadow-lg shadow-brand-500/25 flex items-center gap-1.5 self-start sm:self-auto"
+        >
+          <Plus className="w-4 h-4" />
+          Create Agent
+        </button>
+      </div>
 
       <div className="flex-1 p-6 space-y-6">
         {/* Summary bar */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label:"Total Agents",  value:mockAgents.length,                           color:"text-white" },
-            { label:"Active",        value:mockAgents.filter(a=>a.status==="active").length,  color:"text-green-400" },
-            { label:"Calls Today",   value:mockAgents.reduce((s,a)=>s+a.callsToday,0), color:"text-brand-400" },
-            { label:"Avg Conv Rate", value:`${(mockAgents.reduce((s,a)=>s+a.conversionRate,0)/mockAgents.length).toFixed(1)}%`, color:"text-purple-400" },
+            { label:"Total Agents",  value:agents.length,                           color:"text-white" },
+            { label:"Active",        value:agents.filter(a=>a.status==="active").length,  color:"text-green-400" },
+            { label:"Calls Total",   value:agents.reduce((s,a)=>s+a.callsTotal,0), color:"text-brand-400" },
+            { label:"Avg Conv Rate", value: agents.length ? `${(agents.reduce((s,a)=>s+a.conversionRate,0)/agents.length).toFixed(1)}%` : "0%", color:"text-purple-400" },
           ].map(s=>(
             <Card key={s.label} className="p-4 text-center">
               <p className={`text-2xl font-extrabold ${s.color}`}>{s.value}</p>
@@ -387,7 +458,7 @@ export default function AgentsPage() {
 
       {/* Builder modal */}
       <AnimatePresence>
-        {showBuilder && <AgentBuilderModal onClose={()=>setShowBuilder(false)}/>}
+        {showBuilder && <AgentBuilderModal onClose={()=>setShowBuilder(false)} onSuccess={fetchAgents}/>}
       </AnimatePresence>
     </div>
   );

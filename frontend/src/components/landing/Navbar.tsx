@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const R = "#D42027";
 
@@ -71,8 +72,9 @@ export function Navbar() {
 
           {/* Desktop CTAs */}
           <div className="hidden md:flex items-center gap-3">
+            <ThemeToggle />
             <Link href="/login"
-              className="px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 text-gray-700"
+              className="px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 text-gray-700 dark:text-gray-200"
               style={{ border:"1px solid rgba(212,32,39,0.28)", background:"rgba(212,32,39,0.05)" }}
               onMouseEnter={e=>{const t=e.currentTarget;t.style.borderColor="rgba(212,32,39,0.55)";t.style.color=R;t.style.background="rgba(212,32,39,0.09)"}}
               onMouseLeave={e=>{const t=e.currentTarget;t.style.borderColor="rgba(212,32,39,0.28)";t.style.color="";t.style.background="rgba(212,32,39,0.05)"}}
@@ -83,11 +85,14 @@ export function Navbar() {
           </div>
 
           {/* Mobile hamburger */}
-          <button onClick={()=>setMobileOpen(!mobileOpen)}
-            className="md:hidden p-2 rounded-xl transition-all text-gray-600"
-          >
-            {mobileOpen ? <X className="w-5 h-5"/> : <Menu className="w-5 h-5"/>}
-          </button>
+          <div className="flex md:hidden items-center gap-2">
+            <ThemeToggle />
+            <button onClick={()=>setMobileOpen(!mobileOpen)}
+              className="p-2 rounded-xl transition-all text-gray-600 dark:text-gray-300"
+            >
+              {mobileOpen ? <X className="w-5 h-5"/> : <Menu className="w-5 h-5"/>}
+            </button>
+          </div>
         </div>
       </div>
 

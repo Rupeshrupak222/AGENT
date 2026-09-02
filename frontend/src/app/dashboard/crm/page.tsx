@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { apiClient } from "@/lib/api";
 import {
   Plus, Search, Filter, MoreHorizontal, Phone, Mail, Star,
   ChevronDown, ArrowUpDown, Tag, Clock, User, SlidersHorizontal,
@@ -29,17 +30,6 @@ const statusVariant: Record<LeadStatus, "gray"|"blue"|"cyan"|"purple"|"yellow"|"
   new:"gray", contacted:"blue", interested:"cyan", qualified:"purple",
   appointment:"yellow", closed_won:"green", closed_lost:"red",
 };
-
-const mockLeads: Lead[] = [
-  { id:"1",  name:"Rahul Sharma",   phone:"+91 98765 43210", email:"rahul@acmecorp.com",  company:"Acme Corp",    status:"qualified",   score:87, assignedAgent:"Priya AI", lastContact:"2h ago",  createdAt:"2026-08-25" },
-  { id:"2",  name:"Anita Patel",    phone:"+91 87654 32109", email:"anita@startupxyz.in", company:"Startup XYZ",  status:"interested",  score:72, assignedAgent:"Arjun AI", lastContact:"30m ago", createdAt:"2026-08-26" },
-  { id:"3",  name:"Vikram Singh",   phone:"+91 76543 21098", email:"vikram@infosys.com",  company:"Infosys",      status:"appointment", score:91, assignedAgent:"Meera AI", lastContact:"1h ago",  createdAt:"2026-08-24" },
-  { id:"4",  name:"Sunita Gupta",   phone:"+91 65432 10987", email:"sunita@tcs.com",      company:"TCS",          status:"contacted",   score:58, assignedAgent:"Priya AI", lastContact:"3h ago",  createdAt:"2026-08-27" },
-  { id:"5",  name:"Manish Kumar",   phone:"+91 54321 09876", email:"manish@wipro.com",    company:"Wipro",        status:"new",         score:45, assignedAgent:undefined,  lastContact:undefined, createdAt:"2026-08-28" },
-  { id:"6",  name:"Priya Nair",     phone:"+91 43210 98765", email:"priya@hcl.com",       company:"HCL",          status:"closed_won",  score:95, assignedAgent:"Arjun AI", lastContact:"1d ago",  createdAt:"2026-08-20" },
-  { id:"7",  name:"Amit Joshi",     phone:"+91 32109 87654", email:"amit@bajaj.com",      company:"Bajaj Finance", status:"qualified",  score:80, assignedAgent:"Ravi AI",  lastContact:"5h ago",  createdAt:"2026-08-22" },
-  { id:"8",  name:"Deepa Reddy",    phone:"+91 21098 76543", email:"deepa@hdfc.com",      company:"HDFC",         status:"closed_lost", score:30, assignedAgent:"Priya AI", lastContact:"2d ago",  createdAt:"2026-08-18" },
-];
 
 // ── Score indicator ────────────────────────────────────────────
 function ScoreBar({ score }: { score: number }) {
@@ -190,33 +180,74 @@ function LeadPanel({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 
 // ── Page ────────────────────────────────────────────────────────
 export default function CRMPage() {
-  const [view,    setView]    = useState<"list"|"kanban">("list");
-  const [selected,setSelected] = useState<Lead|null>(null);
-  const [search,  setSearch]  = useState("");
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<"list" | "kanban">("list");
+  const [selected, setSelected] = useState<Lead | null>(null);
+  const [search, setSearch] = useState("");
 
-  const filtered = mockLeads.filter(l =>
-    l.name.toLowerCase().includes(search.toLowerCase()) ||
-    (l.company||"").toLowerCase().includes(search.toLowerCase())
+  const fetchLeads = async () => {
+    try {
+      setLoading(true);
+      const res = await apiClient.get("/leads");
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        const mapped = res.data.data.map((l: any) => ({
+          id: l.id,
+          name: l.name,
+          phone: l.phone,
+          email: l.email || "",
+          company: l.company || "Acme Lead",
+          status: l.status || "new",
+          score: l.score || 70,
+          assignedAgent: l.assignedTo || "Priya AI",
+          lastContact: l.lastContactedAt ? "Recent" : undefined,
+          createdAt: l.createdAt,
+        }));
+        setLeads(mapped);
+      } else if (Array.isArray(res.data)) {
+        setLeads(res.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch leads:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeads();
+  }, []);
+
+  const currentLeads = leads;
+  const filtered = currentLeads.filter(
+    (l) =>
+      l.name.toLowerCase().includes(search.toLowerCase()) ||
+      (l.company || "").toLowerCase().includes(search.toLowerCase())
   );
 
   // Pipeline counts
   const pipelineCounts = PIPELINE_STAGES.reduce((acc, s) => {
-    acc[s.id] = mockLeads.filter(l => l.status === s.id).length;
+    acc[s.id] = currentLeads.filter((l) => l.status === s.id).length;
     return acc;
   }, {} as Record<string, number>);
 
   return (
     <div className="flex flex-col min-h-full">
-      <TopBar title="CRM — Lead Management" subtitle={`${mockLeads.length} leads in pipeline`} action={{ label:"Add Lead", onClick:()=>{} }}/>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 pb-0">
+        <div>
+          <h1 className="text-2xl font-black text-white tracking-tight">CRM — Lead Management</h1>
+          <p className="text-sm text-white/50 mt-1">{currentLeads.length} leads in active sales pipeline</p>
+        </div>
+      </div>
 
       <div className="flex-1 p-6 space-y-6">
         {/* KPIs */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label:"Total Leads",    value:mockLeads.length,                                        icon:<Users className="w-5 h-5"/>,    color:"bg-brand-500/20 text-brand-400" },
-            { label:"Qualified",      value:mockLeads.filter(l=>l.status==="qualified").length,     icon:<Target className="w-5 h-5"/>,   color:"bg-purple-500/20 text-purple-400" },
-            { label:"Won This Month", value:mockLeads.filter(l=>l.status==="closed_won").length,    icon:<CheckCircle2 className="w-5 h-5"/>, color:"bg-green-500/20 text-green-400" },
-            { label:"Pipeline Value", value:"₹12.4L",                                              icon:<DollarSign className="w-5 h-5"/>, color:"bg-orange-500/20 text-orange-400" },
+            { label:"Total Leads",    value:currentLeads.length,                                        icon:<Users className="w-5 h-5"/>,    color:"bg-brand-500/20 text-brand-400" },
+            { label:"Qualified",      value:currentLeads.filter(l=>l.status==="qualified").length,     icon:<Target className="w-5 h-5"/>,   color:"bg-purple-500/20 text-purple-400" },
+            { label:"Won Leads",      value:currentLeads.filter(l=>l.status==="closed_won").length,    icon:<CheckCircle2 className="w-5 h-5"/>, color:"bg-green-500/20 text-green-400" },
+            { label:"Avg Lead Score", value: currentLeads.length ? `${Math.round(currentLeads.reduce((s,l)=>s+l.score,0)/currentLeads.length)}/100` : "0", icon:<DollarSign className="w-5 h-5"/>, color:"bg-orange-500/20 text-orange-400" },
           ].map(s=>(
             <Card key={s.label} className="p-5">
               <div className="flex items-center gap-3">

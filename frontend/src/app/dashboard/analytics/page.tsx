@@ -118,7 +118,10 @@ export default function AnalyticsPage() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <TopBar title="AI Analytics" subtitle="Deep insights powered by GPT-4o analysis"/>
+      <div className="p-6 pb-0">
+        <h1 className="text-2xl font-black text-white tracking-tight">AI Analytics</h1>
+        <p className="text-sm text-white/50 mt-1">Deep operational insights powered by GPT-4o conversational analysis</p>
+      </div>
 
       <div className="flex-1 p-6 space-y-6">
         {/* Period selector */}

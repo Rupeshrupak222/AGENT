@@ -84,7 +84,7 @@ export class LeadsService {
       where: { tenantId, deletedAt: null },
       _count: { status: true },
     });
-    return counts.reduce((acc, c) => {
+    return counts.reduce((acc: Record<string, number>, c: any) => {
       acc[c.status] = c._count.status;
       return acc;
     }, {} as Record<string, number>);
