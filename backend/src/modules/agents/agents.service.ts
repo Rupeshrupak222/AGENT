@@ -23,16 +23,21 @@ export class AgentsService {
   }
 
   async findAll(tenantId: string, filters?: { status?: string; role?: string }) {
-    return this.prisma.aIAgent.findMany({
-      where: {
-        tenantId,
-        deletedAt: null,
-        ...(filters?.status && { status: filters.status as any }),
-        ...(filters?.role   && { role:   filters.role   as any }),
-      },
-      orderBy: { createdAt: 'desc' },
-      include: { _count: { select: { calls: true, campaigns: true } } },
-    });
+    try {
+      return await this.prisma.aIAgent.findMany({
+        where: {
+          tenantId,
+          deletedAt: null,
+          ...(filters?.status && { status: filters.status as any }),
+          ...(filters?.role   && { role:   filters.role   as any }),
+        },
+        orderBy: { createdAt: 'desc' },
+        include: { _count: { select: { calls: true, campaigns: true } } },
+      });
+    } catch (err: any) {
+      this.logger.warn(`Failed to query agents: ${err.message}`);
+      return [];
+    }
   }
 
   async findOne(tenantId: string, id: string) {

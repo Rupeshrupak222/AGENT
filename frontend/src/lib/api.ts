@@ -205,3 +205,163 @@ export const healthApi = {
     return res.data.data;
   },
 };
+
+// ── Analytics API Contracts ─────────────────────────────────────────
+export interface DashboardMetrics {
+  totalCalls: number;
+  connected: number;
+  qualified: number;
+  appointments: number;
+  closedWon: number;
+  connectRate: number;
+  conversionRate: number;
+  avgDuration: number;
+  avgSentiment: number;
+}
+
+export interface CallTrendItem {
+  day: string;
+  total_calls: number;
+  connected: number;
+  avg_sentiment: number;
+}
+
+export interface AgentPerformanceItem {
+  id: string;
+  name: string;
+  role: string;
+  totalCalls: number;
+  completedCalls: number;
+  avgDuration: number;
+  avgSentiment: number;
+  avgQuality: number;
+}
+
+export interface ConversionFunnelItem {
+  stage: string;
+  count: number;
+  pct: number;
+}
+
+export const analyticsApi = {
+  overview: async (
+    range: "today" | "week" | "month" = "week"
+  ): Promise<DashboardMetrics> => {
+    const res = await apiClient.get<ApiResponseWrapper<DashboardMetrics>>(
+      "/analytics/overview",
+      { params: { range } }
+    );
+    return res.data.data;
+  },
+
+  callTrend: async (days = 7): Promise<CallTrendItem[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<CallTrendItem[]>>(
+      "/analytics/call-trend",
+      { params: { days } }
+    );
+    return res.data.data;
+  },
+
+  agentPerformance: async (): Promise<AgentPerformanceItem[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<AgentPerformanceItem[]>>(
+      "/analytics/agent-performance"
+    );
+    return res.data.data;
+  },
+
+  conversionFunnel: async (): Promise<ConversionFunnelItem[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<ConversionFunnelItem[]>>(
+      "/analytics/conversion-funnel"
+    );
+    return res.data.data;
+  },
+};
+
+// ── Calls API Contracts ───────────────────────────────────────────
+export interface CallItem {
+  id: string;
+  phone: string;
+  direction: "outbound" | "inbound";
+  status:
+    | "queued"
+    | "ringing"
+    | "in_progress"
+    | "completed"
+    | "missed"
+    | "failed"
+    | "transferred";
+  duration: number | null;
+  sentimentScore?: number | null;
+  qualityScore?: number | null;
+  startedAt: string;
+  lead?: { id: string; name: string; phone: string };
+  agent?: { id: string; name: string; role: string };
+}
+
+export interface CallsListResponse {
+  items: CallItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface CallMetrics {
+  total: number;
+  completed: number;
+  missed: number;
+  failed: number;
+  connectRate: string;
+  avgDuration: number;
+}
+
+export const callsApi = {
+  list: async (params?: {
+    status?: string;
+    agentId?: string;
+    leadId?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<CallsListResponse> => {
+    const res = await apiClient.get<ApiResponseWrapper<CallsListResponse>>(
+      "/calls",
+      { params }
+    );
+    return res.data.data;
+  },
+
+  metrics: async (
+    range: "today" | "week" | "month" = "today"
+  ): Promise<CallMetrics> => {
+    const res = await apiClient.get<ApiResponseWrapper<CallMetrics>>(
+      "/calls/metrics",
+      { params: { range } }
+    );
+    return res.data.data;
+  },
+};
+
+// ── Agents API Contracts ──────────────────────────────────────────
+export interface AgentItem {
+  id: string;
+  name: string;
+  role: string;
+  language: string;
+  voiceId: string;
+  status: "draft" | "active" | "paused" | "archived";
+  _count?: {
+    calls: number;
+    campaigns: number;
+  };
+}
+
+export const agentsApi = {
+  list: async (filters?: {
+    status?: string;
+    role?: string;
+  }): Promise<AgentItem[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<AgentItem[]>>("/agents", {
+      params: filters,
+    });
+    return res.data.data;
+  },
+};

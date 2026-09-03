@@ -18,6 +18,13 @@ export class AnalyticsController {
     return this.svc.getDashboardMetrics(u.tenantId, range);
   }
 
+  @Get('overview')
+  @ApiOperation({ summary: 'Get top-level dashboard KPIs (overview alias)' })
+  @ApiQuery({ name: 'range', enum: ['today','week','month'], required: false })
+  overview(@CurrentUser() u: any, @Query('range') range: any) {
+    return this.svc.getDashboardMetrics(u.tenantId, range);
+  }
+
   @Get('call-trend')
   @ApiOperation({ summary: 'Daily call volume trend' })
   @ApiQuery({ name: 'days', required: false })
