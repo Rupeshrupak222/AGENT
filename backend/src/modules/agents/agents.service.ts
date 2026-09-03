@@ -1,8 +1,8 @@
 import {
   Injectable, NotFoundException, ForbiddenException, Logger,
 } from '@nestjs/common';
-import { PrismaService }  from '../prisma/prisma.service';
-import { CreateAgentDto, UpdateAgentDto, DeployAgentDto } from './dto/agent.dto';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateAgentDto, UpdateAgentDto } from './dto/agent.dto';
 
 @Injectable()
 export class AgentsService {
@@ -29,7 +29,7 @@ export class AgentsService {
           tenantId,
           deletedAt: null,
           ...(filters?.status && { status: filters.status as any }),
-          ...(filters?.role   && { role:   filters.role   as any }),
+          ...(filters?.role && { role: filters.role as any }),
         },
         orderBy: { createdAt: 'desc' },
         include: { _count: { select: { calls: true, campaigns: true } } },
@@ -44,7 +44,7 @@ export class AgentsService {
     const agent = await this.prisma.aIAgent.findFirst({
       where: { id, tenantId, deletedAt: null },
       include: {
-        _count:    { select: { calls: true } },
+        _count: { select: { calls: true } },
         campaigns: { take: 5, orderBy: { createdAt: 'desc' } },
       },
     });
@@ -53,27 +53,39 @@ export class AgentsService {
   }
 
   async update(tenantId: string, id: string, dto: UpdateAgentDto) {
-    await this.findOne(tenantId, id);
-    return this.prisma.aIAgent.update({ where: { id }, data: dto });
+    return this.prisma.tenantUpdate(
+      this.prisma.aIAgent,
+      tenantId,
+      id,
+      dto as any,
+    );
   }
 
   async remove(tenantId: string, id: string) {
-    await this.findOne(tenantId, id);
-    return this.prisma.aIAgent.update({
-      where: { id },
-      data:  { deletedAt: new Date() },
-    });
+    return this.prisma.tenantSoftDelete(
+      this.prisma.aIAgent,
+      tenantId,
+      id,
+    );
   }
 
   // ── Status transitions ────────────────────────────────────────
   async activate(tenantId: string, id: string) {
-    await this.findOne(tenantId, id);
-    return this.prisma.aIAgent.update({ where: { id }, data: { status: 'active' } });
+    return this.prisma.tenantUpdate(
+      this.prisma.aIAgent,
+      tenantId,
+      id,
+      { status: 'active' },
+    );
   }
 
   async pause(tenantId: string, id: string) {
-    await this.findOne(tenantId, id);
-    return this.prisma.aIAgent.update({ where: { id }, data: { status: 'paused' } });
+    return this.prisma.tenantUpdate(
+      this.prisma.aIAgent,
+      tenantId,
+      id,
+      { status: 'paused' },
+    );
   }
 
   // ── Stats ─────────────────────────────────────────────────────
@@ -86,15 +98,15 @@ export class AgentsService {
     ]);
 
     const avgDuration = await this.prisma.call.aggregate({
-      where:   { agentId: id, tenantId, status: 'completed' },
-      _avg:    { duration: true },
+      where: { agentId: id, tenantId, status: 'completed' },
+      _avg: { duration: true },
     });
 
     return {
       totalCalls,
       connectedCalls,
       qualifiedLeads,
-      conversionRate:  totalCalls ? ((qualifiedLeads / totalCalls) * 100).toFixed(1) : '0',
+      conversionRate: totalCalls ? ((qualifiedLeads / totalCalls) * 100).toFixed(1) : '0',
       avgCallDuration: Math.round(avgDuration._avg.duration ?? 0),
     };
   }
@@ -106,8 +118,8 @@ export class AgentsService {
     return this.prisma.aIAgent.create({
       data: {
         ...rest,
-        name:        `${agent.name} (Copy)`,
-        status:      'draft',
+        name: `${agent.name} (Copy)`,
+        status: 'draft',
         tenantId,
         createdById: userId,
       },

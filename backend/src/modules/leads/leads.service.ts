@@ -17,20 +17,20 @@ export class LeadsService {
 
   async findAll(tenantId: string, query: {
     status?: string; search?: string; agentId?: string;
-    page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc'|'desc';
+    page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc';
   }) {
     const { page = 1, limit = 20, status, search, agentId, sortBy = 'createdAt', sortOrder = 'desc' } = query;
-    const skip  = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
     const where: any = {
       tenantId,
       deletedAt: null,
-      ...(status  && { status }),
+      ...(status && { status }),
       ...(agentId && { assignedAgentId: agentId }),
-      ...(search  && {
+      ...(search && {
         OR: [
-          { name:    { contains: search, mode: 'insensitive' } },
-          { phone:   { contains: search } },
+          { name: { contains: search, mode: 'insensitive' } },
+          { phone: { contains: search } },
           { company: { contains: search, mode: 'insensitive' } },
         ],
       }),
@@ -40,7 +40,7 @@ export class LeadsService {
       this.prisma.lead.findMany({
         where,
         skip,
-        take:    limit,
+        take: limit,
         orderBy: { [sortBy]: sortOrder },
         include: { assignedAgent: { select: { id: true, name: true } } },
       }),
@@ -52,11 +52,11 @@ export class LeadsService {
 
   async findOne(tenantId: string, id: string) {
     const lead = await this.prisma.lead.findFirst({
-      where:   { id, tenantId, deletedAt: null },
+      where: { id, tenantId, deletedAt: null },
       include: {
-        calls:         { orderBy: { startedAt: 'desc' }, take: 10 },
+        calls: { orderBy: { startedAt: 'desc' }, take: 10 },
         assignedAgent: true,
-        activities:    { orderBy: { createdAt: 'desc' }, take: 20 },
+        activities: { orderBy: { createdAt: 'desc' }, take: 20 },
       },
     });
     if (!lead) throw new NotFoundException('Lead not found');
@@ -64,23 +64,34 @@ export class LeadsService {
   }
 
   async update(tenantId: string, id: string, dto: UpdateLeadDto) {
-    await this.findOne(tenantId, id);
-    return this.prisma.lead.update({ where: { id }, data: dto });
+    return this.prisma.tenantUpdate(
+      this.prisma.lead,
+      tenantId,
+      id,
+      dto as any,
+    );
   }
 
   async updateStatus(tenantId: string, id: string, dto: UpdateLeadStatusDto) {
-    await this.findOne(tenantId, id);
-    return this.prisma.lead.update({ where: { id }, data: { status: dto.status } });
+    return this.prisma.tenantUpdate(
+      this.prisma.lead,
+      tenantId,
+      id,
+      { status: dto.status },
+    );
   }
 
   async remove(tenantId: string, id: string) {
-    await this.findOne(tenantId, id);
-    return this.prisma.lead.update({ where: { id }, data: { deletedAt: new Date() } });
+    return this.prisma.tenantSoftDelete(
+      this.prisma.lead,
+      tenantId,
+      id,
+    );
   }
 
   async getPipelineStats(tenantId: string) {
     const counts = await this.prisma.lead.groupBy({
-      by:    ['status'],
+      by: ['status'],
       where: { tenantId, deletedAt: null },
       _count: { status: true },
     });

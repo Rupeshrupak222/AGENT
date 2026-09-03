@@ -1,0 +1,175 @@
+/**
+ * Frontend Permission System for AgentCall AI
+ * Mirrors the backend permission constants and role-permission map.
+ *
+ * IMPORTANT: This is a UX layer only. The backend is the authoritative security boundary.
+ * Frontend permission checks are for navigation/UI hiding, NOT for security.
+ */
+
+// ── Permission Constants ──────────────────────────────────────
+export const PERMISSIONS = {
+  TENANT_VIEW: 'tenant:view',
+  TENANT_UPDATE: 'tenant:update',
+
+  TEAM_VIEW: 'team:view',
+  TEAM_INVITE: 'team:invite',
+  TEAM_UPDATE_ROLE: 'team:update_role',
+  TEAM_REVOKE: 'team:revoke',
+
+  BILLING_VIEW: 'billing:view',
+  BILLING_MANAGE: 'billing:manage',
+  SUBSCRIPTION_UPGRADE: 'subscription:upgrade',
+  SUBSCRIPTION_DOWNGRADE: 'subscription:downgrade',
+
+  TELEPHONY_VIEW: 'telephony:view',
+  TELEPHONY_MANAGE: 'telephony:manage',
+
+  INTEGRATIONS_VIEW: 'integrations:view',
+  INTEGRATIONS_MANAGE: 'integrations:manage',
+
+  AI_AGENT_VIEW: 'ai_agent:view',
+  AI_AGENT_CREATE: 'ai_agent:create',
+  AI_AGENT_UPDATE: 'ai_agent:update',
+  AI_AGENT_DELETE: 'ai_agent:delete',
+
+  AI_PROMPT_VIEW: 'ai_prompt:view',
+  AI_PROMPT_UPDATE: 'ai_prompt:update',
+  AI_VOICE_MANAGE: 'ai_voice:manage',
+  AI_KNOWLEDGE_MANAGE: 'ai_knowledge:manage',
+
+  CAMPAIGN_VIEW: 'campaign:view',
+  CAMPAIGN_CREATE: 'campaign:create',
+  CAMPAIGN_UPDATE: 'campaign:update',
+  CAMPAIGN_EXECUTE: 'campaign:execute',
+  CAMPAIGN_PAUSE: 'campaign:pause',
+
+  LEAD_VIEW: 'lead:view',
+  LEAD_CREATE: 'lead:create',
+  LEAD_UPDATE: 'lead:update',
+  LEAD_DELETE: 'lead:delete',
+  LEAD_IMPORT: 'lead:import',
+  LEAD_ASSIGN: 'lead:assign',
+  LEAD_EXPORT: 'lead:export',
+
+  CALL_VIEW: 'call:view',
+  CALL_INITIATE: 'call:initiate',
+  CALL_MONITOR: 'call:monitor',
+  CALL_INTERVENE: 'call:intervene',
+  CALL_DISPOSITION: 'call:disposition',
+
+  RECORDING_VIEW: 'recording:view',
+  RECORDING_EXPORT: 'recording:export',
+
+  ANALYTICS_VIEW: 'analytics:view',
+  ANALYTICS_EXPORT: 'analytics:export',
+
+  AUTOMATION_VIEW: 'automation:view',
+  AUTOMATION_CREATE: 'automation:create',
+  AUTOMATION_UPDATE: 'automation:update',
+  AUTOMATION_EXECUTE: 'automation:execute',
+
+  CALENDAR_VIEW: 'calendar:view',
+  CALENDAR_MANAGE: 'calendar:manage',
+
+  SECURITY_VIEW: 'security:view',
+  SECURITY_MANAGE: 'security:manage',
+
+  AUDIT_LOG_VIEW: 'audit_log:view',
+
+  WORKSPACE_VIEW: 'workspace:view',
+  WORKSPACE_MANAGE: 'workspace:manage',
+
+  PLATFORM_TENANT_CREATE: 'platform:tenant_create',
+  PLATFORM_TENANT_MANAGE: 'platform:tenant_manage',
+  PLATFORM_TELEPHONY: 'platform:telephony',
+  PLATFORM_AI_PROVIDERS: 'platform:ai_providers',
+  PLATFORM_BILLING_CONFIG: 'platform:billing_config',
+  PLATFORM_DIAGNOSTICS: 'platform:diagnostics',
+  PLATFORM_AUDIT: 'platform:audit',
+} as const;
+
+export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
+
+// ── Role → Permission Map ─────────────────────────────────────
+const ROLE_PERMISSIONS: Record<string, readonly Permission[]> = {
+  super_admin: Object.values(PERMISSIONS) as Permission[],
+
+  company_admin: [
+    PERMISSIONS.TENANT_VIEW, PERMISSIONS.TENANT_UPDATE,
+    PERMISSIONS.TEAM_VIEW, PERMISSIONS.TEAM_INVITE, PERMISSIONS.TEAM_UPDATE_ROLE, PERMISSIONS.TEAM_REVOKE,
+    PERMISSIONS.BILLING_VIEW, PERMISSIONS.BILLING_MANAGE, PERMISSIONS.SUBSCRIPTION_UPGRADE, PERMISSIONS.SUBSCRIPTION_DOWNGRADE,
+    PERMISSIONS.TELEPHONY_VIEW, PERMISSIONS.TELEPHONY_MANAGE,
+    PERMISSIONS.INTEGRATIONS_VIEW, PERMISSIONS.INTEGRATIONS_MANAGE,
+    PERMISSIONS.AI_AGENT_VIEW, PERMISSIONS.AI_AGENT_CREATE, PERMISSIONS.AI_AGENT_UPDATE, PERMISSIONS.AI_AGENT_DELETE,
+    PERMISSIONS.AI_PROMPT_VIEW, PERMISSIONS.AI_PROMPT_UPDATE,
+    PERMISSIONS.AI_VOICE_MANAGE, PERMISSIONS.AI_KNOWLEDGE_MANAGE,
+    PERMISSIONS.CAMPAIGN_VIEW, PERMISSIONS.CAMPAIGN_CREATE, PERMISSIONS.CAMPAIGN_UPDATE, PERMISSIONS.CAMPAIGN_EXECUTE, PERMISSIONS.CAMPAIGN_PAUSE,
+    PERMISSIONS.LEAD_VIEW, PERMISSIONS.LEAD_CREATE, PERMISSIONS.LEAD_UPDATE, PERMISSIONS.LEAD_DELETE, PERMISSIONS.LEAD_IMPORT, PERMISSIONS.LEAD_ASSIGN, PERMISSIONS.LEAD_EXPORT,
+    PERMISSIONS.CALL_VIEW, PERMISSIONS.CALL_INITIATE, PERMISSIONS.CALL_MONITOR, PERMISSIONS.CALL_INTERVENE, PERMISSIONS.CALL_DISPOSITION,
+    PERMISSIONS.RECORDING_VIEW, PERMISSIONS.RECORDING_EXPORT,
+    PERMISSIONS.ANALYTICS_VIEW, PERMISSIONS.ANALYTICS_EXPORT,
+    PERMISSIONS.AUTOMATION_VIEW, PERMISSIONS.AUTOMATION_CREATE, PERMISSIONS.AUTOMATION_UPDATE, PERMISSIONS.AUTOMATION_EXECUTE,
+    PERMISSIONS.CALENDAR_VIEW, PERMISSIONS.CALENDAR_MANAGE,
+    PERMISSIONS.SECURITY_VIEW, PERMISSIONS.SECURITY_MANAGE,
+    PERMISSIONS.AUDIT_LOG_VIEW,
+    PERMISSIONS.WORKSPACE_VIEW, PERMISSIONS.WORKSPACE_MANAGE,
+  ],
+
+  manager: [
+    PERMISSIONS.TENANT_VIEW,
+    PERMISSIONS.TEAM_VIEW,
+    PERMISSIONS.AI_AGENT_VIEW, PERMISSIONS.AI_AGENT_CREATE, PERMISSIONS.AI_AGENT_UPDATE,
+    PERMISSIONS.AI_PROMPT_VIEW, PERMISSIONS.AI_PROMPT_UPDATE,
+    PERMISSIONS.AI_VOICE_MANAGE, PERMISSIONS.AI_KNOWLEDGE_MANAGE,
+    PERMISSIONS.CAMPAIGN_VIEW, PERMISSIONS.CAMPAIGN_CREATE, PERMISSIONS.CAMPAIGN_UPDATE, PERMISSIONS.CAMPAIGN_EXECUTE, PERMISSIONS.CAMPAIGN_PAUSE,
+    PERMISSIONS.LEAD_VIEW, PERMISSIONS.LEAD_CREATE, PERMISSIONS.LEAD_UPDATE, PERMISSIONS.LEAD_IMPORT, PERMISSIONS.LEAD_ASSIGN,
+    PERMISSIONS.CALL_VIEW, PERMISSIONS.CALL_INITIATE, PERMISSIONS.CALL_MONITOR, PERMISSIONS.CALL_INTERVENE, PERMISSIONS.CALL_DISPOSITION,
+    PERMISSIONS.RECORDING_VIEW,
+    PERMISSIONS.ANALYTICS_VIEW,
+    PERMISSIONS.AUTOMATION_VIEW, PERMISSIONS.AUTOMATION_CREATE, PERMISSIONS.AUTOMATION_UPDATE, PERMISSIONS.AUTOMATION_EXECUTE,
+    PERMISSIONS.CALENDAR_VIEW, PERMISSIONS.CALENDAR_MANAGE,
+    PERMISSIONS.AUDIT_LOG_VIEW,
+    PERMISSIONS.WORKSPACE_VIEW,
+  ],
+
+  agent: [
+    PERMISSIONS.TEAM_VIEW,
+    PERMISSIONS.LEAD_VIEW, PERMISSIONS.LEAD_UPDATE,
+    PERMISSIONS.CALL_VIEW, PERMISSIONS.CALL_DISPOSITION,
+    PERMISSIONS.RECORDING_VIEW,
+    PERMISSIONS.AUTOMATION_VIEW,
+    PERMISSIONS.WORKSPACE_VIEW,
+  ],
+
+  viewer: [
+    PERMISSIONS.TENANT_VIEW,
+    PERMISSIONS.TEAM_VIEW,
+    PERMISSIONS.AI_AGENT_VIEW,
+    PERMISSIONS.LEAD_VIEW,
+    PERMISSIONS.CALL_VIEW,
+    PERMISSIONS.RECORDING_VIEW,
+    PERMISSIONS.ANALYTICS_VIEW,
+    PERMISSIONS.AUTOMATION_VIEW,
+    PERMISSIONS.CALENDAR_VIEW,
+    PERMISSIONS.AUDIT_LOG_VIEW,
+    PERMISSIONS.WORKSPACE_VIEW,
+  ],
+};
+
+export function hasPermission(role: string, permission: Permission): boolean {
+  const perms = ROLE_PERMISSIONS[role];
+  if (!perms) return false;
+  return perms.includes(permission);
+}
+
+export function hasAllPermissions(role: string, permissions: Permission[]): boolean {
+  return permissions.every(p => hasPermission(role, p));
+}
+
+export function hasAnyPermission(role: string, permissions: Permission[]): boolean {
+  return permissions.some(p => hasPermission(role, p));
+}
+
+export function getRolePermissions(role: string): readonly Permission[] {
+  return ROLE_PERMISSIONS[role] ?? [];
+}

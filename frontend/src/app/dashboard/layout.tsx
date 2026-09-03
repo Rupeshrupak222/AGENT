@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,44 +26,59 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
+import { usePermissions } from "@/hooks/usePermissions";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { PERMISSIONS, Permission } from "@/lib/permissions";
 
 const R = "#D42027";
 
-const groups = [
+interface NavItem {
+  icon: any;
+  label: string;
+  href: string;
+  permission: Permission;
+  badge?: string;
+}
+
+const ALL_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Overview",
-    items: [{ icon: LayoutDashboard, label: "Dashboard", href: "/dashboard/overview" }],
+    items: [
+      { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard/overview", permission: PERMISSIONS.TENANT_VIEW },
+    ],
   },
   {
     label: "AI Workforce",
     items: [
-      { icon: Bot, label: "AI Agents", href: "/dashboard/agents" },
-      { icon: Mic2, label: "Voices", href: "/dashboard/voices", badge: "New" },
+      { icon: Bot, label: "AI Agents", href: "/dashboard/agents", permission: PERMISSIONS.AI_AGENT_VIEW },
+      { icon: Mic2, label: "Voices", href: "/dashboard/voices", permission: PERMISSIONS.AI_VOICE_MANAGE, badge: "New" },
     ],
   },
   {
     label: "Operations",
     items: [
-      { icon: Phone, label: "Call Center", href: "/dashboard/calls" },
-      { icon: Users, label: "CRM / Leads", href: "/dashboard/crm" },
-      { icon: Calendar, label: "Calendar", href: "/dashboard/calendar" },
-      { icon: MessageSquare, label: "Automations", href: "/dashboard/automations" },
+      { icon: Phone, label: "Call Center", href: "/dashboard/calls", permission: PERMISSIONS.CALL_VIEW },
+      { icon: Users, label: "CRM / Leads", href: "/dashboard/crm", permission: PERMISSIONS.LEAD_VIEW },
+      { icon: Calendar, label: "Calendar", href: "/dashboard/calendar", permission: PERMISSIONS.CALENDAR_VIEW },
+      { icon: MessageSquare, label: "Automations", href: "/dashboard/automations", permission: PERMISSIONS.AUTOMATION_VIEW },
     ],
   },
   {
     label: "Insights",
-    items: [{ icon: BarChart3, label: "Analytics", href: "/dashboard/analytics" }],
+    items: [
+      { icon: BarChart3, label: "Analytics", href: "/dashboard/analytics", permission: PERMISSIONS.ANALYTICS_VIEW },
+    ],
   },
   {
     label: "Account",
     items: [
-      { icon: Building2, label: "Workspace", href: "/dashboard/workspace" },
-      { icon: CreditCard, label: "Billing", href: "/dashboard/billing" },
-      { icon: Settings, label: "Settings", href: "/dashboard/settings" },
+      { icon: Building2, label: "Workspace", href: "/dashboard/workspace", permission: PERMISSIONS.WORKSPACE_VIEW },
+      { icon: CreditCard, label: "Billing", href: "/dashboard/billing", permission: PERMISSIONS.BILLING_VIEW },
+      { icon: Settings, label: "Settings", href: "/dashboard/settings", permission: PERMISSIONS.TENANT_VIEW },
     ],
   },
 ];
@@ -85,8 +100,17 @@ function SidebarContent({
 }) {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+  const { can } = usePermissions();
   const router = useRouter();
   const show = !collapsed || mobile;
+
+  // Filter navigation groups based on permissions
+  const groups = useMemo(() => {
+    return ALL_GROUPS.map((g) => ({
+      ...g,
+      items: g.items.filter((item) => can(item.permission)),
+    })).filter((g) => g.items.length > 0);
+  }, [can]);
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-[#0f0102] border-r border-slate-200 dark:border-brand-500/15 transition-colors duration-200">
@@ -158,11 +182,11 @@ function SidebarContent({
                       {show && (
                         <>
                           <span className="flex-1 truncate">{item.label}</span>
-                          {(item as any).badge && (
+                          {item.badge ? (
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-brand-100 dark:bg-brand-500/25 text-brand-700 dark:text-rose-300 border border-brand-200 dark:border-brand-500/30">
-                              {(item as any).badge}
+                              {item.badge}
                             </span>
-                          )}
+                          ) : null}
                         </>
                       )}
                     </Link>
@@ -230,6 +254,7 @@ function SidebarContent({
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, accessToken, isAuthenticated, logout } = useAuthStore();
+  const { can } = usePermissions();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -285,6 +310,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const unread = NOTIFS.filter((n) => n.unread).length;
   const pageLabel = pathname.split("/").pop()?.replace(/-/g, " ") || "Dashboard";
+
+  // Profile dropdown items filtered by permissions
+  const profileItems = [
+    { label: "Profile Settings", href: "/dashboard/settings", show: true },
+    { label: "Workspace", href: "/dashboard/workspace", show: can(PERMISSIONS.WORKSPACE_VIEW) },
+    { label: "Billing", href: "/dashboard/billing", show: can(PERMISSIONS.BILLING_VIEW) },
+  ].filter((item) => item.show);
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-[#0c0102] transition-colors duration-200">
@@ -460,17 +492,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </AnimatePresence>
             </div>
 
-            {/* New Agent */}
-            <Link
-              href="/dashboard/agents"
-              className="hidden sm:flex items-center gap-1.5 h-9 px-3 rounded-xl text-white text-xs font-semibold transition-all active:scale-[0.97] shadow-md shadow-brand-500/20"
-              style={{
-                background: `linear-gradient(135deg,${R},#9b1219)`,
-              }}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>New Agent</span>
-            </Link>
+            {/* New Agent — only visible if user can create agents */}
+            {can(PERMISSIONS.AI_AGENT_CREATE) && (
+              <Link
+                href="/dashboard/agents"
+                className="hidden sm:flex items-center gap-1.5 h-9 px-3 rounded-xl text-white text-xs font-semibold transition-all active:scale-[0.97] shadow-md shadow-brand-500/20"
+                style={{
+                  background: `linear-gradient(135deg,${R},#9b1219)`,
+                }}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>New Agent</span>
+              </Link>
+            )}
 
             {/* Profile */}
             <div className="relative" onClick={(e) => e.stopPropagation()}>
@@ -507,15 +541,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <p className="text-xs truncate text-slate-500 dark:text-white/40">
                         {user?.email}
                       </p>
-                      <span className="mt-1.5 inline-block text-[10px] font-bold px-2 py-0.5 rounded-full capitalize bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-rose-300 border border-brand-200 dark:border-brand-500/30">
+                      <span className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full capitalize bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-rose-300 border border-brand-200 dark:border-brand-500/30">
+                        {user?.role === "super_admin" && <Shield className="w-2.5 h-2.5" />}
                         {user?.role?.replace("_", " ")}
                       </span>
                     </div>
-                    {[
-                      { label: "Profile Settings", href: "/dashboard/settings" },
-                      { label: "Workspace", href: "/dashboard/workspace" },
-                      { label: "Billing", href: "/dashboard/billing" },
-                    ].map((item) => (
+                    {profileItems.map((item) => (
                       <Link
                         key={item.href}
                         href={item.href}
