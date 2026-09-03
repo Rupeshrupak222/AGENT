@@ -12,6 +12,8 @@ import { Logger } from '@nestjs/common';
 import { AudioSessionService } from '../services/audio-session.service';
 import { AudioFrame } from '../interfaces/audio-frame.interface';
 
+import { ConversationOrchestrator } from '../../ai/orchestrator/conversation.orchestrator';
+
 @WebSocketGateway({
   cors: { origin: '*' },
   namespace: '/telephony/stream',
@@ -24,7 +26,10 @@ export class TelephonyMediaGateway implements OnGatewayConnection, OnGatewayDisc
   private readonly socketToSessionMap = new Map<string, string>();
   private readonly sequenceCounters = new Map<string, number>();
 
-  constructor(private audioSessionService: AudioSessionService) {}
+  constructor(
+    private audioSessionService: AudioSessionService,
+    private conversationOrchestrator: ConversationOrchestrator,
+  ) {}
 
   handleConnection(client: Socket) {
     this.logger.log(`Telephony media transport connected: ${client.id}`);
@@ -34,6 +39,7 @@ export class TelephonyMediaGateway implements OnGatewayConnection, OnGatewayDisc
     const sessionId = this.socketToSessionMap.get(client.id);
     if (sessionId) {
       this.logger.log(`Media stream disconnected for session [${sessionId}]. Releasing resources.`);
+      this.conversationOrchestrator.endSession(sessionId);
       this.socketToSessionMap.delete(client.id);
       this.sequenceCounters.delete(sessionId);
     }
@@ -70,6 +76,18 @@ export class TelephonyMediaGateway implements OnGatewayConnection, OnGatewayDisc
 
     this.socketToSessionMap.set(client.id, session.sessionId);
     this.sequenceCounters.set(session.sessionId, 0);
+
+    // Initialize ConversationOrchestrator for this audio session
+    this.conversationOrchestrator.startSession({
+      sessionId: session.sessionId,
+      callId: session.callId,
+      tenantId: session.tenantId,
+      agentId: session.agentId,
+      socketId: client.id,
+      streamSid: streamSid || '',
+      onAudioChunk: (chunk: Buffer) => this.sendAudioChunkToCaller(client.id, streamSid || '', chunk),
+      onBargeInClear: () => this.sendBargeInClear(client.id, streamSid || ''),
+    });
 
     return { event: 'start:ack', streamSid, status: 'ready' };
   }
@@ -113,7 +131,8 @@ export class TelephonyMediaGateway implements OnGatewayConnection, OnGatewayDisc
       // Record telemetry in AudioSession
       this.audioSessionService.recordInboundFrame(sessionId, payloadBuffer.length);
 
-      // Day 8 hooks will pipe `frame` directly into Deepgram live streaming STT
+      // Pipe frame into ConversationOrchestrator (Deepgram STT)
+      this.conversationOrchestrator.handleAudioFrame(sessionId, payloadBuffer);
     } catch (err: any) {
       this.audioSessionService.recordDroppedFrame(sessionId);
       this.logger.error(`Failed to parse media frame for session [${sessionId}]: ${err.message}`);
@@ -131,6 +150,7 @@ export class TelephonyMediaGateway implements OnGatewayConnection, OnGatewayDisc
     const sessionId = this.socketToSessionMap.get(client.id);
     this.logger.log(`Media stream stop event received for session [${sessionId || client.id}]`);
     if (sessionId) {
+      this.conversationOrchestrator.endSession(sessionId);
       this.audioSessionService.closeSession(sessionId);
       this.socketToSessionMap.delete(client.id);
       this.sequenceCounters.delete(sessionId);
