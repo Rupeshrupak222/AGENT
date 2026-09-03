@@ -1,464 +1,819 @@
 "use client";
-import { useState, useEffect } from "react";
-import { apiClient } from "@/lib/api";
+
+import { useState, useEffect, useCallback } from "react";
 import {
-  Plus, Bot, Play, Pause, Settings, Trash2, Copy,
-  Mic2, Globe2, Brain, Phone, TrendingUp, MoreHorizontal,
-  Search, Filter, ChevronDown, Zap, CheckCircle2,
+  Plus,
+  Bot,
+  Play,
+  Pause,
+  Copy,
+  Trash2,
+  Globe2,
+  Phone,
+  MoreHorizontal,
+  Search,
+  CheckCircle2,
+  RefreshCw,
+  AlertTriangle,
+  X,
+  Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TopBar }    from "@/components/dashboard/TopBar";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Badge }     from "@/components/ui/Badge";
-import { Button }    from "@/components/ui/Button";
-import { Input, Select, TextArea } from "@/components/ui/Input";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { WaveAnimation } from "@/components/ui/WaveAnimation";
-import type { AIAgent, AgentRole, Language } from "@/types";
+import {
+  agentsApi,
+  normalizeApiError,
+  AgentItem,
+  CreateAgentInput,
+} from "@/lib/api";
 
-// ── Role & Language Labels ───────────────────────────────────────
-
-const roleLabels: Record<AgentRole, string> = {
-  telecaller:"Telecaller", recruiter:"Recruiter", receptionist:"Receptionist",
-  collection:"Collection", sales:"Sales Agent", support:"Support",
-  appointment_setter:"Appt. Setter",
-};
-const roleColors: Record<AgentRole, "blue"|"purple"|"cyan"|"orange"|"green"|"yellow"|"red"> = {
-  telecaller:"blue", recruiter:"purple", receptionist:"cyan",
-  collection:"orange", sales:"green", support:"yellow", appointment_setter:"red",
-};
-const langLabels: Record<Language,string> = {
-  hindi:"Hindi", english:"English", hinglish:"Hinglish",
-  tamil:"Tamil", telugu:"Telugu", marathi:"Marathi",
-  bengali:"Bengali", gujarati:"Gujarati", kannada:"Kannada", punjabi:"Punjabi",
+const roleLabels: Record<string, string> = {
+  telecaller: "Telecaller",
+  recruiter: "Recruiter",
+  receptionist: "Receptionist",
+  collection: "Collection",
+  sales: "Sales Agent",
+  support: "Support",
+  appointment_setter: "Appt. Setter",
 };
 
-// ── Builder wizard steps ───────────────────────────────────────
-const WIZARD_STEPS = ["Role & Goal","Voice & Language","Knowledge Base","Scripts","Review"];
+const roleColors: Record<
+  string,
+  "blue" | "purple" | "cyan" | "orange" | "green" | "yellow" | "red"
+> = {
+  telecaller: "blue",
+  recruiter: "purple",
+  receptionist: "cyan",
+  collection: "orange",
+  sales: "green",
+  support: "yellow",
+  appointment_setter: "red",
+};
+
+const langLabels: Record<string, string> = {
+  hindi: "Hindi",
+  english: "English",
+  hinglish: "Hinglish",
+  tamil: "Tamil",
+  telugu: "Telugu",
+  marathi: "Marathi",
+  bengali: "Bengali",
+  gujarati: "Gujarati",
+  kannada: "Kannada",
+  punjabi: "Punjabi",
+};
+
+const WIZARD_STEPS = [
+  "Role & Identity",
+  "Voice & Language",
+  "Knowledge & Scripts",
+  "Review & Deploy",
+];
 
 const ROLE_OPTIONS = [
-  { value:"telecaller",       label:"AI Telecaller",        icon:"📞", desc:"Outbound lead qualification & follow-up" },
-  { value:"sales",            label:"AI Sales Agent",       icon:"💼", desc:"Lead nurturing & deal closing" },
-  { value:"recruiter",        label:"AI Recruiter",         icon:"👥", desc:"Candidate screening & scheduling" },
-  { value:"receptionist",     label:"AI Receptionist",      icon:"🎧", desc:"Inbound call handling & routing" },
-  { value:"collection",       label:"AI Collection Agent",  icon:"💰", desc:"EMI reminders & payment recovery" },
-  { value:"appointment_setter",label:"AI Appt. Setter",     icon:"📅", desc:"Calendar booking automation" },
-  { value:"support",          label:"AI Support Agent",     icon:"🛠",  desc:"Customer help & FAQ resolution" },
+  {
+    value: "telecaller",
+    label: "AI Telecaller",
+    desc: "Outbound prospect qualification & structured follow-ups",
+  },
+  {
+    value: "sales",
+    label: "AI Sales Representative",
+    desc: "Inbound discovery, product demos & sales pipeline conversion",
+  },
+  {
+    value: "recruiter",
+    label: "AI Talent Recruiter",
+    desc: "Candidate resume screening & interview scheduling",
+  },
+  {
+    value: "receptionist",
+    label: "AI Front Desk Receptionist",
+    desc: "Live call routing, office FAQs & greeting automation",
+  },
+  {
+    value: "collection",
+    label: "AI Collections Specialist",
+    desc: "EMI payment reminders & payment reconciliation",
+  },
+  {
+    value: "appointment_setter",
+    label: "AI Appointment Setter",
+    desc: "High-volume calendar bookings & demo confirmations",
+  },
+  {
+    value: "support",
+    label: "AI Support Specialist",
+    desc: "Troubleshooting FAQs & tier-1 issue resolution",
+  },
 ];
-const VOICE_OPTIONS = [
-  { id:"priya",  name:"Priya",  lang:"Hindi/Hinglish", gender:"Female", sample:"Warm, professional" },
-  { id:"arjun",  name:"Arjun",  lang:"English",        gender:"Male",   sample:"Confident, clear" },
-  { id:"meera",  name:"Meera",  lang:"Hindi",          gender:"Female", sample:"Friendly, calm" },
-  { id:"ravi",   name:"Ravi",   lang:"Hindi/Marathi",  gender:"Male",   sample:"Authoritative" },
-  { id:"anjali", name:"Anjali", lang:"English/Hindi",  gender:"Female", sample:"Polished, crisp" },
-  { id:"dev",    name:"Dev",    lang:"Hinglish",       gender:"Male",   sample:"Casual, upbeat" },
-];
-const LANG_OPTIONS = Object.entries(langLabels).map(([v,l])=>({value:v,label:l}));
 
-function AgentBuilderModal({ onClose, onSuccess }: { onClose: () => void; onSuccess?: () => void }) {
+const VOICE_OPTIONS = [
+  { id: "priya-warm", name: "Priya", lang: "Hindi/Hinglish", gender: "Female" },
+  { id: "arjun-clear", name: "Arjun", lang: "English", gender: "Male" },
+  { id: "meera-calm", name: "Meera", lang: "Hindi", gender: "Female" },
+  { id: "ravi-deep", name: "Ravi", lang: "Hindi/Marathi", gender: "Male" },
+  { id: "anjali-crisp", name: "Anjali", lang: "English/Hindi", gender: "Female" },
+  { id: "dev-upbeat", name: "Dev", lang: "Hinglish", gender: "Male" },
+];
+
+// ── Agent Creation Modal ─────────────────────────────────────────
+function AgentBuilderModal({
+  onClose,
+  onSuccess,
+}: {
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({
-    name:"", role:"telecaller", goal:"", language:"english", voice:"priya",
-    knowledgeBase:"", scripts:"", qualRules:"",
+  const [error, setError] = useState<string | null>(null);
+
+  const [form, setForm] = useState<CreateAgentInput>({
+    name: "",
+    role: "telecaller",
+    language: "english",
+    voiceId: "priya-warm",
+    businessGoal: "",
+    openingScript: "",
+    qualificationRules: "",
+    knowledgeBase: "",
   });
 
-  const set = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
+  const setField = (k: keyof CreateAgentInput, v: string) => {
+    setForm((prev) => ({ ...prev, [k]: v }));
+  };
+
   const canNext = () => {
-    if (step === 0) return form.name.trim() && form.role && form.goal.trim();
-    if (step === 1) return form.language && form.voice;
+    if (step === 0) return form.name.trim().length >= 2 && form.businessGoal.trim().length >= 10;
+    if (step === 1) return !!form.language && !!form.voiceId;
     return true;
   };
 
   const handleDeploy = async () => {
     try {
       setSubmitting(true);
-      await apiClient.post("/agents", {
-        name: form.name,
-        role: form.role,
-        language: form.language,
-        voiceId: form.voice,
-        businessGoal: form.goal,
-        openingScript: form.scripts || undefined,
-        qualificationRules: form.qualRules || undefined,
-        knowledgeBase: form.knowledgeBase || undefined,
+      setError(null);
+      await agentsApi.create({
+        ...form,
+        openingScript: form.openingScript?.trim() || undefined,
+        qualificationRules: form.qualificationRules?.trim() || undefined,
+        knowledgeBase: form.knowledgeBase?.trim() || undefined,
       });
-      if (onSuccess) onSuccess();
+      onSuccess();
       onClose();
     } catch (err) {
-      console.error("Agent creation failed:", err);
-      onClose();
-    } finally {
+      setError(normalizeApiError(err));
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <motion.div
-        initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <motion.div
-        initial={{ opacity:0, scale:0.95, y:20 }}
-        animate={{ opacity:1, scale:1, y:0 }}
-        exit={{ opacity:0, scale:0.95, y:20 }}
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto glass-card rounded-3xl border border-white/15 shadow-glass"
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white dark:bg-[#150305] border border-slate-200 dark:border-white/15 shadow-2xl p-6 text-slate-900 dark:text-white"
       >
         {/* Header */}
-        <div className="sticky top-0 bg-[#0d0d1f]/95 backdrop-blur-xl border-b border-white/[0.07] px-6 py-4 rounded-t-3xl">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-bold text-white">Create AI Agent</h2>
-              <p className="text-xs text-white/40">No-code agent builder</p>
-            </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all text-lg">×</button>
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/10">
+          <div>
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-brand-500" />
+              Build Autonomous AI Agent
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-white/40">
+              Configure persona, conversational goals, and voice telemetry
+            </p>
           </div>
-          {/* Progress steps */}
-          <div className="flex items-center gap-1">
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:text-white/40 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Step Progress */}
+        <div className="py-4">
+          <div className="flex items-center gap-2">
             {WIZARD_STEPS.map((s, i) => (
-              <div key={s} className="flex items-center gap-1 flex-1">
-                <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold transition-all ${i < step ? "bg-green-500 text-white" : i === step ? "bg-brand-500 text-white" : "bg-white/10 text-white/30"}`}>
+              <div key={s} className="flex-1 flex items-center gap-2">
+                <div
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                    i < step
+                      ? "bg-emerald-500 text-white"
+                      : i === step
+                      ? "bg-brand-600 text-white"
+                      : "bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-white/40"
+                  }`}
+                >
                   {i < step ? <CheckCircle2 className="w-3.5 h-3.5" /> : i + 1}
                 </div>
+                <span className="hidden sm:inline text-[11px] font-medium text-slate-600 dark:text-white/60 truncate">
+                  {s}
+                </span>
                 {i < WIZARD_STEPS.length - 1 && (
-                  <div className={`flex-1 h-0.5 rounded-full transition-all ${i < step ? "bg-green-500" : "bg-white/10"}`} />
+                  <div
+                    className={`flex-1 h-0.5 rounded-full ${
+                      i < step ? "bg-emerald-500" : "bg-slate-200 dark:bg-white/10"
+                    }`}
+                  />
                 )}
               </div>
             ))}
           </div>
-          <div className="flex justify-between mt-1">
-            {WIZARD_STEPS.map((s, i) => (
-              <span key={s} className={`text-[10px] ${i === step ? "text-brand-400 font-medium" : "text-white/25"}`}>{s}</span>
-            ))}
+        </div>
+
+        {/* Error notification */}
+        {error && (
+          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            <span>{error}</span>
           </div>
+        )}
+
+        {/* Wizard Form Steps */}
+        <div className="space-y-4 py-2">
+          {step === 0 && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-white/80 mb-1">
+                  Agent Name *
+                </label>
+                <input
+                  value={form.name}
+                  onChange={(e) => setField("name", e.target.value)}
+                  placeholder="e.g. Priya - Enterprise Qualification"
+                  className="w-full h-10 px-3 rounded-xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 text-sm outline-none focus:border-brand-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-white/80 mb-1">
+                  Agent Role Taxonomy *
+                </label>
+                <div className="grid sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                  {ROLE_OPTIONS.map((r) => (
+                    <button
+                      type="button"
+                      key={r.value}
+                      onClick={() => setField("role", r.value)}
+                      className={`p-3 rounded-xl text-left border transition-all ${
+                        form.role === r.value
+                          ? "border-brand-500 bg-brand-50/50 dark:bg-brand-500/15"
+                          : "border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20"
+                      }`}
+                    >
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">
+                        {r.label}
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-white/40 mt-0.5">
+                        {r.desc}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-white/80 mb-1">
+                  Core Business Objective / Prompt Goal * (Min 10 chars)
+                </label>
+                <textarea
+                  rows={3}
+                  value={form.businessGoal}
+                  onChange={(e) => setField("businessGoal", e.target.value)}
+                  placeholder="Describe what this voice employee should accomplish during conversations..."
+                  className="w-full p-3 rounded-xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 text-xs outline-none focus:border-brand-500 resize-none"
+                />
+              </div>
+            </div>
+          )}
+
+          {step === 1 && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-white/80 mb-1">
+                  Primary Dialect / Language
+                </label>
+                <select
+                  value={form.language}
+                  onChange={(e) => setField("language", e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl bg-slate-100 dark:bg-[#1a0405] border border-slate-200 dark:border-white/10 text-xs outline-none focus:border-brand-500"
+                >
+                  {Object.entries(langLabels).map(([v, l]) => (
+                    <option key={v} value={v}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-white/80 mb-2">
+                  Select Synthetic Voice Profile
+                </label>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {VOICE_OPTIONS.map((v) => (
+                    <div
+                      key={v.id}
+                      onClick={() => setField("voiceId", v.id)}
+                      className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                        form.voiceId === v.id
+                          ? "border-brand-500 bg-brand-50/50 dark:bg-brand-500/15"
+                          : "border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white">
+                          {v.name} ({v.gender})
+                        </p>
+                        <Badge variant="gray" className="text-[10px]">
+                          {v.lang}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-white/80 mb-1">
+                  Opening Hook Script (Optional)
+                </label>
+                <input
+                  value={form.openingScript}
+                  onChange={(e) => setField("openingScript", e.target.value)}
+                  placeholder="e.g. Hello! This is Priya from Acme Corp calling regarding your inquiry..."
+                  className="w-full h-10 px-3 rounded-xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 text-xs outline-none focus:border-brand-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-white/80 mb-1">
+                  Lead Qualification Rules (Optional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={form.qualificationRules}
+                  onChange={(e) => setField("qualificationRules", e.target.value)}
+                  placeholder="Budget > $10,000, Timeline < 30 days, B2B company"
+                  className="w-full p-3 rounded-xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 text-xs outline-none focus:border-brand-500 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-white/80 mb-1">
+                  Company Knowledge Context / FAQs (Optional)
+                </label>
+                <textarea
+                  rows={3}
+                  value={form.knowledgeBase}
+                  onChange={(e) => setField("knowledgeBase", e.target.value)}
+                  placeholder="Add pricing details, service offerings, and objection handling guidelines..."
+                  className="w-full p-3 rounded-xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 text-xs outline-none focus:border-brand-500 resize-none"
+                />
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-3 p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 text-xs">
+              <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-2">
+                Verify Agent Parameters
+              </h4>
+              <div className="flex justify-between py-1 border-b border-slate-200 dark:border-white/5">
+                <span className="text-slate-500 dark:text-white/40">Name:</span>
+                <span className="font-semibold text-slate-900 dark:text-white">{form.name}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-200 dark:border-white/5">
+                <span className="text-slate-500 dark:text-white/40">Role:</span>
+                <span className="font-semibold capitalize text-slate-900 dark:text-white">{roleLabels[form.role] || form.role}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-200 dark:border-white/5">
+                <span className="text-slate-500 dark:text-white/40">Language:</span>
+                <span className="font-semibold capitalize text-slate-900 dark:text-white">{langLabels[form.language] || form.language}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-200 dark:border-white/5">
+                <span className="text-slate-500 dark:text-white/40">Voice Profile:</span>
+                <span className="font-semibold text-slate-900 dark:text-white">{form.voiceId}</span>
+              </div>
+              <div className="py-1">
+                <span className="text-slate-500 dark:text-white/40 block mb-1">Objective:</span>
+                <p className="text-slate-700 dark:text-white/80 italic">{form.businessGoal}</p>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Step content */}
-        <div className="p-6 space-y-5">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={step}
-              initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:-20 }}
-              transition={{ duration:0.2 }}
+        {/* Modal Footer Controls */}
+        <div className="pt-4 border-t border-slate-100 dark:border-white/10 flex items-center justify-between">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => (step === 0 ? onClose() : setStep((s) => s - 1))}
+            disabled={submitting}
+          >
+            {step === 0 ? "Cancel" : "Back"}
+          </Button>
+
+          {step < WIZARD_STEPS.length - 1 ? (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setStep((s) => s + 1)}
+              disabled={!canNext()}
             >
-              {step === 0 && (
-                <div className="space-y-5">
-                  <Input label="Agent Name" placeholder="e.g. Priya AI" value={form.name} onChange={e=>set("name",e.target.value)} leftIcon={<Bot className="w-4 h-4"/>} />
-                  <div>
-                    <p className="text-sm font-medium text-white/70 mb-3">Agent Role</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {ROLE_OPTIONS.map(r => (
-                        <button key={r.value} onClick={()=>set("role",r.value)}
-                          className={`p-3 rounded-xl border text-left transition-all ${form.role===r.value ? "border-brand-500/60 bg-brand-500/10 text-white" : "border-white/10 hover:border-white/25 text-white/60"}`}>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span>{r.icon}</span>
-                            <span className="text-sm font-semibold">{r.label}</span>
-                          </div>
-                          <p className="text-xs text-white/40">{r.desc}</p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <TextArea label="Business Goal" placeholder="Describe what this agent should achieve in calls..." value={form.goal} onChange={e=>set("goal",e.target.value)} rows={3} />
-                </div>
-              )}
-
-              {step === 1 && (
-                <div className="space-y-5">
-                  <Select label="Primary Language" options={LANG_OPTIONS} value={form.language} onChange={e=>set("language",e.target.value)} />
-                  <div>
-                    <p className="text-sm font-medium text-white/70 mb-3">Select Voice (ElevenLabs)</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      {VOICE_OPTIONS.map(v => (
-                        <button key={v.id} onClick={()=>set("voice",v.id)}
-                          className={`p-4 rounded-xl border text-left transition-all ${form.voice===v.id ? "border-brand-500/60 bg-brand-500/10" : "border-white/10 hover:border-white/25"}`}>
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-sm font-bold text-white">{v.name[0]}</div>
-                            <div>
-                              <p className="text-sm font-semibold text-white">{v.name}</p>
-                              <p className="text-xs text-white/40">{v.gender}</p>
-                            </div>
-                          </div>
-                          <p className="text-xs text-white/50">{v.lang}</p>
-                          <p className="text-xs text-brand-400 mt-1">{v.sample}</p>
-                          {form.voice===v.id && <WaveAnimation active size="sm" bars={5} color="bg-brand-400" className="mt-2" />}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {step === 2 && (
-                <div className="space-y-5">
-                  <div>
-                    <p className="text-sm font-medium text-white/70 mb-2">Upload Knowledge Base</p>
-                    <div className="border-2 border-dashed border-white/15 rounded-2xl p-8 text-center hover:border-brand-500/40 transition-all cursor-pointer group">
-                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center mx-auto mb-3 group-hover:bg-brand-500/20 transition-all">
-                        <Brain className="w-6 h-6 text-brand-400" />
-                      </div>
-                      <p className="text-sm font-medium text-white/70">Drop files or click to upload</p>
-                      <p className="text-xs text-white/30 mt-1">PDF, DOCX, TXT — up to 50MB</p>
-                    </div>
-                  </div>
-                  <TextArea label="Or paste text directly" placeholder="Paste your product info, FAQs, pricing, objection handlers..." value={form.knowledgeBase} onChange={e=>set("knowledgeBase",e.target.value)} rows={6} />
-                </div>
-              )}
-
-              {step === 3 && (
-                <div className="space-y-5">
-                  <TextArea label="Opening Script" placeholder="Hello {name}, I'm calling from {company}. Is this a good time?..." value={form.scripts} onChange={e=>set("scripts",e.target.value)} rows={4} />
-                  <TextArea label="Qualification Rules" placeholder="Must have: Budget > ₹50K, Decision maker, Interested in [product]..." value={form.qualRules} onChange={e=>set("qualRules",e.target.value)} rows={4} />
-                  <div className="glass-card rounded-xl p-4 border border-brand-500/20">
-                    <p className="text-sm font-semibold text-white mb-2 flex items-center gap-2"><Zap className="w-4 h-4 text-brand-400"/>AI Script Enhancement</p>
-                    <p className="text-xs text-white/50">AgentCall AI will automatically improve your scripts for higher conversions using GPT-4o.</p>
-                    <label className="flex items-center gap-2 mt-3 cursor-pointer">
-                      <div className="w-10 h-5 rounded-full bg-brand-500 relative"><div className="absolute right-0.5 top-0.5 w-4 h-4 rounded-full bg-white" /></div>
-                      <span className="text-xs text-white/60">Enable AI enhancement</span>
-                    </label>
-                  </div>
-                </div>
-              )}
-
-              {step === 4 && (
-                <div className="space-y-4">
-                  <div className="glass-card rounded-2xl p-5 border border-green-500/20 bg-green-500/5">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center text-white font-bold">{(form.name||"A")[0]}</div>
-                      <div>
-                        <p className="font-bold text-white">{form.name || "Unnamed Agent"}</p>
-                        <p className="text-xs text-white/40">{form.role ? ROLE_OPTIONS.find(r=>r.value===form.role)?.label : "No role"}</p>
-                      </div>
-                      <Badge variant="green" dot className="ml-auto">Ready to Deploy</Badge>
-                    </div>
-                    {[
-                      ["Language", langLabels[form.language as Language]||"English"],
-                      ["Voice",    form.voice ? VOICE_OPTIONS.find(v=>v.id===form.voice)?.name : "—"],
-                      ["Goal",     form.goal||"—"],
-                    ].map(([k,v])=>(
-                      <div key={k} className="flex gap-3 text-sm py-1.5 border-b border-white/[0.05] last:border-0">
-                        <span className="text-white/40 w-24 flex-shrink-0">{k}</span>
-                        <span className="text-white/80 truncate">{v}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-xs text-white/40 text-center">Your agent will be stored in PostgreSQL and live immediately.</p>
-                </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-
-        {/* Footer buttons */}
-        <div className="sticky bottom-0 bg-[#0d0d1f]/95 backdrop-blur-xl border-t border-white/[0.07] px-6 py-4 flex justify-between rounded-b-3xl">
-          <Button variant="secondary" size="md" onClick={() => step > 0 ? setStep(s=>s-1) : onClose()}>
-            {step === 0 ? "Cancel" : "← Back"}
-          </Button>
-          <Button variant="primary" size="md" disabled={!canNext() || submitting}
-            onClick={() => step < WIZARD_STEPS.length-1 ? setStep(s=>s+1) : handleDeploy()}>
-            {submitting ? "Deploying..." : step === WIZARD_STEPS.length-1 ? "🚀 Deploy Agent" : "Continue →"}
-          </Button>
+              Continue →
+            </Button>
+          ) : (
+            <button
+              onClick={handleDeploy}
+              disabled={submitting}
+              className="btn-red text-xs px-5 py-2 rounded-xl flex items-center gap-1.5 shadow-md shadow-brand-500/20 disabled:opacity-50"
+            >
+              {submitting ? "Deploying..." : "Deploy Agent Fleet"}
+            </button>
+          )}
         </div>
       </motion.div>
     </div>
   );
 }
 
-// ── Agent card ─────────────────────────────────────────────────
-function AgentCard({ agent }: { agent: AIAgent }) {
+// ── Agent Card ───────────────────────────────────────────────────
+function AgentCardItem({
+  agent,
+  onRefresh,
+}: {
+  agent: AgentItem;
+  onRefresh: () => void;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const toggleStatus = async () => {
+    try {
+      setActionLoading(true);
+      if (agent.status === "active") {
+        await agentsApi.pause(agent.id);
+      } else {
+        await agentsApi.activate(agent.id);
+      }
+      onRefresh();
+    } catch (err) {
+      alert(normalizeApiError(err));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDuplicate = async () => {
+    try {
+      setActionLoading(true);
+      setMenuOpen(false);
+      await agentsApi.duplicate(agent.id);
+      onRefresh();
+    } catch (err) {
+      alert(normalizeApiError(err));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm(`Are you sure you want to archive agent "${agent.name}"?`)) return;
+    try {
+      setActionLoading(true);
+      setMenuOpen(false);
+      await agentsApi.delete(agent.id);
+      onRefresh();
+    } catch (err) {
+      alert(normalizeApiError(err));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
-    <Card hover className="p-5 group relative">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-brand-sm">
-            {agent.name[0]}
+    <Card hover className="p-5 relative bg-white dark:bg-gradient-to-b dark:from-white/[0.05] dark:to-white/[0.02] border-slate-200 dark:border-white/10 shadow-sm flex flex-col justify-between">
+      <div>
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-600 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md flex-shrink-0">
+              {agent.name[0]}
+            </div>
+            <div>
+              <p className="font-bold text-slate-900 dark:text-white truncate max-w-[140px]">
+                {agent.name}
+              </p>
+              <Badge variant={roleColors[agent.role] || "gray"} className="mt-0.5 text-[10px]">
+                {roleLabels[agent.role] || agent.role}
+              </Badge>
+            </div>
           </div>
-          <div>
-            <p className="font-bold text-white">{agent.name}</p>
-            <Badge variant={roleColors[agent.role]} className="mt-0.5">{roleLabels[agent.role]}</Badge>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant={agent.status === "active" ? "green" : agent.status === "paused" ? "yellow" : "gray"} dot>
-            {agent.status}
-          </Badge>
-          <div className="relative">
-            <button onClick={()=>setMenuOpen(o=>!o)} className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/30 hover:text-white transition-all">
-              <MoreHorizontal className="w-4 h-4"/>
-            </button>
-            {menuOpen && (
-              <div className="absolute right-0 top-8 w-40 glass-card rounded-xl border border-white/10 shadow-glass z-20 overflow-hidden">
-                {[
-                  { icon:<Settings className="w-3.5 h-3.5"/>, label:"Edit Agent" },
-                  { icon:<Copy className="w-3.5 h-3.5"/>,     label:"Duplicate" },
-                  { icon:<Trash2 className="w-3.5 h-3.5 text-red-400"/>, label:"Delete", red:true },
-                ].map(item=>(
-                  <button key={item.label} onClick={()=>setMenuOpen(false)}
-                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-white/5 transition-all ${item.red?"text-red-400":"text-white/70"}`}>
-                    {item.icon}{item.label}
+
+          <div className="flex items-center gap-2">
+            <Badge
+              variant={
+                agent.status === "active"
+                  ? "green"
+                  : agent.status === "paused"
+                  ? "yellow"
+                  : "gray"
+              }
+              dot
+              className="text-[10px] capitalize"
+            >
+              {agent.status}
+            </Badge>
+
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="w-7 h-7 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 flex items-center justify-center text-slate-400 dark:text-white/40 hover:text-slate-900 dark:hover:text-white transition-all"
+              >
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 top-8 w-36 rounded-xl bg-white dark:bg-[#180406] border border-slate-200 dark:border-white/10 shadow-xl z-20 overflow-hidden text-xs">
+                  <button
+                    onClick={handleDuplicate}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                  >
+                    <Copy className="w-3.5 h-3.5" /> Duplicate
                   </button>
-                ))}
-              </div>
-            )}
+                  <button
+                    onClick={handleDelete}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Archive
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        {[
-          { label:"Today", value:agent.callsToday, icon:<Phone className="w-3.5 h-3.5"/>, color:"text-brand-400" },
-          { label:"Conv%", value:`${agent.conversionRate}%`, icon:<TrendingUp className="w-3.5 h-3.5"/>, color:"text-green-400" },
-          { label:"Avg Min", value:`${Math.floor(agent.avgCallDuration/60)}:${(agent.avgCallDuration%60).toString().padStart(2,"0")}`, icon:<Mic2 className="w-3.5 h-3.5"/>, color:"text-purple-400" },
-        ].map(s=>(
-          <div key={s.label} className="bg-white/[0.03] rounded-xl p-2.5 text-center border border-white/[0.05]">
-            <div className={`flex justify-center mb-1 ${s.color}`}>{s.icon}</div>
-            <p className="text-sm font-bold text-white">{s.value}</p>
-            <p className="text-[10px] text-white/30">{s.label}</p>
+        {/* Call count metric */}
+        <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 mb-4 text-center">
+          <div className="flex items-center justify-center gap-1.5 text-brand-600 dark:text-brand-400 mb-1">
+            <Phone className="w-3.5 h-3.5" />
+            <span className="text-[11px] font-semibold">Total Handled Calls</span>
           </div>
-        ))}
-      </div>
+          <p className="text-xl font-black text-slate-900 dark:text-white font-mono">
+            {(agent._count?.calls ?? 0).toLocaleString()}
+          </p>
+        </div>
 
-      {/* Language */}
-      <div className="flex items-center gap-2 mb-4 text-xs text-white/40">
-        <Globe2 className="w-3.5 h-3.5"/>
-        <span>{langLabels[agent.language]}</span>
-        {agent.status === "active" && <WaveAnimation active size="sm" bars={4} color="bg-brand-400" className="ml-auto"/>}
+        {/* Language & Voice */}
+        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-white/40 mb-4">
+          <div className="flex items-center gap-1.5">
+            <Globe2 className="w-3.5 h-3.5" />
+            <span>{langLabels[agent.language] || agent.language}</span>
+          </div>
+          {agent.status === "active" && (
+            <WaveAnimation active size="sm" bars={4} color="bg-brand-500" />
+          )}
+        </div>
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2">
-        <Button variant={agent.status==="active"?"secondary":"primary"} size="sm" className="flex-1"
-          icon={agent.status==="active" ? <Pause className="w-3.5 h-3.5"/> : <Play className="w-3.5 h-3.5"/>}>
-          {agent.status==="active" ? "Pause" : "Activate"}
+      <div className="flex gap-2 pt-2">
+        <Button
+          variant={agent.status === "active" ? "secondary" : "primary"}
+          size="sm"
+          className="flex-1 text-xs"
+          disabled={actionLoading}
+          onClick={toggleStatus}
+          icon={
+            agent.status === "active" ? (
+              <Pause className="w-3.5 h-3.5" />
+            ) : (
+              <Play className="w-3.5 h-3.5" />
+            )
+          }
+        >
+          {agent.status === "active" ? "Pause" : "Activate"}
         </Button>
-        <Button variant="ghost" size="sm" icon={<Settings className="w-3.5 h-3.5"/>}>Configure</Button>
       </div>
     </Card>
   );
 }
 
-// ── Page ───────────────────────────────────────────────────────
+// ── Main Agents Page ─────────────────────────────────────────────
 export default function AgentsPage() {
-  const [agents, setAgents] = useState<AIAgent[]>([]);
+  const [agents, setAgents] = useState<AgentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showBuilder, setShowBuilder] = useState(false);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
 
-  const fetchAgents = async () => {
+  const fetchAgents = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await apiClient.get("/agents");
-      if (res.data?.success && Array.isArray(res.data.data)) {
-        const mapped = res.data.data.map((a: any) => ({
-          id: a.id,
-          name: a.name,
-          role: a.role || "telecaller",
-          language: a.language || "english",
-          voice: a.voiceId || "Priya",
-          businessGoal: a.businessGoal || a.promptTemplate || "",
-          status: a.status || "active",
-          callsToday: a._count?.calls || 0,
-          callsTotal: a._count?.calls || 0,
-          conversionRate: 28,
-          avgCallDuration: 180,
-          createdAt: a.createdAt,
-        }));
-        setAgents(mapped);
-      } else if (Array.isArray(res.data)) {
-        setAgents(res.data);
-      }
+      setError(null);
+      const data = await agentsApi.list({
+        status: filter === "all" ? undefined : filter,
+      });
+      setAgents(data || []);
     } catch (err) {
-      console.error("Failed to load agents:", err);
+      setError(normalizeApiError(err));
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
 
   useEffect(() => {
     fetchAgents();
-  }, []);
+  }, [fetchAgents]);
 
-  const activeAgents = agents;
-  const filtered = activeAgents
-    .filter((a) => (filter === "all" ? true : a.status === filter))
-    .filter((a) =>
-      search ? a.name.toLowerCase().includes(search.toLowerCase()) || a.role.toLowerCase().includes(search.toLowerCase()) : true
+  const filtered = agents.filter((a) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      a.name.toLowerCase().includes(q) ||
+      (a.role || "").toLowerCase().includes(q)
     );
+  });
+
+  const activeCount = agents.filter((a) => a.status === "active").length;
+  const totalCalls = agents.reduce((s, a) => s + (a._count?.calls ?? 0), 0);
 
   return (
     <div className="flex flex-col min-h-full">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 pb-0">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">AI Agents</h1>
-          <p className="text-sm text-white/50 mt-1">Build, configure and manage your AI workforce</p>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            AI Agent Studio
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-white/50 mt-1">
+            Build, train and deploy autonomous voice employees for your company
+          </p>
         </div>
-        <button
-          onClick={() => setShowBuilder(true)}
-          className="btn-red text-xs py-2 px-4 h-9 shadow-lg shadow-brand-500/25 flex items-center gap-1.5 self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          Create Agent
-        </button>
-      </div>
-
-      <div className="flex-1 p-6 space-y-6">
-        {/* Summary bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {[
-            { label:"Total Agents",  value:agents.length,                           color:"text-white" },
-            { label:"Active",        value:agents.filter(a=>a.status==="active").length,  color:"text-green-400" },
-            { label:"Calls Total",   value:agents.reduce((s,a)=>s+a.callsTotal,0), color:"text-brand-400" },
-            { label:"Avg Conv Rate", value: agents.length ? `${(agents.reduce((s,a)=>s+a.conversionRate,0)/agents.length).toFixed(1)}%` : "0%", color:"text-purple-400" },
-          ].map(s=>(
-            <Card key={s.label} className="p-4 text-center">
-              <p className={`text-2xl font-extrabold ${s.color}`}>{s.value}</p>
-              <p className="text-xs text-white/40 mt-1">{s.label}</p>
-            </Card>
-          ))}
-        </div>
-
-        {/* Filters */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1">
-            {["all","active","paused","draft"].map(f=>(
-              <button key={f} onClick={()=>setFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize ${filter===f?"bg-brand-500 text-white":"text-white/40 hover:text-white"}`}>
-                {f}
-              </button>
-            ))}
-          </div>
-          <div className="flex-1 min-w-[200px] max-w-xs">
-            <Input placeholder="Search agents..." leftIcon={<Search className="w-4 h-4"/>}/>
-          </div>
-          <Button variant="secondary" size="sm" icon={<Filter className="w-4 h-4"/>} iconRight={<ChevronDown className="w-3.5 h-3.5"/>}>Filter</Button>
-        </div>
-
-        {/* Agent grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filtered.map(agent=><AgentCard key={agent.id} agent={agent}/>)}
-
-          {/* Create new card */}
-          <button onClick={()=>setShowBuilder(true)}
-            className="glass-card rounded-2xl p-5 border-dashed border-white/15 hover:border-brand-500/40 hover:bg-brand-500/5 transition-all group flex flex-col items-center justify-center gap-3 min-h-[280px]">
-            <div className="w-14 h-14 rounded-2xl bg-white/5 group-hover:bg-brand-500/10 border border-white/10 group-hover:border-brand-500/30 flex items-center justify-center transition-all">
-              <Plus className="w-7 h-7 text-white/30 group-hover:text-brand-400 transition-all"/>
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-semibold text-white/50 group-hover:text-white transition-colors">Create New Agent</p>
-              <p className="text-xs text-white/25 mt-1">No-code builder</p>
-            </div>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={fetchAgents}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.12] border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/80 transition-all shadow-sm"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-brand-500" : ""}`} />
+            Refresh
+          </button>
+          <button
+            onClick={() => setShowBuilder(true)}
+            className="btn-red text-xs py-2 px-4 h-9 shadow-md shadow-brand-500/25 flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            Create Agent
           </button>
         </div>
       </div>
 
-      {/* Builder modal */}
+      <div className="flex-1 p-6 space-y-6">
+        {/* Error banner */}
+        {error && (
+          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-sm flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+            <button
+              onClick={fetchAgents}
+              className="px-3 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 font-semibold text-xs transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Real Summary Metrics */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <Card className="p-4 bg-white dark:bg-gradient-to-b dark:from-white/[0.05] dark:to-white/[0.02] border-slate-200 dark:border-white/10 shadow-sm text-center">
+            <p className="text-2xl font-black text-slate-900 dark:text-white font-mono">
+              {loading ? "—" : agents.length}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-white/40 mt-1">Configured Agents</p>
+          </Card>
+          <Card className="p-4 bg-white dark:bg-gradient-to-b dark:from-white/[0.05] dark:to-white/[0.02] border-slate-200 dark:border-white/10 shadow-sm text-center">
+            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+              {loading ? "—" : activeCount}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-white/40 mt-1">Active in Production</p>
+          </Card>
+          <Card className="p-4 bg-white dark:bg-gradient-to-b dark:from-white/[0.05] dark:to-white/[0.02] border-slate-200 dark:border-white/10 shadow-sm text-center">
+            <p className="text-2xl font-black text-brand-600 dark:text-brand-400 font-mono">
+              {loading ? "—" : totalCalls.toLocaleString()}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-white/40 mt-1">Total Handled Calls</p>
+          </Card>
+        </div>
+
+        {/* Filters & Search Toolbar */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1 bg-slate-200/70 dark:bg-white/5 rounded-xl p-1">
+            {["all", "active", "paused", "draft", "archived"].map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
+                  filter === f
+                    ? "bg-brand-600 text-white shadow-sm"
+                    : "text-slate-600 dark:text-white/50 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex-1 min-w-[200px] max-w-xs relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by agent name or role..."
+              className="w-full h-9 pl-9 pr-3 rounded-xl text-xs bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/30 outline-none focus:border-brand-500"
+            />
+          </div>
+        </div>
+
+        {/* Agent Grid */}
+        {loading ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="h-64 rounded-2xl bg-slate-100 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 animate-pulse"
+              />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="p-12 text-center bg-white dark:bg-gradient-to-b dark:from-white/[0.05] dark:to-white/[0.02] border border-slate-200 dark:border-white/10 rounded-2xl shadow-sm">
+            <Bot className="w-10 h-10 mx-auto mb-3 text-slate-400 dark:text-white/20" />
+            <h3 className="text-base font-bold text-slate-800 dark:text-white">
+              No AI Agents Configured
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-white/40 max-w-md mx-auto mt-1 mb-4">
+              Deploy your first autonomous conversational agent to start qualifying prospects and handling live phone calls.
+            </p>
+            <button
+              onClick={() => setShowBuilder(true)}
+              className="btn-red text-xs py-2 px-4 shadow-md shadow-brand-500/20"
+            >
+              Build New Agent
+            </button>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filtered.map((agent) => (
+              <AgentCardItem
+                key={agent.id}
+                agent={agent}
+                onRefresh={fetchAgents}
+              />
+            ))}
+
+            {/* Create New Agent Tile */}
+            <button
+              onClick={() => setShowBuilder(true)}
+              className="rounded-2xl p-5 border-2 border-dashed border-slate-300 dark:border-white/15 hover:border-brand-500/50 hover:bg-brand-50/30 dark:hover:bg-brand-500/5 transition-all group flex flex-col items-center justify-center gap-3 min-h-[220px]"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/5 group-hover:bg-brand-100 dark:group-hover:bg-brand-500/20 border border-slate-200 dark:border-white/10 flex items-center justify-center transition-all">
+                <Plus className="w-6 h-6 text-slate-400 dark:text-white/40 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-all" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-bold text-slate-700 dark:text-white/70 group-hover:text-brand-600 dark:group-hover:text-white transition-colors">
+                  Create New Agent
+                </p>
+                <p className="text-xs text-slate-400 dark:text-white/30 mt-0.5">
+                  Autonomous conversational voice builder
+                </p>
+              </div>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Builder Modal */}
       <AnimatePresence>
-        {showBuilder && <AgentBuilderModal onClose={()=>setShowBuilder(false)} onSuccess={fetchAgents}/>}
+        {showBuilder && (
+          <AgentBuilderModal
+            onClose={() => setShowBuilder(false)}
+            onSuccess={fetchAgents}
+          />
+        )}
       </AnimatePresence>
     </div>
   );

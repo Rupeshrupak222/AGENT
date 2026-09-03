@@ -290,17 +290,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Guard against unauthenticated layout rendering during hydration
   if (!mounted || (!isAuthenticated && !accessToken)) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-[#0c0102]">
-        <div className="flex flex-col items-center gap-3">
+      <div
+        className="flex h-screen items-center justify-center bg-slate-50 dark:bg-[#0c0102]"
+        style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#0c0102" }}
+      >
+        <div className="flex flex-col items-center gap-3" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center animate-pulse shadow-lg shadow-brand-500/20"
             style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               background: `linear-gradient(135deg,${R},#9b1219)`,
             }}
           >
-            <Zap className="w-5 h-5 text-white fill-white" />
+            <Zap className="w-5 h-5 text-white fill-white" style={{ width: 20, height: 20, color: "#fff", fill: "#fff" }} />
           </div>
-          <p className="text-xs font-medium text-slate-500 dark:text-white/40">
+          <p className="text-xs font-medium text-slate-500 dark:text-white/40" style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
             Authenticating session...
           </p>
         </div>

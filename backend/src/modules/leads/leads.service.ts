@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CreateLeadDto, UpdateLeadDto, BulkImportLeadsDto, UpdateLeadStatusDto } from './dto/lead.dto';
 
 @Injectable()
 export class LeadsService {
+  private readonly logger = new Logger(LeadsService.name);
+
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
@@ -42,48 +44,59 @@ export class LeadsService {
     status?: string; search?: string; agentId?: string;
     page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc';
   }) {
-    const { page = 1, limit = 20, status, search, agentId, sortBy = 'createdAt', sortOrder = 'desc' } = query;
-    const skip = (page - 1) * limit;
+    try {
+      const { page = 1, limit = 20, status, search, agentId, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+      const skip = (page - 1) * limit;
 
-    const where: any = {
-      tenantId,
-      deletedAt: null,
-      ...(status && { status }),
-      ...(agentId && { assignedAgentId: agentId }),
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { phone: { contains: search } },
-          { company: { contains: search, mode: 'insensitive' } },
-        ],
-      }),
-    };
+      const where: any = {
+        tenantId,
+        deletedAt: null,
+        ...(status && { status }),
+        ...(agentId && { assignedAgentId: agentId }),
+        ...(search && {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { phone: { contains: search } },
+            { company: { contains: search, mode: 'insensitive' } },
+          ],
+        }),
+      };
 
-    const [items, total] = await Promise.all([
-      this.prisma.lead.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { [sortBy]: sortOrder },
-        include: { assignedAgent: { select: { id: true, name: true } } },
-      }),
-      this.prisma.lead.count({ where }),
-    ]);
+      const [items, total] = await Promise.all([
+        this.prisma.lead.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { [sortBy]: sortOrder },
+          include: { assignedAgent: { select: { id: true, name: true } } },
+        }),
+        this.prisma.lead.count({ where }),
+      ]);
 
-    return { items, total, page, limit, pages: Math.ceil(total / limit) };
+      return { items, total, page, limit, pages: Math.ceil(total / limit) };
+    } catch (err: any) {
+      this.logger.warn(`Failed to query leads: ${err.message}`);
+      return { items: [], total: 0, page: query.page ?? 1, limit: query.limit ?? 20, pages: 0 };
+    }
   }
 
   async findOne(tenantId: string, id: string) {
-    const lead = await this.prisma.lead.findFirst({
-      where: { id, tenantId, deletedAt: null },
-      include: {
-        calls: { orderBy: { startedAt: 'desc' }, take: 10 },
-        assignedAgent: true,
-        activities: { orderBy: { createdAt: 'desc' }, take: 20 },
-      },
-    });
-    if (!lead) throw new NotFoundException('Lead not found');
-    return lead;
+    try {
+      const lead = await this.prisma.lead.findFirst({
+        where: { id, tenantId, deletedAt: null },
+        include: {
+          calls: { orderBy: { startedAt: 'desc' }, take: 10 },
+          assignedAgent: true,
+          activities: { orderBy: { createdAt: 'desc' }, take: 20 },
+        },
+      });
+      if (!lead) throw new NotFoundException('Lead not found');
+      return lead;
+    } catch (err: any) {
+      if (err instanceof NotFoundException) throw err;
+      this.logger.warn(`Failed to query lead ${id}: ${err.message}`);
+      throw new NotFoundException('Lead not found or database offline');
+    }
   }
 
   async update(tenantId: string, id: string, dto: UpdateLeadDto) {
@@ -142,14 +155,19 @@ export class LeadsService {
   }
 
   async getPipelineStats(tenantId: string) {
-    const counts = await this.prisma.lead.groupBy({
-      by: ['status'],
-      where: { tenantId, deletedAt: null },
-      _count: { status: true },
-    });
-    return counts.reduce((acc: Record<string, number>, c: any) => {
-      acc[c.status] = c._count.status;
-      return acc;
-    }, {} as Record<string, number>);
+    try {
+      const counts = await this.prisma.lead.groupBy({
+        by: ['status'],
+        where: { tenantId, deletedAt: null },
+        _count: { status: true },
+      });
+      return counts.reduce((acc: Record<string, number>, c: any) => {
+        acc[c.status] = c._count.status;
+        return acc;
+      }, {} as Record<string, number>);
+    } catch (err: any) {
+      this.logger.warn(`Failed to query pipeline stats: ${err.message}`);
+      return {};
+    }
   }
 }

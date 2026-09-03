@@ -314,6 +314,21 @@ export interface CallMetrics {
   avgDuration: number;
 }
 
+export interface CallTranscript {
+  id: string;
+  rawText?: string;
+  turns?: Array<{ speaker: string; text: string; timestamp?: string }>;
+  summary?: string;
+}
+
+export interface CallDetail extends CallItem {
+  notes?: string;
+  recordingUrl?: string;
+  lead?: { id: string; name: string; phone: string; email?: string; company?: string };
+  agent?: { id: string; name: string; role: string };
+  transcript?: CallTranscript | null;
+}
+
 export const callsApi = {
   list: async (params?: {
     status?: string;
@@ -338,6 +353,11 @@ export const callsApi = {
     );
     return res.data.data;
   },
+
+  get: async (id: string): Promise<CallDetail> => {
+    const res = await apiClient.get<ApiResponseWrapper<CallDetail>>(`/calls/${id}`);
+    return res.data.data;
+  },
 };
 
 // ── Agents API Contracts ──────────────────────────────────────────
@@ -348,10 +368,35 @@ export interface AgentItem {
   language: string;
   voiceId: string;
   status: "draft" | "active" | "paused" | "archived";
+  businessGoal?: string;
+  openingScript?: string;
+  qualificationRules?: string;
+  knowledgeBase?: string;
+  createdAt?: string;
   _count?: {
     calls: number;
     campaigns: number;
   };
+}
+
+export interface AgentStats {
+  totalCalls: number;
+  connectedCalls: number;
+  qualifiedLeads: number;
+  conversionRate: string;
+  avgCallDuration: number;
+}
+
+export interface CreateAgentInput {
+  name: string;
+  role: string;
+  language: string;
+  voiceId: string;
+  businessGoal: string;
+  openingScript?: string;
+  qualificationRules?: string;
+  knowledgeBase?: string;
+  settings?: Record<string, any>;
 }
 
 export const agentsApi = {
@@ -364,4 +409,154 @@ export const agentsApi = {
     });
     return res.data.data;
   },
+
+  get: async (id: string): Promise<AgentItem> => {
+    const res = await apiClient.get<ApiResponseWrapper<AgentItem>>(`/agents/${id}`);
+    return res.data.data;
+  },
+
+  getStats: async (id: string): Promise<AgentStats> => {
+    const res = await apiClient.get<ApiResponseWrapper<AgentStats>>(`/agents/${id}/stats`);
+    return res.data.data;
+  },
+
+  create: async (dto: CreateAgentInput): Promise<AgentItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<AgentItem>>("/agents", dto);
+    return res.data.data;
+  },
+
+  update: async (id: string, dto: Partial<CreateAgentInput>): Promise<AgentItem> => {
+    const res = await apiClient.patch<ApiResponseWrapper<AgentItem>>(`/agents/${id}`, dto);
+    return res.data.data;
+  },
+
+  activate: async (id: string): Promise<AgentItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<AgentItem>>(`/agents/${id}/activate`);
+    return res.data.data;
+  },
+
+  pause: async (id: string): Promise<AgentItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<AgentItem>>(`/agents/${id}/pause`);
+    return res.data.data;
+  },
+
+  duplicate: async (id: string): Promise<AgentItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<AgentItem>>(`/agents/${id}/duplicate`);
+    return res.data.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/agents/${id}`);
+  },
 };
+
+// ── Leads API Contracts ───────────────────────────────────────────
+export interface LeadItem {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string | null;
+  company?: string | null;
+  status:
+    | "new"
+    | "contacted"
+    | "interested"
+    | "qualified"
+    | "appointment"
+    | "closed_won"
+    | "closed_lost";
+  score: number;
+  source?: string | null;
+  notes?: string | null;
+  assignedAgentId?: string | null;
+  assignedAgent?: { id: string; name: string } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LeadsListResponse {
+  items: LeadItem[];
+  total: number;
+  page: number;
+  limit: number;
+  pages?: number;
+}
+
+export interface LeadActivity {
+  id: string;
+  type: string;
+  description: string;
+  createdAt: string;
+}
+
+export interface LeadDetail extends LeadItem {
+  calls?: CallItem[];
+  activities?: LeadActivity[];
+}
+
+export interface CreateLeadInput {
+  name: string;
+  phone: string;
+  email?: string;
+  company?: string;
+  source?: string;
+  status?: LeadItem["status"];
+  notes?: string;
+  agentId?: string;
+}
+
+export const leadsApi = {
+  list: async (params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    search?: string;
+    agentId?: string;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
+  }): Promise<LeadsListResponse> => {
+    const res = await apiClient.get<ApiResponseWrapper<LeadsListResponse>>(
+      "/leads",
+      { params }
+    );
+    return res.data.data;
+  },
+
+  pipeline: async (): Promise<Record<string, number>> => {
+    const res = await apiClient.get<ApiResponseWrapper<Record<string, number>>>(
+      "/leads/pipeline"
+    );
+    return res.data.data;
+  },
+
+  get: async (id: string): Promise<LeadDetail> => {
+    const res = await apiClient.get<ApiResponseWrapper<LeadDetail>>(`/leads/${id}`);
+    return res.data.data;
+  },
+
+  create: async (dto: CreateLeadInput): Promise<LeadDetail> => {
+    const res = await apiClient.post<ApiResponseWrapper<LeadDetail>>("/leads", dto);
+    return res.data.data;
+  },
+
+  update: async (id: string, dto: Partial<CreateLeadInput>): Promise<LeadDetail> => {
+    const res = await apiClient.patch<ApiResponseWrapper<LeadDetail>>(`/leads/${id}`, dto);
+    return res.data.data;
+  },
+
+  updateStatus: async (
+    id: string,
+    status: LeadItem["status"]
+  ): Promise<LeadDetail> => {
+    const res = await apiClient.patch<ApiResponseWrapper<LeadDetail>>(
+      `/leads/${id}/status`,
+      { status }
+    );
+    return res.data.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/leads/${id}`);
+  },
+};
+

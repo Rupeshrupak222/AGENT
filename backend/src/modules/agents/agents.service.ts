@@ -139,25 +139,37 @@ export class AgentsService {
   }
 
   async getStats(tenantId: string, id: string) {
-    await this.findOne(tenantId, id);
-    const [totalCalls, connectedCalls, qualifiedLeads] = await Promise.all([
-      this.prisma.call.count({ where: { agentId: id, tenantId } }),
-      this.prisma.call.count({ where: { agentId: id, tenantId, status: 'completed' } }),
-      this.prisma.lead.count({ where: { tenantId, status: 'qualified' } }),
-    ]);
+    try {
+      await this.findOne(tenantId, id);
+      const [totalCalls, connectedCalls, qualifiedLeads] = await Promise.all([
+        this.prisma.call.count({ where: { agentId: id, tenantId } }),
+        this.prisma.call.count({ where: { agentId: id, tenantId, status: 'completed' } }),
+        this.prisma.lead.count({ where: { tenantId, assignedAgentId: id, status: 'qualified' } }),
+      ]);
 
-    const avgDuration = await this.prisma.call.aggregate({
-      where: { agentId: id, tenantId, status: 'completed' },
-      _avg: { duration: true },
-    });
+    try {
+      const avgDuration = await this.prisma.call.aggregate({
+        where: { agentId: id, tenantId, status: 'completed' },
+        _avg: { duration: true },
+      });
 
-    return {
-      totalCalls,
-      connectedCalls,
-      qualifiedLeads,
-      conversionRate: totalCalls ? ((qualifiedLeads / totalCalls) * 100).toFixed(1) : '0',
-      avgCallDuration: Math.round(avgDuration._avg.duration ?? 0),
-    };
+      return {
+        totalCalls,
+        connectedCalls,
+        qualifiedLeads,
+        conversionRate: totalCalls ? ((qualifiedLeads / totalCalls) * 100).toFixed(1) : '0',
+        avgCallDuration: Math.round(avgDuration._avg.duration ?? 0),
+      };
+    } catch (err: any) {
+      this.logger.warn(`Failed to query agent stats: ${err.message}`);
+      return {
+        totalCalls: 0,
+        connectedCalls: 0,
+        qualifiedLeads: 0,
+        conversionRate: '0',
+        avgCallDuration: 0,
+      };
+    }
   }
 
   async duplicate(tenantId: string, id: string, userId: string) {

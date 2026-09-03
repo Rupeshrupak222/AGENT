@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { TelephonyService } from '../telephony/services/telephony.service';
 
 export interface InitiateCallDto {
   leadId:   string;
@@ -11,7 +12,10 @@ export interface InitiateCallDto {
 export class CallsService {
   private readonly logger = new Logger(CallsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private telephonyService: TelephonyService,
+  ) {}
 
   async initiateCall(tenantId: string, dto: InitiateCallDto) {
     const [lead, agent] = await Promise.all([
@@ -34,7 +38,14 @@ export class CallsService {
     });
 
     this.logger.log(`Call queued: ${call.id} → ${lead.phone}`);
-    // In production: enqueue to BullMQ → Twilio/Exotel provider
+
+    // Dispatch through telephony provider abstraction
+    try {
+      await this.telephonyService.dispatchOutboundCall(tenantId, call.id, lead.phone);
+    } catch (err: any) {
+      this.logger.warn(`Telephony dispatch deferred or failed for call ${call.id}: ${err.message}`);
+    }
+
     return call;
   }
 

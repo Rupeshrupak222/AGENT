@@ -16,6 +16,7 @@ import { AutomationsModule } from './modules/automations/automations.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CacheModule } from './modules/cache/cache.module';
 import { RbacModule } from './common/rbac/rbac.module';
+import { TelephonyModule } from './modules/telephony/telephony.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -65,6 +66,7 @@ import { AppController } from './app.controller';
     AutomationsModule,
     AuditModule,
     CacheModule,
+    TelephonyModule,
   ],
 })
 export class AppModule {}

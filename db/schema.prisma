@@ -305,6 +305,7 @@ model Call {
   @@index([agentId])
   @@index([status])
   @@index([startedAt])
+  @@index([providerCallId])
   @@map("Call")
 }
 
