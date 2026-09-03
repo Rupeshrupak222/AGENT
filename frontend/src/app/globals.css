@@ -4,204 +4,163 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── CSS custom properties ─────────────────────────────────── */
+/* ── Design System Tokens ───────────────────────────────────── */
 :root {
-  --red:        #D42027;
-  --red-dark:   #9b1219;
-  --red-light:  #f46d72;
-  --red-glow:   rgba(212,32,39,0.20);
-  --red-subtle: rgba(212,32,39,0.08);
-  --bg:         #ffffff;
-  --bg-card:    #f8f8f8;
-  --bg-sidebar: #f2f2f2;
-  --border:     rgba(0,0,0,0.08);
-  --border-red: rgba(212,32,39,0.25);
+  /* Brand */
+  --brand-50:  #fef2f2;
+  --brand-100: #fde2e3;
+  --brand-200: #fcc9cb;
+  --brand-400: #f46d72;
+  --brand-500: #D42027;
+  --brand-600: #bb1920;
+  --brand-700: #9b1219;
+  --brand-900: #6d1214;
+
+  /* Surface */
+  --bg:           #f9fafb;
+  --bg-secondary: #ffffff;
+  --bg-card:      #ffffff;
+  --bg-sidebar:   #ffffff;
+  --bg-muted:     #f3f4f6;
+  --bg-hover:     #f9fafb;
+  --bg-active:    rgba(212,32,39,0.06);
+
+  /* Text */
+  --text-primary:   #111827;
+  --text-secondary: #6b7280;
+  --text-muted:     #9ca3af;
+  --text-inverse:   #ffffff;
+
+  /* Border */
+  --border-default: #e5e7eb;
+  --border-muted:   #f3f4f6;
+  --border-focus:   rgba(212,32,39,0.5);
+
+  /* Shadow */
+  --shadow-sm:  0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md:  0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+  --shadow-lg:  0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+  --shadow-xl:  0 20px 25px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.04);
+
+  /* Radius */
+  --radius-sm:  0.5rem;
+  --radius-md:  0.75rem;
+  --radius-lg:  1rem;
+  --radius-xl:  1.5rem;
 }
 
 .dark {
-  --bg:         #0c0102;
-  --bg-card:    #150305;
-  --bg-sidebar: #0f0102;
-  --border:     rgba(255,255,255,0.08);
-  --border-red: rgba(212,32,39,0.30);
+  --bg:           #0a0102;
+  --bg-secondary: #110203;
+  --bg-card:      #150305;
+  --bg-sidebar:   #0f0102;
+  --bg-muted:     #1a0608;
+  --bg-hover:     #1e0809;
+  --bg-active:    rgba(212,32,39,0.10);
+
+  --text-primary:   #f9fafb;
+  --text-secondary: #9ca3af;
+  --text-muted:     #6b7280;
+  --text-inverse:   #111827;
+
+  --border-default: rgba(255,255,255,0.08);
+  --border-muted:   rgba(255,255,255,0.04);
+  --border-focus:   rgba(212,32,39,0.6);
+
+  --shadow-sm:  0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md:  0 4px 6px -1px rgba(0,0,0,0.4), 0 2px 4px -2px rgba(0,0,0,0.3);
+  --shadow-lg:  0 10px 15px -3px rgba(0,0,0,0.5), 0 4px 6px -4px rgba(0,0,0,0.4);
+  --shadow-xl:  0 20px 25px -5px rgba(0,0,0,0.6), 0 8px 10px -6px rgba(0,0,0,0.5);
 }
 
+/* ── Base Reset ─────────────────────────────────────────────── */
 @layer base {
-  * { box-sizing: border-box; }
+  *, *::before, *::after { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body {
     background-color: var(--bg);
-    color: #111111;
+    color: var(--text-primary);
     font-family: "Inter", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  .dark body, body.dark {
-    color: #f3f4f6;
-  }
   ::selection { background: rgba(212,32,39,0.18); color: #D42027; }
 }
 
+/* ── Component Classes ──────────────────────────────────────── */
 @layer components {
 
   /* ── Glass card ─────────────────────────────────────────── */
   .glass-card {
-    background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.09);
-    box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-md);
+    border-radius: var(--radius-lg);
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
+  .glass-card:hover { border-color: rgba(212,32,39,0.2); }
   .dark .glass-card {
     background: rgba(21, 3, 5, 0.7);
     border: 1px solid rgba(255,255,255,0.08);
     box-shadow: 0 8px 32px rgba(0,0,0,0.55);
     backdrop-filter: blur(16px);
   }
-  .glass-card:hover { border-color: rgba(212,32,39,0.28); }
 
-  /* ── Gradient text #D42027 ──────────────────────────────── */
+  /* ── Gradient text ─────────────────────────────────────── */
   .gradient-text {
     background: linear-gradient(130deg, #f46d72 0%, #D42027 45%, #bb1920 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    color: transparent;
-  }
-  .gradient-text-dark {
-    background: linear-gradient(130deg, #111111 0%, #333333 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
   }
 
-  /* ── Background meshes ──────────────────────────────────── */
+  /* ── Background meshes ─────────────────────────────────── */
   .bg-mesh {
     background:
-      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(212,32,39,0.07), transparent),
-      radial-gradient(ellipse 50% 40% at 85% 65%,  rgba(180,20,26,0.04), transparent),
-      #ffffff;
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(212,32,39,0.05), transparent),
+      radial-gradient(ellipse 50% 40% at 85% 65%, rgba(180,20,26,0.03), transparent),
+      var(--bg);
   }
-  .bg-mesh-subtle {
+  .dark .bg-mesh {
     background:
-      radial-gradient(ellipse 60% 40% at 15% 80%, rgba(212,32,39,0.04), transparent),
-      radial-gradient(ellipse 40% 30% at 85% 20%, rgba(180,20,26,0.03), transparent);
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(212,32,39,0.07), transparent),
+      radial-gradient(ellipse 50% 40% at 85% 65%, rgba(180,20,26,0.04), transparent),
+      var(--bg);
   }
 
-  /* ── Primary button ─────────────────────────────────────── */
-  .btn-red {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0 1.75rem;
-    height: 3rem;
-    border-radius: 0.75rem;
-    font-weight: 600;
-    font-size: 0.9375rem;
-    color: #ffffff;
-    background: linear-gradient(135deg, #D42027 0%, #9b1219 100%);
-    box-shadow: 0 0 20px rgba(212,32,39,0.25), 0 4px 12px rgba(0,0,0,0.12);
-    transition: all 0.22s ease;
-    cursor: pointer;
-    border: none;
-    outline: none;
-    white-space: nowrap;
-    user-select: none;
-  }
-  .btn-red:hover {
-    background: linear-gradient(135deg, #e8282f 0%, #bb1920 100%);
-    box-shadow: 0 0 32px rgba(212,32,39,0.38), 0 4px 16px rgba(0,0,0,0.18);
-    transform: translateY(-1px);
-  }
-  .btn-red:active { transform: scale(0.97); }
-  .btn-red:disabled { opacity: 0.5; cursor: not-allowed; transform: none; pointer-events: none; }
-
-  /* ── Outline button ─────────────────────────────────────── */
-  .btn-outline {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0 1.75rem;
-    height: 3rem;
-    border-radius: 0.75rem;
-    font-weight: 600;
-    font-size: 0.9375rem;
-    color: #D42027;
-    background: rgba(212,32,39,0.05);
-    border: 1px solid rgba(212,32,39,0.30);
-    transition: all 0.22s ease;
-    cursor: pointer;
-    outline: none;
-    white-space: nowrap;
-    user-select: none;
-  }
-  .btn-outline:hover {
-    background: rgba(212,32,39,0.10);
-    border-color: rgba(212,32,39,0.55);
-    color: #D42027;
-    transform: translateY(-1px);
-  }
-  .btn-outline:active { transform: scale(0.97); }
-
-  /* ── Input ──────────────────────────────────────────────── */
-  .field {
-    width: 100%;
-    height: 2.875rem;
-    border-radius: 0.75rem;
-    padding: 0 1rem;
-    font-size: 0.875rem;
-    color: #111111;
-    background: #f8f8f8;
-    border: 1px solid rgba(0,0,0,0.12);
-    outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  .field::placeholder { color: rgba(0,0,0,0.35); }
-  .field:focus {
-    border-color: rgba(212,32,39,0.55);
-    box-shadow: 0 0 0 3px rgba(212,32,39,0.10);
-    background: #ffffff;
-  }
-  .field.error { border-color: rgba(212,32,39,0.8); }
-
-  /* ── Sidebar item ───────────────────────────────────────── */
+  /* ── Sidebar nav ───────────────────────────────────────── */
   .nav-item {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     padding: 0.625rem 0.75rem;
-    border-radius: 0.75rem;
+    border-radius: var(--radius-md);
     font-size: 0.875rem;
     font-weight: 500;
-    color: rgba(0,0,0,0.5);
+    color: var(--text-secondary);
     transition: all 0.15s ease;
     cursor: pointer;
     border: 1px solid transparent;
   }
-  .nav-item:hover  { color: #111; background: rgba(0,0,0,0.04); }
-  .nav-item.active { color: #D42027; background: rgba(212,32,39,0.08); border-color: rgba(212,32,39,0.22); }
-  .nav-item.active svg { color: var(--red); }
-
-  /* ── Badge ──────────────────────────────────────────────── */
-  .badge      { display:inline-flex; align-items:center; gap:0.375rem; padding:0.15rem 0.625rem; border-radius:9999px; font-size:0.7rem; font-weight:600; }
-  .badge-red  { background:rgba(212,32,39,0.10); color:#D42027; border:1px solid rgba(212,32,39,0.28); }
-  .badge-white{ background:rgba(0,0,0,0.06); color:rgba(0,0,0,0.7); border:1px solid rgba(0,0,0,0.12); }
-  .badge-green{ background:rgba(34,197,94,0.10); color:#16a34a; border:1px solid rgba(34,197,94,0.28); }
-  .badge-yellow{background:rgba(234,179,8,0.10); color:#ca8a04; border:1px solid rgba(234,179,8,0.28); }
-  .badge-gray { background:rgba(0,0,0,0.05); color:rgba(0,0,0,0.45); border:1px solid rgba(0,0,0,0.1); }
-
-  /* ── Table ──────────────────────────────────────────────── */
-  .data-table       { width:100%; font-size:0.875rem; }
-  .data-table th    { padding:0.75rem 1rem; text-align:left; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:rgba(0,0,0,0.4); border-bottom:1px solid rgba(0,0,0,0.07); }
-  .data-table td    { padding:0.75rem 1rem; color:rgba(0,0,0,0.7); border-bottom:1px solid rgba(0,0,0,0.05); }
-  .data-table tr:hover td { background:rgba(212,32,39,0.03); }
+  .nav-item:hover { color: var(--text-primary); background: var(--bg-hover); }
+  .nav-item.active { color: #D42027; background: var(--bg-active); border-color: rgba(212,32,39,0.2); }
 }
 
+/* ── Utilities ─────────────────────────────────────────────── */
 @layer utilities {
   .text-balance { text-wrap: balance; }
-  /* scrollbar */
+
+  /* Scrollbar */
   ::-webkit-scrollbar       { width:5px; height:5px; }
   ::-webkit-scrollbar-track { background:transparent; }
   ::-webkit-scrollbar-thumb { background:rgba(212,32,39,0.25); border-radius:9999px; }
   ::-webkit-scrollbar-thumb:hover { background:rgba(212,32,39,0.45); }
+
+  /* Focus ring utility */
+  .focus-ring {
+    outline: none;
+  }
+  .focus-ring:focus-visible {
+    box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px rgba(212,32,39,0.4);
+  }
 }

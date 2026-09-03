@@ -11,7 +11,6 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Cell, ScatterChart, Scatter, ZAxis,
 } from "recharts";
-import { TopBar }  from "@/components/dashboard/TopBar";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge }   from "@/components/ui/Badge";
 import { Button }  from "@/components/ui/Button";
@@ -79,13 +78,13 @@ const leadPriorityScatter = Array.from({ length: 40 }, (_, i) => ({
 function ChartTip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="glass-card rounded-xl p-3 text-xs border border-white/10">
-      {label && <p className="font-semibold text-white mb-1.5">{label}</p>}
+    <div className="glass-card rounded-xl p-3 text-xs border border-slate-200 dark:border-white/10">
+      {label && <p className="font-semibold text-slate-900 dark:text-white mb-1.5">{label}</p>}
       {payload.map((p: any) => (
         <div key={p.name} className="flex items-center gap-2 mb-0.5">
           <div className="w-2 h-2 rounded-full" style={{ background: p.color }}/>
-          <span className="text-white/60 capitalize">{p.name}:</span>
-          <span className="text-white font-medium">{p.value}</span>
+          <span className="text-slate-500 dark:text-white/60 capitalize">{p.name}:</span>
+          <span className="text-slate-900 dark:text-white font-medium">{p.value}</span>
         </div>
       ))}
     </div>
@@ -99,13 +98,13 @@ function InsightCard({ insight }: { insight: typeof aiInsights[0] }) {
   return (
     <div className={`glass-card rounded-xl p-4 border ${borderColor} ${bgColor}`}>
       <div className="flex items-start gap-3">
-        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 mt-0.5">{insight.icon}</div>
+        <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-white/[0.04] flex items-center justify-center flex-shrink-0 mt-0.5">{insight.icon}</div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-1">
-            <p className="text-sm font-semibold text-white">{insight.title}</p>
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">{insight.title}</p>
             <Badge variant={insight.type === "success" ? "green" : insight.type === "warning" ? "yellow" : "blue"} className="text-[10px] flex-shrink-0">{insight.impact}</Badge>
           </div>
-          <p className="text-xs text-white/50 leading-relaxed">{insight.body}</p>
+          <p className="text-xs text-slate-500 dark:text-white/50 leading-relaxed">{insight.body}</p>
         </div>
       </div>
     </div>
@@ -119,17 +118,17 @@ export default function AnalyticsPage() {
   return (
     <div className="flex flex-col min-h-full">
       <div className="p-6 pb-0">
-        <h1 className="text-2xl font-black text-white tracking-tight">AI Analytics</h1>
-        <p className="text-sm text-white/50 mt-1">Deep operational insights powered by GPT-4o conversational analysis</p>
+        <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">AI Analytics</h1>
+        <p className="text-sm text-slate-500 dark:text-white/50 mt-1">Deep operational insights powered by GPT-4o conversational analysis</p>
       </div>
 
       <div className="flex-1 p-6 space-y-6">
         {/* Period selector */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1">
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/[0.04] rounded-xl p-1">
             {(["week","month","quarter"] as const).map(p=>(
               <button key={p} onClick={()=>setPeriod(p)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-all ${period===p?"bg-brand-500 text-white":"text-white/40 hover:text-white"}`}>
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-all ${period===p?"bg-brand-500 text-white":"text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white"}`}>
                 {p}
               </button>
             ))}
@@ -151,9 +150,9 @@ export default function AnalyticsPage() {
           ].map(s=>(
             <Card key={s.label} className="p-5">
               <div className={`inline-flex p-2.5 rounded-xl ${s.color} mb-3`}>{s.icon}</div>
-              <p className="text-2xl font-extrabold text-white mb-1">{s.value}</p>
-              <p className="text-xs text-white/40">{s.label}</p>
-              <p className="text-[11px] text-white/25 mt-1">{s.change}</p>
+              <p className="text-2xl font-extrabold text-slate-900 dark:text-white mb-1">{s.value}</p>
+              <p className="text-xs text-slate-500 dark:text-white/40">{s.label}</p>
+              <p className="text-[11px] text-slate-400 dark:text-white/25 mt-1">{s.change}</p>
             </Card>
           ))}
         </div>
@@ -168,9 +167,9 @@ export default function AnalyticsPage() {
             </CardHeader>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={weeklyConv} margin={{ top:5, right:5, left:-20, bottom:0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)"/>
-                <XAxis dataKey="week" tick={{ fill:"rgba(255,255,255,0.3)", fontSize:10 }} axisLine={false} tickLine={false}/>
-                <YAxis tick={{ fill:"rgba(255,255,255,0.3)", fontSize:10 }} axisLine={false} tickLine={false}/>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)"/>
+                <XAxis dataKey="week" tick={{ fill:"#64748b", fontSize:10 }} axisLine={false} tickLine={false}/>
+                <YAxis tick={{ fill:"#64748b", fontSize:10 }} axisLine={false} tickLine={false}/>
                 <Tooltip content={<ChartTip/>}/>
                 <Line type="monotone" dataKey="conv" stroke="#6366f1" strokeWidth={2.5} dot={{ fill:"#6366f1", r:4 }} name="Conv %"/>
                 <Line type="monotone" dataKey="sentiment" stroke="#22c55e" strokeWidth={2} strokeDasharray="5 3" dot={false} name="Sentiment"/>
@@ -182,16 +181,16 @@ export default function AnalyticsPage() {
           <Card className="p-6">
             <CardHeader>
               <CardTitle>Sentiment Analysis</CardTitle>
-              <button className="text-white/30 hover:text-white transition-colors"><Info className="w-4 h-4"/></button>
+              <button className="text-slate-400 dark:text-white/30 hover:text-slate-900 dark:hover:text-white transition-colors"><Info className="w-4 h-4"/></button>
             </CardHeader>
             <div className="space-y-3 mt-2">
               {sentimentDist.map(s=>(
                 <div key={s.name}>
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-white/60">{s.name}</span>
-                    <span className="text-white font-medium">{s.value}%</span>
+                    <span className="text-slate-500 dark:text-white/60">{s.name}</span>
+                    <span className="text-slate-900 dark:text-white font-medium">{s.value}%</span>
                   </div>
-                  <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-2 bg-slate-100 dark:bg-white/[0.10] rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all" style={{ width:`${s.value}%`, background:s.color }}/>
                   </div>
                 </div>
@@ -209,13 +208,13 @@ export default function AnalyticsPage() {
               {conversionFunnel.map((f, i)=>(
                 <div key={f.stage}>
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-white/60">{f.stage}</span>
+                    <span className="text-slate-500 dark:text-white/60">{f.stage}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-white font-medium">{f.value.toLocaleString()}</span>
-                      <span className="text-white/30">({f.pct}%)</span>
+                      <span className="text-slate-900 dark:text-white font-medium">{f.value.toLocaleString()}</span>
+                      <span className="text-slate-400 dark:text-white/30">({f.pct}%)</span>
                     </div>
                   </div>
-                  <div className="h-3 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-3 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
                     <div className="h-full rounded-full" style={{ width:`${f.pct}%`, background:f.color, opacity:1-i*0.08 }}/>
                   </div>
                 </div>
@@ -228,8 +227,8 @@ export default function AnalyticsPage() {
             <CardHeader><CardTitle>Agent Comparison</CardTitle></CardHeader>
             <ResponsiveContainer width="100%" height={220}>
               <RadarChart data={agentRadar}>
-                <PolarGrid stroke="rgba(255,255,255,0.08)"/>
-                <PolarAngleAxis dataKey="metric" tick={{ fill:"rgba(255,255,255,0.3)", fontSize:9 }}/>
+                <PolarGrid stroke="rgba(148,163,184,0.2)"/>
+                <PolarAngleAxis dataKey="metric" tick={{ fill:"#64748b", fontSize:9 }}/>
                 <PolarRadiusAxis tick={false} axisLine={false}/>
                 <Radar name="Priya AI" dataKey="priya" stroke="#6366f1" fill="#6366f1" fillOpacity={0.15}/>
                 <Radar name="Arjun AI" dataKey="arjun" stroke="#22c55e" fill="#22c55e" fillOpacity={0.1}/>
@@ -238,7 +237,7 @@ export default function AnalyticsPage() {
             </ResponsiveContainer>
             <div className="flex justify-center gap-4 mt-2">
               {[["#6366f1","Priya"],["#22c55e","Arjun"],["#a855f7","Meera"]].map(([c,l])=>(
-                <div key={l} className="flex items-center gap-1.5 text-xs text-white/40">
+                <div key={l} className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-white/40">
                   <div className="w-2.5 h-2.5 rounded-full" style={{background:c}}/>
                   {l}
                 </div>
@@ -251,8 +250,8 @@ export default function AnalyticsPage() {
             <CardHeader><CardTitle>Customer Intent Detection</CardTitle></CardHeader>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={intentData} layout="vertical" margin={{ top:0, right:10, left:10, bottom:0 }}>
-                <XAxis type="number" tick={{ fill:"rgba(255,255,255,0.3)", fontSize:10 }} axisLine={false} tickLine={false}/>
-                <YAxis dataKey="intent" type="category" tick={{ fill:"rgba(255,255,255,0.4)", fontSize:10 }} axisLine={false} tickLine={false} width={90}/>
+                <XAxis type="number" tick={{ fill:"#64748b", fontSize:10 }} axisLine={false} tickLine={false}/>
+                <YAxis dataKey="intent" type="category" tick={{ fill:"#64748b", fontSize:10 }} axisLine={false} tickLine={false} width={90}/>
                 <Tooltip content={<ChartTip/>}/>
                 <Bar dataKey="count" radius={[0,4,4,0]}>
                   {intentData.map((e,i)=><Cell key={i} fill={e.color}/>)}
@@ -264,7 +263,7 @@ export default function AnalyticsPage() {
                 <div key={d.intent} className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full" style={{background:d.color}}/>
-                    <span className="text-white/50">{d.intent}</span>
+                    <span className="text-slate-500 dark:text-white/50">{d.intent}</span>
                   </div>
                   <span className="text-green-400 font-medium">{d.convRate}% conv</span>
                 </div>
@@ -294,19 +293,19 @@ export default function AnalyticsPage() {
         <Card className="p-6">
           <CardHeader>
             <CardTitle>Lead Priority Score Distribution</CardTitle>
-            <p className="text-xs text-white/40">Score vs Conversion Rate (bubble size = calls made)</p>
+            <p className="text-xs text-slate-500 dark:text-white/40">Score vs Conversion Rate (bubble size = calls made)</p>
           </CardHeader>
           <ResponsiveContainer width="100%" height={200}>
             <ScatterChart margin={{ top:5, right:5, left:-20, bottom:0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)"/>
-              <XAxis dataKey="score" name="Priority Score" tick={{ fill:"rgba(255,255,255,0.3)", fontSize:10 }} label={{ value:"Priority Score", position:"insideBottom", offset:-2, fill:"rgba(255,255,255,0.3)", fontSize:10 }} axisLine={false} tickLine={false}/>
-              <YAxis dataKey="conv"  name="Conv Rate %" tick={{ fill:"rgba(255,255,255,0.3)", fontSize:10 }} axisLine={false} tickLine={false}/>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)"/>
+              <XAxis dataKey="score" name="Priority Score" tick={{ fill:"#64748b", fontSize:10 }} label={{ value:"Priority Score", position:"insideBottom", offset:-2, fill:"#64748b", fontSize:10 }} axisLine={false} tickLine={false}/>
+              <YAxis dataKey="conv"  name="Conv Rate %" tick={{ fill:"#64748b", fontSize:10 }} axisLine={false} tickLine={false}/>
               <ZAxis dataKey="calls" range={[20, 100]}/>
               <Tooltip cursor={{ strokeDasharray:"3 3" }} content={({ active, payload })=>
                 active && payload?.length ? (
-                  <div className="glass-card rounded-xl p-2.5 text-xs border border-white/10">
-                    <p className="text-white/60">Score: <span className="text-white font-medium">{payload[0]?.value}</span></p>
-                    <p className="text-white/60">Conv: <span className="text-green-400 font-medium">{payload[1]?.value}%</span></p>
+                  <div className="glass-card rounded-xl p-2.5 text-xs border border-slate-200 dark:border-white/10">
+                    <p className="text-slate-500 dark:text-white/60">Score: <span className="text-slate-900 dark:text-white font-medium">{payload[0]?.value}</span></p>
+                    <p className="text-slate-500 dark:text-white/60">Conv: <span className="text-green-400 font-medium">{payload[1]?.value}%</span></p>
                   </div>
                 ) : null
               }/>

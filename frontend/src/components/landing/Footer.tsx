@@ -18,8 +18,7 @@ const socials = [
 
 export function Footer() {
   return (
-    <footer className="bg-gray-50 pt-12 sm:pt-16 pb-6 sm:pb-8"
-      style={{ borderTop:"1px solid rgba(0,0,0,0.08)" }}>
+    <footer className="bg-gray-50 dark:bg-[#0a0102] pt-12 sm:pt-16 pb-6 sm:pb-8 border-t border-slate-200 dark:border-brand-500/15">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 mb-10">
 
@@ -30,18 +29,15 @@ export function Footer() {
                 style={{ background:`linear-gradient(135deg,${R},#9b1219)`, boxShadow:"0 0 12px rgba(212,32,39,0.25)" }}>
                 <Zap className="w-4 h-4 text-white fill-white"/>
               </div>
-              <span className="text-lg font-bold text-gray-900">AgentCall <span className="gradient-text">AI</span></span>
+              <span className="text-lg font-bold text-gray-900 dark:text-white">AgentCall <span className="gradient-text">AI</span></span>
             </Link>
-            <p className="text-sm leading-relaxed mb-5 max-w-xs text-gray-400">
+            <p className="text-sm leading-relaxed mb-5 max-w-xs text-gray-400 dark:text-white/40">
               The AI Workforce Platform for modern businesses. Deploy AI Employees that work 24/7, handle calls and drive revenue.
             </p>
             <div className="flex items-center gap-2.5">
               {socials.map(s=>(
                 <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-gray-400"
-                  style={{ border:"1px solid rgba(0,0,0,0.10)", background:"#ffffff" }}
-                  onMouseEnter={e=>{const t=e.currentTarget;t.style.borderColor=R;t.style.color=R}}
-                  onMouseLeave={e=>{const t=e.currentTarget;t.style.borderColor="rgba(0,0,0,0.10)";t.style.color=""}}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-gray-400 dark:text-white/40 bg-white dark:bg-white/[0.04] border border-slate-200 dark:border-brand-500/20 hover:border-brand-500 hover:text-brand-500"
                 >{s.icon}</a>
               ))}
             </div>
@@ -50,11 +46,11 @@ export function Footer() {
           {/* Link columns */}
           {Object.entries(cols).map(([cat, links])=>(
             <div key={cat}>
-              <p className="text-xs font-bold uppercase tracking-widest mb-4 text-gray-400">{cat}</p>
+              <p className="text-xs font-bold uppercase tracking-widest mb-4 text-gray-400 dark:text-white/40">{cat}</p>
               <ul className="space-y-2.5">
                 {links.map(link=>(
                   <li key={link.l}>
-                    <Link href={link.href} className="text-sm transition-colors text-gray-500 hover:text-gray-900"
+                    <Link href={link.href} className="text-sm transition-colors text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white"
                     >{link.l}</Link>
                   </li>
                 ))}
@@ -64,11 +60,11 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-gray-200">
-          <p className="text-xs text-gray-400">© 2026 AgentCall AI. All rights reserved.</p>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-gray-200 dark:border-white/[0.08]">
+          <p className="text-xs text-gray-400 dark:text-white/40">© 2026 AgentCall AI. All rights reserved.</p>
           <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
             {["Privacy Policy","Terms of Service","Cookie Policy","GDPR"].map(t=>(
-              <Link key={t} href="#" className="text-xs text-gray-400 hover:text-red-600 transition-colors">{t}</Link>
+              <Link key={t} href="#" className="text-xs text-gray-400 dark:text-white/40 hover:text-red-600 transition-colors">{t}</Link>
             ))}
           </div>
         </div>

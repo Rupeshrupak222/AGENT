@@ -5,14 +5,12 @@ import { Menu, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-const R = "#D42027";
-
 const navLinks = [
-  { label:"Features",     href:"#features"     },
-  { label:"How It Works", href:"#how-it-works"  },
-  { label:"Pricing",      href:"#pricing"       },
-  { label:"Integrations", href:"#integrations"  },
-  { label:"Docs",         href:"/docs"          },
+  { label: "Features",     href: "#features"     },
+  { label: "How It Works", href: "#how-it-works"  },
+  { label: "Pricing",      href: "#pricing"       },
+  { label: "Integrations", href: "#integrations"  },
+  { label: "Docs",         href: "/docs"          },
 ];
 
 export function Navbar() {
@@ -28,31 +26,29 @@ export function Navbar() {
   function anchor(e: React.MouseEvent<HTMLAnchorElement>, href: string) {
     if (href.startsWith("#")) {
       e.preventDefault();
-      document.getElementById(href.slice(1))?.scrollIntoView({ behavior:"smooth", block:"start" });
+      document.getElementById(href.slice(1))?.scrollIntoView({ behavior: "smooth", block: "start" });
       setMobileOpen(false);
     }
   }
 
   return (
     <nav
-      style={scrolled ? {
-        backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)",
-        background:"rgba(255,255,255,0.92)",
-        borderBottom:"1px solid rgba(0,0,0,0.08)",
-        boxShadow:"0 4px 24px rgba(0,0,0,0.08)",
-      } : { background:"transparent" }}
-      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+      className={cn(
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+        scrolled || mobileOpen
+          ? "bg-white/90 dark:bg-[#0c0102]/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-brand-500/15 shadow-sm dark:shadow-2xl"
+          : "bg-transparent border-b border-transparent"
+      )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300"
-              style={{ background:`linear-gradient(135deg,${R} 0%,#9b1219 100%)`, boxShadow:`0 0 18px rgba(212,32,39,0.30)` }}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 bg-gradient-to-br from-brand-500 to-brand-700 shadow-md shadow-brand-500/30">
               <Zap className="w-4 h-4 text-white fill-white" />
             </div>
-            <span className="text-lg font-bold text-gray-900">
+            <span className="text-lg font-bold text-slate-900 dark:text-white">
               AgentCall <span className="gradient-text">AI</span>
             </span>
           </Link>
@@ -61,9 +57,7 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-0.5">
             {navLinks.map(l => (
               <a key={l.label} href={l.href} onClick={e=>anchor(e,l.href)}
-                className="px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 cursor-pointer text-gray-600"
-                onMouseEnter={e=>{(e.target as HTMLElement).style.color="#111";(e.target as HTMLElement).style.background="rgba(0,0,0,0.05)"}}
-                onMouseLeave={e=>{(e.target as HTMLElement).style.color="";(e.target as HTMLElement).style.background="transparent"}}
+                className="px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 cursor-pointer text-slate-600 dark:text-white/60 hover:bg-slate-100 dark:hover:bg-white/[0.06] hover:text-slate-900 dark:hover:text-white"
               >
                 {l.label}
               </a>
@@ -74,11 +68,10 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             <ThemeToggle />
             <Link href="/login"
-              className="px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 text-gray-700 dark:text-gray-200"
-              style={{ border:"1px solid rgba(212,32,39,0.28)", background:"rgba(212,32,39,0.05)" }}
-              onMouseEnter={e=>{const t=e.currentTarget;t.style.borderColor="rgba(212,32,39,0.55)";t.style.color=R;t.style.background="rgba(212,32,39,0.09)"}}
-              onMouseLeave={e=>{const t=e.currentTarget;t.style.borderColor="rgba(212,32,39,0.28)";t.style.color="";t.style.background="rgba(212,32,39,0.05)"}}
-            >Sign In</Link>
+              className="px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 text-brand-600 dark:text-white border border-brand-500/30 bg-brand-500/5 hover:bg-brand-500/10 hover:border-brand-500/50"
+            >
+              Sign In
+            </Link>
             <Link href="/signup" className="btn-red text-sm px-5 py-2 h-9 rounded-xl">
               Start Free Trial
             </Link>
@@ -88,7 +81,7 @@ export function Navbar() {
           <div className="flex md:hidden items-center gap-2">
             <ThemeToggle />
             <button onClick={()=>setMobileOpen(!mobileOpen)}
-              className="p-2 rounded-xl transition-all text-gray-600 dark:text-gray-300"
+              className="p-2 rounded-xl transition-all text-slate-600 dark:text-white/70 hover:bg-slate-100 dark:hover:bg-white/[0.06]"
             >
               {mobileOpen ? <X className="w-5 h-5"/> : <Menu className="w-5 h-5"/>}
             </button>
@@ -98,22 +91,22 @@ export function Navbar() {
 
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div style={{ background:"rgba(255,255,255,0.98)", backdropFilter:"blur(20px)", borderBottom:"1px solid rgba(0,0,0,0.08)" }}>
+        <div className="bg-white/98 dark:bg-[#120204] backdrop-blur-xl border-b border-slate-200 dark:border-brand-500/15">
           <div className="px-4 py-4 space-y-1">
             {navLinks.map(l=>(
               <a key={l.label} href={l.href} onClick={e=>anchor(e,l.href)}
-                className="block px-4 py-3 text-sm rounded-xl transition-all cursor-pointer text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                className="block px-4 py-3 text-sm rounded-xl transition-all cursor-pointer text-slate-600 dark:text-white/60 hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-white"
               >{l.label}</a>
             ))}
-            <div className="pt-3 flex flex-col gap-2 border-t border-gray-100">
+            <div className="pt-3 flex flex-col gap-2 border-t border-slate-200 dark:border-white/[0.08]">
               <Link href="/login" onClick={()=>setMobileOpen(false)}
-                className="w-full py-3 text-center text-sm font-semibold rounded-xl transition-all text-gray-700"
-                style={{ border:"1px solid rgba(212,32,39,0.28)", background:"rgba(212,32,39,0.05)" }}>
+                className="w-full py-3 text-center text-sm font-semibold rounded-xl transition-all text-brand-600 dark:text-white border border-brand-500/30 bg-brand-500/5"
+              >
                 Sign In
               </Link>
               <Link href="/signup" onClick={()=>setMobileOpen(false)}
-                className="w-full py-3 text-center text-sm font-semibold text-white rounded-xl transition-all"
-                style={{ background:`linear-gradient(135deg,${R} 0%,#9b1219 100%)`, boxShadow:"0 0 20px rgba(212,32,39,0.25)" }}>
+                className="w-full py-3 text-center text-sm font-semibold text-white rounded-xl transition-all bg-gradient-to-br from-brand-500 to-brand-700 shadow-md shadow-brand-500/25"
+              >
                 Start Free Trial
               </Link>
             </div>

@@ -95,12 +95,12 @@ export default function BillingPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Subscription & Billing</h1>
-          <p className="text-sm text-white/50 mt-1">Manage your plan, calling minutes allocation, and payment history.</p>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Subscription & Billing</h1>
+          <p className="text-sm text-slate-500 dark:text-white/50 mt-1">Manage your plan, calling minutes allocation, and payment history.</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse" />
             Current Plan: <strong className="capitalize">{subscription?.plan || "Growth"}</strong>
           </span>
         </div>
@@ -110,59 +110,59 @@ export default function BillingPage() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-sm font-medium flex items-center gap-2"
+          className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-300 text-sm font-medium flex items-center gap-2"
         >
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+          <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
           {successMessage}
         </motion.div>
       )}
 
       {/* Usage Meter Card */}
-      <div className="rounded-2xl p-6 bg-gradient-to-b from-white/[0.06] to-white/[0.02] border border-white/[0.08] shadow-2xl">
+      <div className="rounded-2xl p-6 bg-white dark:bg-gradient-to-b dark:from-white/[0.06] dark:to-white/[0.02] border border-slate-200 dark:border-white/[0.08] shadow-2xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Clock className="w-4 h-4 text-brand-400" />
+            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Clock className="w-4 h-4 text-brand-500 dark:text-brand-400" />
               Monthly Minutes Allowance
             </h3>
-            <p className="text-xs text-white/40 mt-0.5">Renews automatically every billing cycle</p>
+            <p className="text-xs text-slate-500 dark:text-white/40 mt-0.5">Renews automatically every billing cycle</p>
           </div>
-          <span className="text-xs font-mono text-white/60">
-            <strong className="text-white">1,847</strong> / 5,000 mins used (36.9%)
+          <span className="text-xs font-mono text-slate-500 dark:text-white/60">
+            <strong className="text-slate-900 dark:text-white">1,847</strong> / 5,000 mins used (36.9%)
           </span>
         </div>
 
         {/* Progress bar */}
-        <div className="w-full h-3 rounded-full bg-white/10 overflow-hidden relative">
+        <div className="w-full h-3 rounded-full bg-slate-100 dark:bg-white/10 overflow-hidden relative">
           <div
             className="h-full rounded-full bg-gradient-to-r from-brand-600 to-rose-500 transition-all duration-500 shadow-lg shadow-brand-500/40"
             style={{ width: "36.9%" }}
           />
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-white/[0.06] text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-200 dark:border-white/[0.06] text-xs">
           <div>
-            <span className="text-white/40 block">Concurrent Channels</span>
-            <span className="text-base font-bold text-white font-mono mt-0.5 block">25 Calls</span>
+            <span className="text-slate-500 dark:text-white/40 block">Concurrent Channels</span>
+            <span className="text-base font-bold text-slate-900 dark:text-white font-mono mt-0.5 block">25 Calls</span>
           </div>
           <div>
-            <span className="text-white/40 block">Total Dispatched</span>
-            <span className="text-base font-bold text-white font-mono mt-0.5 block">2,847 Calls</span>
+            <span className="text-slate-500 dark:text-white/40 block">Total Dispatched</span>
+            <span className="text-base font-bold text-slate-900 dark:text-white font-mono mt-0.5 block">2,847 Calls</span>
           </div>
           <div>
-            <span className="text-white/40 block">Avg Duration</span>
-            <span className="text-base font-bold text-white font-mono mt-0.5 block">3m 24s</span>
+            <span className="text-slate-500 dark:text-white/40 block">Avg Duration</span>
+            <span className="text-base font-bold text-slate-900 dark:text-white font-mono mt-0.5 block">3m 24s</span>
           </div>
           <div>
-            <span className="text-white/40 block">Renewal Date</span>
-            <span className="text-base font-bold text-emerald-400 font-mono mt-0.5 block">30 Sept 2026</span>
+            <span className="text-slate-500 dark:text-white/40 block">Renewal Date</span>
+            <span className="text-base font-bold text-emerald-600 dark:text-emerald-400 font-mono mt-0.5 block">30 Sept 2026</span>
           </div>
         </div>
       </div>
 
       {/* Plan Tiers */}
       <div>
-        <h2 className="text-lg font-bold text-white mb-4">Available Plans</h2>
+        <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Available Plans</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {Object.entries(PLANS_DISPLAY).map(([key, info]) => {
             const planDetails = plans[key];
@@ -174,12 +174,12 @@ export default function BillingPage() {
             return (
               <div
                 key={key}
-                className={`relative flex flex-col justify-between rounded-2xl p-6 bg-gradient-to-b from-white/[0.05] to-white/[0.02] border transition-all duration-300 ${
+                className={`relative flex flex-col justify-between rounded-2xl p-6 bg-white dark:bg-gradient-to-b dark:from-white/[0.05] dark:to-white/[0.02] border transition-all duration-300 ${
                   info.popular
                     ? "border-brand-500/50 shadow-2xl shadow-brand-950/40 ring-1 ring-brand-500/30"
                     : isCurrent
                     ? "border-emerald-500/40 shadow-xl"
-                    : "border-white/[0.08] hover:border-white/20"
+                    : "border-slate-200 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20"
                 }`}
               >
                 {info.popular && (
@@ -190,24 +190,24 @@ export default function BillingPage() {
 
                 <div>
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-extrabold text-white capitalize">{key}</h3>
+                    <h3 className="text-lg font-extrabold text-slate-900 dark:text-white capitalize">{key}</h3>
                     {isCurrent && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
                         Active
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-white/50 mt-1.5 min-h-[36px]">{info.desc}</p>
+                  <p className="text-xs text-slate-500 dark:text-white/50 mt-1.5 min-h-[36px]">{info.desc}</p>
 
                   <div className="my-6">
-                    <span className="text-3xl font-black text-white font-mono">{priceDisplay}</span>
-                    {priceDisplay !== "Custom" && <span className="text-xs text-white/40 ml-1">/ month</span>}
+                    <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">{priceDisplay}</span>
+                    {priceDisplay !== "Custom" && <span className="text-xs text-slate-500 dark:text-white/40 ml-1">/ month</span>}
                   </div>
 
-                  <ul className="space-y-2.5 text-xs text-white/70 border-t border-white/[0.06] pt-5">
+                  <ul className="space-y-2.5 text-xs text-slate-600 dark:text-white/70 border-t border-slate-200 dark:border-white/[0.06] pt-5">
                     {info.features.map((feat) => (
                       <li key={feat} className="flex items-start gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                         <span>{feat}</span>
                       </li>
                     ))}
@@ -218,7 +218,7 @@ export default function BillingPage() {
                   {isCurrent ? (
                     <button
                       disabled
-                      className="w-full py-2.5 rounded-xl text-xs font-bold bg-white/10 text-white/40 border border-white/5 cursor-default"
+                      className="w-full py-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/40 border border-slate-200 dark:border-white/5 cursor-default"
                     >
                       Current Plan
                     </button>
@@ -229,7 +229,7 @@ export default function BillingPage() {
                       className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                         info.popular
                           ? "btn-red h-10 shadow-lg shadow-brand-500/30"
-                          : "bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/10"
+                          : "bg-slate-100 dark:bg-white/[0.08] hover:bg-slate-200 dark:hover:bg-white/[0.15] text-slate-700 dark:text-white border border-slate-200 dark:border-white/10"
                       }`}
                     >
                       {upgradingPlan === key ? (

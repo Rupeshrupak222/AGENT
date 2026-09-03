@@ -1,31 +1,26 @@
 "use client";
 import { cn } from "@/lib/utils";
-import { HTMLAttributes } from "react";
+import { HTMLAttributes, forwardRef } from "react";
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   hover?: boolean;
   glow?: boolean;
-  padding?: "none"|"sm"|"md"|"lg";
+  padding?: "none" | "sm" | "md" | "lg";
 }
-const pad = { none:"", sm:"p-4", md:"p-6", lg:"p-8" };
 
-export function Card({ hover=false, glow=false, padding="md", children, className, style, ...props }: CardProps) {
-  return (
+const pad = { none: "", sm: "p-4", md: "p-6", lg: "p-8" };
+
+export const Card = forwardRef<HTMLDivElement, CardProps>(
+  ({ hover = false, glow = false, padding = "md", children, className, ...props }, ref) => (
     <div
-      style={{
-        background:"linear-gradient(135deg,rgba(255,255,255,0.045) 0%,rgba(212,32,39,0.022) 100%)",
-        border:"1px solid rgba(255,255,255,0.07)",
-        backdropFilter:"blur(18px)",
-        WebkitBackdropFilter:"blur(18px)",
-        boxShadow: glow
-          ? "0 0 40px rgba(212,32,39,0.28),0 8px 32px rgba(0,0,0,0.55)"
-          : "0 8px 32px rgba(0,0,0,0.50)",
-        borderRadius:"1rem",
-        ...style,
-      }}
+      ref={ref}
       className={cn(
-        "transition-all duration-300",
-        hover && "hover:-translate-y-0.5 hover:border-[rgba(212,32,39,0.22)]",
+        "rounded-xl border transition-all duration-200",
+        "bg-surface-card border-line",
+        "dark:bg-[rgba(21,3,5,0.7)] dark:border-white/[0.08] dark:shadow-glass dark:backdrop-blur-[18px]",
+        "shadow-md",
+        hover && "hover:-translate-y-0.5 hover:border-brand-500/20 dark:hover:border-brand-500/20",
+        glow && "shadow-brand/20 dark:shadow-brand/30",
         pad[padding],
         className
       )}
@@ -33,12 +28,30 @@ export function Card({ hover=false, glow=false, padding="md", children, classNam
     >
       {children}
     </div>
+  )
+);
+Card.displayName = "Card";
+
+export function CardHeader({ children, className, ...p }: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={cn("flex items-center justify-between mb-4", className)} {...p}>
+      {children}
+    </div>
   );
 }
 
-export function CardHeader({ children, className, ...p }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("flex items-center justify-between mb-4", className)} {...p}>{children}</div>;
-}
 export function CardTitle({ children, className, ...p }: HTMLAttributes<HTMLHeadingElement>) {
-  return <h3 className={cn("text-base font-semibold text-white", className)} {...p}>{children}</h3>;
+  return (
+    <h3 className={cn("text-base font-semibold text-content dark:text-white", className)} {...p}>
+      {children}
+    </h3>
+  );
+}
+
+export function CardDescription({ children, className, ...p }: HTMLAttributes<HTMLParagraphElement>) {
+  return (
+    <p className={cn("text-sm text-content-secondary dark:text-white/50", className)} {...p}>
+      {children}
+    </p>
+  );
 }

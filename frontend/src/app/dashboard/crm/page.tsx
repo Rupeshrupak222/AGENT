@@ -24,6 +24,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 import {
   leadsApi,
   normalizeApiError,
@@ -79,6 +80,7 @@ function LeadDetailPanel({
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "history">("overview");
+  const { success: toastSuccess, error: toastError } = useToast();
 
   useEffect(() => {
     let mounted = true;
@@ -106,8 +108,9 @@ function LeadDetailPanel({
       const updated = await leadsApi.updateStatus(lead.id, newStage);
       setLead((prev) => (prev ? { ...prev, status: updated.status } : prev));
       onStatusChange();
+      toastSuccess(`Lead moved to "${newStage.replace("_", " ")}"`);
     } catch (err) {
-      alert(normalizeApiError(err));
+      toastError(normalizeApiError(err));
     } finally {
       setUpdating(false);
     }

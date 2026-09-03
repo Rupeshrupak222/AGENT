@@ -101,11 +101,10 @@ export function HeroSection() {
     document.getElementById(id)?.scrollIntoView({ behavior:"smooth", block:"start" });
   }
   return (
-    <section id="hero" className="relative min-h-screen flex items-center pt-16 overflow-hidden"
+    <section id="hero" className="relative min-h-screen flex items-center pt-16 overflow-hidden bg-white dark:bg-[#0c0102]"
       style={{
-        background:`radial-gradient(ellipse 85% 55% at 50% -15%,rgba(212,32,39,0.08),transparent),
-                   radial-gradient(ellipse 50% 40% at 85% 65%,rgba(180,20,26,0.04),transparent),
-                   #ffffff`,
+        backgroundImage:`radial-gradient(ellipse 85% 55% at 50% -15%,rgba(212,32,39,0.08),transparent),
+                   radial-gradient(ellipse 50% 40% at 85% 65%,rgba(180,20,26,0.04),transparent)`,
       }}>
 
       {/* Subtle grid pattern */}
@@ -125,11 +124,11 @@ export function HeroSection() {
             </motion.div>
 
             <motion.div initial={{ opacity:0,y:20 }} animate={{ opacity:1,y:0 }} transition={{ delay:0.1,duration:0.7 }}>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-gray-900 leading-[1.05] tracking-tight text-balance mb-4">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-gray-900 dark:text-white leading-[1.05] tracking-tight text-balance mb-4">
                 Hire AI Employees{" "}
                 <span className="gradient-text">That Work 24/7</span>
               </h1>
-              <p className="text-lg sm:text-xl leading-relaxed max-w-xl mx-auto lg:mx-0 text-gray-500">
+              <p className="text-lg sm:text-xl leading-relaxed max-w-xl mx-auto lg:mx-0 text-gray-500 dark:text-white/60">
                 Deploy AI Telecallers, Recruiters, Receptionists and Sales Agents in minutes.
                 Reduce costs, increase conversions and automate operations.
               </p>
@@ -145,10 +144,9 @@ export function HeroSection() {
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform"/>
               </Link>
               <button onClick={()=>scroll("how-it-works")}
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.97] text-gray-700"
-                style={{ border:"1px solid rgba(212,32,39,0.28)", background:"rgba(212,32,39,0.05)" }}
+                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.97] text-gray-700 dark:text-white/70 border border-brand-500/30 bg-brand-500/5 hover:bg-brand-500/10 hover:border-brand-500/50"
               >
-                <Play className="w-4 h-4 fill-current" style={{ color:R }}/> See How It Works
+                <Play className="w-4 h-4 fill-current text-brand-500" /> See How It Works
               </button>
             </motion.div>
 
@@ -157,14 +155,14 @@ export function HeroSection() {
               className="flex items-center gap-5 justify-center lg:justify-start flex-wrap">
               <div className="flex -space-x-2">
                 {[R,"#e53e3e","#c53030","#9b2c2c","#742a2a"].map((c,i)=>(
-                  <div key={i} className="w-8 h-8 rounded-full border-2 border-white" style={{ background:c }}/>
+                  <div key={i} className="w-8 h-8 rounded-full border-2 border-white dark:border-[#0c0102]" style={{ background:c }}/>
                 ))}
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">1,000+ businesses</p>
-                <p className="text-xs text-gray-400">already using AgentCall AI</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">1,000+ businesses</p>
+                <p className="text-xs text-gray-400 dark:text-white/40">already using AgentCall AI</p>
               </div>
-              <div className="h-8 w-px hidden sm:block bg-gray-200"/>
+              <div className="h-8 w-px hidden sm:block bg-gray-200 dark:bg-white/15"/>
               <div className="flex items-center gap-1">
                 {[1,2,3,4,5].map(i=>(
                   <svg key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" viewBox="0 0 20 20">

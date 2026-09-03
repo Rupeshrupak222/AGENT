@@ -120,11 +120,13 @@ export default function LoginPage() {
           </div>
 
           {/* Demo hint */}
-          <button onClick={() => { setEmail("admin@acmecorp.com"); setPassword("Demo@1234"); setError(""); }}
-            className="w-full mb-6 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all"
-            style={{ border:`1px solid rgba(212,32,39,0.35)`, background:"rgba(212,32,39,0.1)", color:"#ffaaaa" }}>
-            <Zap className="w-4 h-4"/> Use Demo Credentials
-          </button>
+          {process.env.NODE_ENV !== "production" && (
+            <button onClick={() => { setEmail("admin@acmecorp.com"); setPassword("Demo@1234"); setError(""); }}
+              className="w-full mb-6 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all"
+              style={{ border:`1px solid rgba(212,32,39,0.35)`, background:"rgba(212,32,39,0.1)", color:"#ffaaaa" }}>
+              <Zap className="w-4 h-4"/> Use Demo Credentials
+            </button>
+          )}
 
           {/* Error */}
           {error && (
@@ -210,14 +212,16 @@ export default function LoginPage() {
           </div>
 
           {/* Development Seed Helper */}
-          <div className="mt-5 p-3 rounded-xl text-xs flex items-center justify-between"
-            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.45)" }}>
-            <span>Seeded Admin: <strong className="text-white">admin@acmecorp.com</strong> / <strong className="text-white">Demo@1234</strong></span>
-            <button type="button" onClick={() => { setEmail("admin@acmecorp.com"); setPassword("Demo@1234"); }}
-              className="text-[11px] font-semibold underline transition-colors" style={{ color: R }}>
-              Fill
-            </button>
-          </div>
+          {process.env.NODE_ENV !== "production" && (
+            <div className="mt-5 p-3 rounded-xl text-xs flex items-center justify-between"
+              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.45)" }}>
+              <span>Seeded Admin: <strong className="text-white">admin@acmecorp.com</strong> / <strong className="text-white">Demo@1234</strong></span>
+              <button type="button" onClick={() => { setEmail("admin@acmecorp.com"); setPassword("Demo@1234"); }}
+                className="text-[11px] font-semibold underline transition-colors" style={{ color: R }}>
+                Fill
+              </button>
+            </div>
+          )}
 
           <p className="text-center text-sm mt-8" style={{ color:"rgba(255,255,255,0.38)" }}>
             Don&apos;t have an account?{" "}

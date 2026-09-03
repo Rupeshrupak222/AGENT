@@ -197,6 +197,35 @@ export const authApi = {
   },
 };
 
+/**
+ * Validates a persisted session on app load by calling /auth/me.
+ * On success, refreshes the stored user + tenant and ensures we are
+ * authenticated. On failure (expired/invalid token) the response
+ * interceptor already handles refresh; if that fails, we force logout.
+ * Returns true if the session is valid.
+ */
+export async function bootstrapAuth(): Promise<boolean> {
+  const state = useAuthStore.getState();
+  if (!state.accessToken) {
+    state.logout();
+    return false;
+  }
+
+  try {
+    const data = await authApi.me();
+    if (data) {
+      const { tenant: userTenant, ...userData } = data;
+      state.login(userData as AuthUser, userTenant, state.accessToken ?? "", state.refreshToken ?? undefined);
+      return true;
+    }
+    state.logout();
+    return false;
+  } catch {
+    state.logout();
+    return false;
+  }
+}
+
 export const healthApi = {
   check: async () => {
     const res = await apiClient.get<ApiResponseWrapper<{ status: string }>>(

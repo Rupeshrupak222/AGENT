@@ -14,21 +14,20 @@ const steps = [
 
 export function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="py-16 sm:py-24 relative overflow-hidden bg-gray-50">
+    <section id="how-it-works" className="py-16 sm:py-24 relative overflow-hidden bg-gray-50 dark:bg-[#0a0102]">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full pointer-events-none"
         style={{ background:"radial-gradient(ellipse,rgba(212,32,39,0.04),transparent 70%)" }}/>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <motion.div initial={{ opacity:0,y:20 }} whileInView={{ opacity:1,y:0 }} viewport={{ once:true }}
           className="text-center mb-12 sm:mb-16">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-5"
-            style={{ background:"rgba(34,197,94,0.10)", color:"#16a34a", border:"1px solid rgba(34,197,94,0.25)" }}>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-5 bg-green-500/10 text-green-600 border border-green-500/25">
             <span className="w-1.5 h-1.5 rounded-full bg-current"/>Simple Workflow
           </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 mb-4 tracking-tight">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight">
             Live in <span className="gradient-text">5 Steps</span>
           </h2>
-          <p className="text-base sm:text-lg max-w-xl mx-auto text-gray-500">
+          <p className="text-base sm:text-lg max-w-xl mx-auto text-gray-500 dark:text-white/60">
             From zero to a fully operational AI call center in under 30 minutes.
           </p>
         </motion.div>
@@ -46,17 +45,15 @@ export function HowItWorksSection() {
                 className="relative text-center group"
               >
                 <div className="flex justify-center mb-5">
-                  <div className="relative w-20 h-20 rounded-2xl flex items-center justify-center text-white transition-transform duration-300 group-hover:scale-110"
-                    style={{ background:`linear-gradient(135deg,${R} 0%,#9b1219 100%)`, boxShadow:"0 0 24px rgba(212,32,39,0.25)" }}>
+                  <div className="relative w-20 h-20 rounded-2xl flex items-center justify-center text-white transition-transform duration-300 group-hover:scale-110 bg-gradient-to-br from-brand-500 to-brand-700 shadow-md shadow-brand-500/25">
                     {s.icon}
-                    <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-white"
-                      style={{ border:"1px solid rgba(212,32,39,0.28)", color:R }}>
+                    <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-white dark:bg-[#120204] text-brand-500 dark:text-brand-400 border border-brand-500/30">
                       {s.n}
                     </span>
                   </div>
                 </div>
-                <h3 className="text-base font-bold text-gray-900 mb-2">{s.title}</h3>
-                <p className="text-sm leading-relaxed text-gray-500">{s.desc}</p>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">{s.title}</h3>
+                <p className="text-sm leading-relaxed text-gray-500 dark:text-white/60">{s.desc}</p>
               </motion.div>
             ))}
           </div>

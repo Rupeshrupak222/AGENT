@@ -7,7 +7,7 @@ const R = "#D42027";
 
 export function CTASection() {
   return (
-    <section className="py-16 sm:py-24 relative overflow-hidden bg-white">
+    <section className="py-16 sm:py-24 relative overflow-hidden bg-white dark:bg-[#0c0102]">
       <div className="absolute inset-0 pointer-events-none"
         style={{ background:"radial-gradient(ellipse 80% 60% at 50% 50%,rgba(212,32,39,0.05),transparent 65%)" }}/>
 
@@ -15,10 +15,10 @@ export function CTASection() {
         <motion.div initial={{ opacity:0,y:30 }} whileInView={{ opacity:1,y:0 }} viewport={{ once:true }}
           className="space-y-8">
           <div className="space-y-4">
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight text-balance">
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight text-balance">
               Ready to Deploy Your{" "}<span className="gradient-text">AI Workforce?</span>
             </h2>
-            <p className="text-lg sm:text-xl max-w-xl mx-auto leading-relaxed text-gray-500">
+            <p className="text-lg sm:text-xl max-w-xl mx-auto leading-relaxed text-gray-500 dark:text-white/60">
               Join 1,000+ businesses that have replaced manual calling with AI agents.
               14-day free trial, no credit card required.
             </p>
@@ -33,16 +33,13 @@ export function CTASection() {
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform"/>
             </Link>
             <Link href="/login"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-9 py-4 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.97] text-gray-700"
-              style={{ border:"1px solid rgba(212,32,39,0.28)", background:"rgba(212,32,39,0.05)" }}
-              onMouseEnter={e=>{e.currentTarget.style.background="rgba(212,32,39,0.09)";e.currentTarget.style.borderColor="rgba(212,32,39,0.45)"}}
-              onMouseLeave={e=>{e.currentTarget.style.background="rgba(212,32,39,0.05)";e.currentTarget.style.borderColor="rgba(212,32,39,0.28)"}}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-9 py-4 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.97] text-gray-700 dark:text-white/70 border border-brand-500/30 bg-brand-500/5 hover:bg-brand-500/10 hover:border-brand-500/50"
             >
               Sign In to Dashboard
             </Link>
           </div>
 
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-gray-400 dark:text-white/40">
             Setup in 5 minutes · Cancel anytime · GDPR compliant · SOC2 ready
           </p>
         </motion.div>

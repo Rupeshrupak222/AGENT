@@ -29,12 +29,13 @@ import {
   Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { bootstrapAuth } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
 import { usePermissions } from "@/hooks/usePermissions";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useToast } from "@/components/ui/Toast";
 import { PERMISSIONS, Permission } from "@/lib/permissions";
-
-const R = "#D42027";
+import { Badge } from "@/components/ui/Badge";
 
 interface NavItem {
   icon: any;
@@ -99,9 +100,10 @@ function SidebarContent({
   onClose?: () => void;
 }) {
   const pathname = usePathname();
-  const { user, logout } = useAuthStore();
+  const { user, tenant, logout } = useAuthStore();
   const { can } = usePermissions();
   const router = useRouter();
+  const { success } = useToast();
   const show = !collapsed || mobile;
 
   // Filter navigation groups based on permissions
@@ -121,12 +123,7 @@ function SidebarContent({
           show ? "px-5 gap-3" : "justify-center"
         )}
       >
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md shadow-brand-500/20"
-          style={{
-            background: `linear-gradient(135deg,${R},#9b1219)`,
-          }}
-        >
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md shadow-brand-500/20 bg-gradient-to-br from-brand-500 to-brand-700">
           <Zap className="w-4 h-4 text-white fill-white" />
         </div>
         {show && (
@@ -217,6 +214,7 @@ function SidebarContent({
         </Link>
         <button
           onClick={() => {
+            success("You have been signed out safely.");
             logout();
             router.push("/login");
           }}
@@ -230,10 +228,7 @@ function SidebarContent({
         </button>
         {show && user && (
           <div className="flex items-center gap-3 px-3 py-2 mt-2 rounded-xl bg-slate-100 dark:bg-brand-500/10 border border-slate-200 dark:border-brand-500/20">
-            <div
-              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-sm"
-              style={{ background: `linear-gradient(135deg,${R},#9b1219)` }}
-            >
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-sm bg-gradient-to-br from-brand-500 to-brand-700">
               {user.name?.[0]?.toUpperCase() ?? "U"}
             </div>
             <div className="flex-1 min-w-0">
@@ -241,7 +236,7 @@ function SidebarContent({
                 {user.name}
               </p>
               <p className="text-[10px] capitalize truncate text-slate-500 dark:text-white/40">
-                {user.role?.replace("_", " ")}
+                {tenant?.name ?? user.role?.replace("_", " ")}
               </p>
             </div>
           </div>
@@ -253,19 +248,41 @@ function SidebarContent({
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, accessToken, isAuthenticated, logout } = useAuthStore();
+  const { user, tenant, accessToken, isAuthenticated, logout } = useAuthStore();
   const { can } = usePermissions();
   const router = useRouter();
+  const { success } = useToast();
   const [mounted, setMounted] = useState(false);
+  const [sessionValidated, setSessionValidated] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Session revalidation on mount: verify persisted token via /auth/me
+  useEffect(() => {
+    if (!mounted) return;
+    if (!isAuthenticated && !accessToken) {
+      setSessionValidated(true);
+      return;
+    }
+    let active = true;
+    (async () => {
+      const ok = await bootstrapAuth();
+      if (active) setSessionValidated(true);
+      void ok;
+    })();
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted]);
 
   // Hydration route guard
   useEffect(() => {
@@ -282,34 +299,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const fn = () => {
       setNotifOpen(false);
       setProfileOpen(false);
+      setWorkspaceOpen(false);
     };
     document.addEventListener("click", fn);
     return () => document.removeEventListener("click", fn);
   }, []);
 
   // Guard against unauthenticated layout rendering during hydration
-  if (!mounted || (!isAuthenticated && !accessToken)) {
+  if (!mounted || !sessionValidated || (!isAuthenticated && !accessToken)) {
     return (
-      <div
-        className="flex h-screen items-center justify-center bg-slate-50 dark:bg-[#0c0102]"
-        style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#0c0102" }}
-      >
-        <div className="flex flex-col items-center gap-3" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center animate-pulse shadow-lg shadow-brand-500/20"
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 12,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: `linear-gradient(135deg,${R},#9b1219)`,
-            }}
-          >
-            <Zap className="w-5 h-5 text-white fill-white" style={{ width: 20, height: 20, color: "#fff", fill: "#fff" }} />
+      <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-[#0c0102]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center animate-pulse shadow-lg shadow-brand-500/20 bg-gradient-to-br from-brand-500 to-brand-700">
+            <Zap className="w-5 h-5 text-white fill-white" />
           </div>
-          <p className="text-xs font-medium text-slate-500 dark:text-white/40" style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
+          <p className="text-xs font-medium text-slate-500 dark:text-white/40">
             Authenticating session...
           </p>
         </div>
@@ -384,6 +388,65 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               <Menu className="w-5 h-5" />
             </button>
+
+            {/* Workspace switcher */}
+            <div className="relative" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => {
+                  setWorkspaceOpen(!workspaceOpen);
+                  setNotifOpen(false);
+                  setProfileOpen(false);
+                }}
+                className="hidden sm:flex items-center gap-2 px-3 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] border border-slate-200 dark:border-white/10 transition-all"
+              >
+                <Building2 className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+                <span className="text-sm font-semibold text-slate-800 dark:text-white max-w-[140px] truncate">
+                  {tenant?.name ?? "My Workspace"}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-white/30" />
+              </button>
+              <AnimatePresence>
+                {workspaceOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                    className="absolute left-0 top-12 w-64 rounded-2xl overflow-hidden z-50 bg-surface-card dark:bg-[#180406] border border-line dark:border-brand-500/20 backdrop-blur-xl shadow-2xl"
+                  >
+                    <div className="px-4 py-3 border-b border-slate-100 dark:border-white/[0.06]">
+                      <p className="text-xs font-semibold text-slate-500 dark:text-white/40 uppercase tracking-wide">
+                        Workspaces
+                      </p>
+                    </div>
+                    <div className="px-2 py-2">
+                      <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-brand-50/60 dark:bg-brand-500/10">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm bg-gradient-to-br from-brand-500 to-brand-700">
+                          <Building2 className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                            {tenant?.name ?? "My Workspace"}
+                          </p>
+                          {tenant?.plan && (
+                            <span className="text-[10px] capitalize text-slate-500 dark:text-white/40">
+                              {tenant.plan} plan
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <Link
+                      href="/dashboard/workspace"
+                      onClick={() => setWorkspaceOpen(false)}
+                      className="block px-4 py-2.5 text-sm text-brand-600 dark:text-brand-400 hover:bg-slate-50 dark:hover:bg-white/[0.04] border-t border-slate-100 dark:border-white/[0.06] transition-all"
+                    >
+                      Manage workspaces
+                    </Link>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             <div className="min-w-0">
               <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight capitalize truncate">
                 {pageLabel}
@@ -439,10 +502,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               >
                 <Bell className="w-4 h-4" />
                 {unread > 0 && (
-                  <span
-                    className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-sm"
-                    style={{ background: R }}
-                  >
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-sm bg-brand-500">
                     {unread}
                   </span>
                 )}
@@ -475,10 +535,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       >
                         <div className="flex gap-2.5">
                           {n.unread && (
-                            <div
-                              className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0"
-                              style={{ background: R }}
-                            />
+                            <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 bg-brand-500" />
                           )}
                           <div className={n.unread ? "" : "pl-4"}>
                             <p className="text-sm text-slate-800 dark:text-white/80">
@@ -505,10 +562,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {can(PERMISSIONS.AI_AGENT_CREATE) && (
               <Link
                 href="/dashboard/agents"
-                className="hidden sm:flex items-center gap-1.5 h-9 px-3 rounded-xl text-white text-xs font-semibold transition-all active:scale-[0.97] shadow-md shadow-brand-500/20"
-                style={{
-                  background: `linear-gradient(135deg,${R},#9b1219)`,
-                }}
+                className="hidden sm:flex items-center gap-1.5 h-9 px-3 rounded-xl text-white text-xs font-semibold transition-all active:scale-[0.97] shadow-md shadow-brand-500/20 bg-gradient-to-br from-brand-500 to-brand-700"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>New Agent</span>
@@ -524,10 +578,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 }}
                 className="flex items-center gap-2 h-9 px-2 rounded-xl transition-all hover:bg-slate-100 dark:hover:bg-white/[0.06]"
               >
-                <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm"
-                  style={{ background: `linear-gradient(135deg,${R},#9b1219)` }}
-                >
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm bg-gradient-to-br from-brand-500 to-brand-700">
                   {user?.name?.[0]?.toUpperCase() ?? "U"}
                 </div>
                 <span className="hidden sm:block text-xs font-medium max-w-[80px] truncate text-slate-700 dark:text-white/70">
@@ -554,6 +605,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         {user?.role === "super_admin" && <Shield className="w-2.5 h-2.5" />}
                         {user?.role?.replace("_", " ")}
                       </span>
+                      {tenant?.plan && (
+                        <Badge variant="info" className="ml-1 text-[10px]">
+                          {tenant.plan}
+                        </Badge>
+                      )}
                     </div>
                     {profileItems.map((item) => (
                       <Link
@@ -567,6 +623,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <div className="border-t border-slate-100 dark:border-white/[0.06]">
                       <button
                         onClick={() => {
+                          success("You have been signed out safely.");
                           logout();
                           router.push("/login");
                         }}

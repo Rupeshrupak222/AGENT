@@ -22,6 +22,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 import { WaveAnimation } from "@/components/ui/WaveAnimation";
 import {
   agentsApi,
@@ -460,18 +462,22 @@ function AgentCardItem({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const toggleStatus = async () => {
     try {
       setActionLoading(true);
       if (agent.status === "active") {
         await agentsApi.pause(agent.id);
+        toastSuccess(`"${agent.name}" paused`);
       } else {
         await agentsApi.activate(agent.id);
+        toastSuccess(`"${agent.name}" activated`);
       }
       onRefresh();
     } catch (err) {
-      alert(normalizeApiError(err));
+      toastError(normalizeApiError(err));
     } finally {
       setActionLoading(false);
     }
@@ -482,23 +488,24 @@ function AgentCardItem({
       setActionLoading(true);
       setMenuOpen(false);
       await agentsApi.duplicate(agent.id);
+      toastSuccess(`"${agent.name}" duplicated`);
       onRefresh();
     } catch (err) {
-      alert(normalizeApiError(err));
+      toastError(normalizeApiError(err));
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Are you sure you want to archive agent "${agent.name}"?`)) return;
     try {
       setActionLoading(true);
       setMenuOpen(false);
       await agentsApi.delete(agent.id);
+      toastSuccess(`"${agent.name}" archived`);
       onRefresh();
     } catch (err) {
-      alert(normalizeApiError(err));
+      toastError(normalizeApiError(err));
     } finally {
       setActionLoading(false);
     }
@@ -554,7 +561,10 @@ function AgentCardItem({
                     <Copy className="w-3.5 h-3.5" /> Duplicate
                   </button>
                   <button
-                    onClick={handleDelete}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setDeleteConfirm(true);
+                    }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" /> Archive
@@ -607,6 +617,16 @@ function AgentCardItem({
           {agent.status === "active" ? "Pause" : "Activate"}
         </Button>
       </div>
+
+      <ConfirmDialog
+        open={deleteConfirm}
+        onClose={() => setDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="Archive AI Agent"
+        message={`Are you sure you want to archive "${agent.name}"? It will stop handling calls and be removed from active deployment.`}
+        confirmLabel="Archive Agent"
+        loading={actionLoading}
+      />
     </Card>
   );
 }
