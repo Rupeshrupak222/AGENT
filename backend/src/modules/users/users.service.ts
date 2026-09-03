@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService,
+  ) {}
 
   async findAll(tenantId: string) {
     return this.prisma.user.findMany({
@@ -29,25 +33,54 @@ export class UsersService {
     const user = await this.prisma.user.create({
       data: { ...data, password: hashed, tenantId, role: data.role as any },
     });
-    // In production: send invite email with tempPwd
+
+    this.auditService.log({
+      action: 'USER_INVITED',
+      resource: 'user',
+      resourceId: user.id,
+      details: { name: user.name, email: user.email, role: user.role },
+      tenantId,
+    });
+
     return { ...user, tempPassword: tempPwd };
   }
 
-  async updateRole(tenantId: string, id: string, role: string) {
-    return this.prisma.tenantUpdate(
+  async updateRole(tenantId: string, id: string, role: string, performedBy?: string) {
+    const result = await this.prisma.tenantUpdate(
       this.prisma.user,
       tenantId,
       id,
       { role: role as any },
     );
+
+    this.auditService.log({
+      action: 'ROLE_CHANGED',
+      resource: 'user',
+      resourceId: id,
+      details: { newRole: role },
+      tenantId,
+      userId: performedBy,
+    });
+
+    return result;
   }
 
-  async deactivate(tenantId: string, id: string) {
-    return this.prisma.tenantUpdate(
+  async deactivate(tenantId: string, id: string, performedBy?: string) {
+    const result = await this.prisma.tenantUpdate(
       this.prisma.user,
       tenantId,
       id,
       { isActive: false },
     );
+
+    this.auditService.log({
+      action: 'USER_REVOKED',
+      resource: 'user',
+      resourceId: id,
+      tenantId,
+      userId: performedBy,
+    });
+
+    return result;
   }
 }

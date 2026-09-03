@@ -1,18 +1,41 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { CreateLeadDto, UpdateLeadDto, BulkImportLeadsDto, UpdateLeadStatusDto } from './dto/lead.dto';
 
 @Injectable()
 export class LeadsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService,
+  ) {}
 
   async create(tenantId: string, dto: CreateLeadDto) {
-    return this.prisma.lead.create({ data: { ...dto, tenantId } });
+    const lead = await this.prisma.lead.create({ data: { ...dto, tenantId } });
+
+    this.auditService.log({
+      action: 'LEAD_CREATED',
+      resource: 'lead',
+      resourceId: lead.id,
+      details: { name: lead.name, phone: lead.phone },
+      tenantId,
+    });
+
+    return lead;
   }
 
   async bulkImport(tenantId: string, dto: BulkImportLeadsDto) {
     const data = dto.leads.map(l => ({ ...l, tenantId }));
-    return this.prisma.lead.createMany({ data, skipDuplicates: true });
+    const result = await this.prisma.lead.createMany({ data, skipDuplicates: true });
+
+    this.auditService.log({
+      action: 'LEAD_IMPORTED',
+      resource: 'lead',
+      details: { count: result.count, total: dto.leads.length },
+      tenantId,
+    });
+
+    return result;
   }
 
   async findAll(tenantId: string, query: {
@@ -64,29 +87,58 @@ export class LeadsService {
   }
 
   async update(tenantId: string, id: string, dto: UpdateLeadDto) {
-    return this.prisma.tenantUpdate(
+    const result = await this.prisma.tenantUpdate(
       this.prisma.lead,
       tenantId,
       id,
       dto as any,
     );
+
+    this.auditService.log({
+      action: 'LEAD_UPDATED',
+      resource: 'lead',
+      resourceId: id,
+      details: { changes: Object.keys(dto) },
+      tenantId,
+    });
+
+    return result;
   }
 
   async updateStatus(tenantId: string, id: string, dto: UpdateLeadStatusDto) {
-    return this.prisma.tenantUpdate(
+    const result = await this.prisma.tenantUpdate(
       this.prisma.lead,
       tenantId,
       id,
       { status: dto.status },
     );
+
+    this.auditService.log({
+      action: 'LEAD_STATUS_CHANGED',
+      resource: 'lead',
+      resourceId: id,
+      details: { newStatus: dto.status },
+      tenantId,
+    });
+
+    return result;
   }
 
   async remove(tenantId: string, id: string) {
-    return this.prisma.tenantSoftDelete(
+    const result = await this.prisma.tenantSoftDelete(
       this.prisma.lead,
       tenantId,
       id,
     );
+
+    this.auditService.log({
+      action: 'LEAD_DELETED',
+      resource: 'lead',
+      resourceId: id,
+      tenantId,
+    });
+
+    return result;
   }
 
   async getPipelineStats(tenantId: string) {

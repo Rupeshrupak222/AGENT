@@ -38,12 +38,12 @@ export class UsersController {
   @Patch(':id/role')
   @Permissions(TEAM_UPDATE_ROLE)
   updateRole(@CurrentUser() u: any, @Param('id') id: string, @Body('role') role: string) {
-    return this.svc.updateRole(u.tenantId, id, role);
+    return this.svc.updateRole(u.tenantId, id, role, u.id);
   }
 
   @Delete(':id')
   @Permissions(TEAM_REVOKE)
   deactivate(@CurrentUser() u: any, @Param('id') id: string) {
-    return this.svc.deactivate(u.tenantId, id);
+    return this.svc.deactivate(u.tenantId, id, u.id);
   }
 }

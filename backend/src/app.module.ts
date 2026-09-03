@@ -14,6 +14,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { AutomationsModule } from './modules/automations/automations.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { CacheModule } from './modules/cache/cache.module';
 import { RbacModule } from './common/rbac/rbac.module';
 import { AppController } from './app.controller';
 
@@ -63,6 +64,7 @@ import { AppController } from './app.controller';
     BillingModule,
     AutomationsModule,
     AuditModule,
+    CacheModule,
   ],
 })
 export class AppModule {}

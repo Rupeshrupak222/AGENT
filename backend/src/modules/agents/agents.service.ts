@@ -2,17 +2,20 @@ import {
   Injectable, NotFoundException, ForbiddenException, Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { CreateAgentDto, UpdateAgentDto } from './dto/agent.dto';
 
 @Injectable()
 export class AgentsService {
   private readonly logger = new Logger(AgentsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService,
+  ) {}
 
-  // ── CRUD ─────────────────────────────────────────────────────
   async create(tenantId: string, userId: string, dto: CreateAgentDto) {
-    return this.prisma.aIAgent.create({
+    const agent = await this.prisma.aIAgent.create({
       data: {
         ...dto,
         tenantId,
@@ -20,6 +23,17 @@ export class AgentsService {
         status: 'draft',
       },
     });
+
+    this.auditService.log({
+      action: 'AI_AGENT_CREATED',
+      resource: 'ai_agent',
+      resourceId: agent.id,
+      details: { name: agent.name, role: agent.role },
+      tenantId,
+      userId,
+    });
+
+    return agent;
   }
 
   async findAll(tenantId: string, filters?: { status?: string; role?: string }) {
@@ -53,42 +67,77 @@ export class AgentsService {
   }
 
   async update(tenantId: string, id: string, dto: UpdateAgentDto) {
-    return this.prisma.tenantUpdate(
+    const result = await this.prisma.tenantUpdate(
       this.prisma.aIAgent,
       tenantId,
       id,
       dto as any,
     );
+
+    this.auditService.log({
+      action: 'AI_AGENT_UPDATED',
+      resource: 'ai_agent',
+      resourceId: id,
+      details: { changes: Object.keys(dto) },
+      tenantId,
+    });
+
+    return result;
   }
 
   async remove(tenantId: string, id: string) {
-    return this.prisma.tenantSoftDelete(
+    const result = await this.prisma.tenantSoftDelete(
       this.prisma.aIAgent,
       tenantId,
       id,
     );
+
+    this.auditService.log({
+      action: 'AI_AGENT_DELETED',
+      resource: 'ai_agent',
+      resourceId: id,
+      tenantId,
+    });
+
+    return result;
   }
 
-  // ── Status transitions ────────────────────────────────────────
   async activate(tenantId: string, id: string) {
-    return this.prisma.tenantUpdate(
+    const result = await this.prisma.tenantUpdate(
       this.prisma.aIAgent,
       tenantId,
       id,
       { status: 'active' },
     );
+
+    this.auditService.log({
+      action: 'AI_AGENT_ACTIVATED',
+      resource: 'ai_agent',
+      resourceId: id,
+      tenantId,
+    });
+
+    return result;
   }
 
   async pause(tenantId: string, id: string) {
-    return this.prisma.tenantUpdate(
+    const result = await this.prisma.tenantUpdate(
       this.prisma.aIAgent,
       tenantId,
       id,
       { status: 'paused' },
     );
+
+    this.auditService.log({
+      action: 'AI_AGENT_PAUSED',
+      resource: 'ai_agent',
+      resourceId: id,
+      tenantId,
+    });
+
+    return result;
   }
 
-  // ── Stats ─────────────────────────────────────────────────────
   async getStats(tenantId: string, id: string) {
     await this.findOne(tenantId, id);
     const [totalCalls, connectedCalls, qualifiedLeads] = await Promise.all([
@@ -111,11 +160,10 @@ export class AgentsService {
     };
   }
 
-  // ── Duplicate ─────────────────────────────────────────────────
   async duplicate(tenantId: string, id: string, userId: string) {
     const agent = await this.findOne(tenantId, id);
     const { id: _, createdAt, updatedAt, _count, campaigns, ...rest } = agent as any;
-    return this.prisma.aIAgent.create({
+    const newAgent = await this.prisma.aIAgent.create({
       data: {
         ...rest,
         name: `${agent.name} (Copy)`,
@@ -124,5 +172,16 @@ export class AgentsService {
         createdById: userId,
       },
     });
+
+    this.auditService.log({
+      action: 'AI_AGENT_DUPLICATED',
+      resource: 'ai_agent',
+      resourceId: newAgent.id,
+      details: { sourceId: id, name: newAgent.name },
+      tenantId,
+      userId,
+    });
+
+    return newAgent;
   }
 }
