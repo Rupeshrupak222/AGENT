@@ -4,9 +4,10 @@ import { CallsController } from './calls.controller';
 import { CallsGateway } from './calls.gateway';
 import { AuditModule } from '../audit/audit.module';
 import { TelephonyModule } from '../telephony/telephony.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [AuditModule, TelephonyModule],
+  imports: [AuditModule, TelephonyModule, AuthModule],
   providers: [CallsService, CallsGateway],
   controllers: [CallsController],
   exports: [CallsService, CallsGateway],

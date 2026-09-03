@@ -1,7 +1,20 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AppProviders } from "@/components/AppProviders";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -31,11 +44,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      </head>
-      <body className="min-h-screen bg-white dark:bg-[#0c0102] text-gray-900 dark:text-white antialiased transition-colors duration-200">
+      <body className={`${inter.variable} ${mono.variable} min-h-screen bg-white dark:bg-[#0c0102] text-gray-900 dark:text-white antialiased transition-colors duration-200`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <AppProviders>{children}</AppProviders>
         </ThemeProvider>
