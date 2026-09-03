@@ -1,12 +1,12 @@
 import { ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { TenantGuard } from '../../../src/common/guards/tenant.guard';
-import { PermissionsGuard } from '../../../src/common/guards/permissions.guard';
-import { Permissions } from '../../../src/common/decorators/permissions.decorator';
-import { PERMISSIONS_KEY } from '../../../src/common/decorators/permissions.decorator';
+import { TenantGuard } from '../src/common/guards/tenant.guard';
+import { PermissionsGuard } from '../src/common/guards/permissions.guard';
+import { Permissions } from '../src/common/decorators/permissions.decorator';
+import { PERMISSIONS_KEY } from '../src/common/decorators/permissions.decorator';
 import {
   USERS, TENANT_A, TENANT_B, RESOURCES,
-} from '../../test-utils';
+} from './test-utils';
 
 // ── Test helpers ────────────────────────────────────────────────
 function createRequest(user: any, params: Record<string, string> = {}) {

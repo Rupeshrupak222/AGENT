@@ -147,7 +147,6 @@ export class AgentsService {
         this.prisma.lead.count({ where: { tenantId, assignedAgentId: id, status: 'qualified' } }),
       ]);
 
-    try {
       const avgDuration = await this.prisma.call.aggregate({
         where: { agentId: id, tenantId, status: 'completed' },
         _avg: { duration: true },

@@ -43,7 +43,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
    * record exists and belongs to the tenant between the read and write.
    */
   async tenantUpdate<T extends { id: string }>(
-    model: { findFirst: Function; update: Function },
+    model: { findFirst: (...args: any[]) => any; update: (...args: any[]) => any },
     tenantId: string,
     id: string,
     data: Record<string, any>,
@@ -60,7 +60,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
    * Tenant-safe soft-delete: validates ownership, then sets deletedAt.
    */
   async tenantSoftDelete(
-    model: { findFirst: Function; update: Function },
+    model: { findFirst: (...args: any[]) => any; update: (...args: any[]) => any },
     tenantId: string,
     id: string,
   ): Promise<void> {
