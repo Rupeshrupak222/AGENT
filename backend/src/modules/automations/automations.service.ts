@@ -82,8 +82,8 @@ export class AutomationsService {
     const [items, total] = await Promise.all([
       this.prisma.automationLog.findMany({
         where,
-        skip:    (page - 1) * limit,
-        take:    limit,
+        skip:    (Math.max(1, Number(page) || 1) - 1) * Math.max(1, Math.min(100, Number(limit) || 20)),
+        take:    Math.max(1, Math.min(100, Number(limit) || 20)),
         orderBy: { createdAt: 'desc' },
         include: { lead: { select: { name: true, phone: true } } },
       }),

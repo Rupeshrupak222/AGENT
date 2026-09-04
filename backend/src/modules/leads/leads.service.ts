@@ -45,8 +45,10 @@ export class LeadsService {
     page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc';
   }) {
     try {
-      const { page = 1, limit = 20, status, search, agentId, sortBy = 'createdAt', sortOrder = 'desc' } = query;
-      const skip = (page - 1) * limit;
+      const pageNum = Math.max(1, Number(query?.page) || 1);
+      const limitNum = Math.max(1, Math.min(100, Number(query?.limit) || 20));
+      const skip = (pageNum - 1) * limitNum;
+      const { status, search, agentId, sortBy = 'createdAt', sortOrder = 'desc' } = query;
 
       const where: any = {
         tenantId,
@@ -66,14 +68,14 @@ export class LeadsService {
         this.prisma.lead.findMany({
           where,
           skip,
-          take: limit,
+          take: limitNum,
           orderBy: { [sortBy]: sortOrder },
           include: { assignedAgent: { select: { id: true, name: true } } },
         }),
         this.prisma.lead.count({ where }),
       ]);
 
-      return { items, total, page, limit, pages: Math.ceil(total / limit) };
+      return { items, total, page: pageNum, limit: limitNum, pages: Math.ceil(total / limitNum) };
     } catch (err: any) {
       this.logger.warn(`Failed to query leads: ${err.message}`);
       return { items: [], total: 0, page: query.page ?? 1, limit: query.limit ?? 20, pages: 0 };

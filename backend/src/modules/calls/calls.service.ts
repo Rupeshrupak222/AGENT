@@ -54,15 +54,16 @@ export class CallsService {
     page?: number; limit?: number;
   }) {
     try {
-      const { page = 1, limit = 20, ...filters } = query;
-      const skip  = (page - 1) * limit;
-      const where: any = { tenantId, ...(filters.status  && { status:  filters.status }),
-                                      ...(filters.agentId && { agentId: filters.agentId }),
-                                      ...(filters.leadId  && { leadId:  filters.leadId }) };
+      const pageNum  = Math.max(1, Number(query?.page) || 1);
+      const limitNum = Math.max(1, Math.min(100, Number(query?.limit) || 20));
+      const skip  = (pageNum - 1) * limitNum;
+      const where: any = { tenantId, ...(query?.status  && { status:  query.status }),
+                                      ...(query?.agentId && { agentId: query.agentId }),
+                                      ...(query?.leadId  && { leadId:  query.leadId }) };
 
       const [items, total] = await Promise.all([
         this.prisma.call.findMany({
-          where, skip, take: limit,
+          where, skip, take: limitNum,
           orderBy: { startedAt: 'desc' },
           include: {
             lead:  { select: { id: true, name: true, phone: true } },
@@ -71,7 +72,7 @@ export class CallsService {
         }),
         this.prisma.call.count({ where }),
       ]);
-      return { items, total, page, limit };
+      return { items, total, page: pageNum, limit: limitNum };
     } catch (err: any) {
       this.logger.warn(`Failed to query calls: ${err.message}`);
       return { items: [], total: 0, page: query.page ?? 1, limit: query.limit ?? 20 };

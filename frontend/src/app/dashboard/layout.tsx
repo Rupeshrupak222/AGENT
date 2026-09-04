@@ -115,11 +115,11 @@ function SidebarContent({
   }, [can]);
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-[#0f0102] border-r border-slate-200 dark:border-brand-500/15 transition-colors duration-200">
+    <div className="flex flex-col h-full bg-[#0f0102] border-r border-brand-500/15 transition-colors duration-200">
       {/* Logo */}
       <div
         className={cn(
-          "flex items-center h-16 flex-shrink-0 border-b border-slate-200 dark:border-brand-500/15",
+          "flex items-center h-16 flex-shrink-0 border-b border-brand-500/15",
           show ? "px-5 gap-3" : "justify-center"
         )}
       >
@@ -127,14 +127,14 @@ function SidebarContent({
           <Zap className="w-4 h-4 text-white fill-white" />
         </div>
         {show && (
-          <span className="text-base font-bold text-slate-900 dark:text-white whitespace-nowrap">
+          <span className="text-base font-bold text-white whitespace-nowrap">
             AgentCall <span className="gradient-text">AI</span>
           </span>
         )}
         {mobile && (
           <button
             onClick={onClose}
-            className="ml-auto text-slate-400 hover:text-slate-700 dark:text-white/40 dark:hover:text-white"
+            className="ml-auto text-white/40 hover:text-white/40 dark:hover:text-white"
           >
             <X className="w-5 h-5" />
           </button>
@@ -146,7 +146,7 @@ function SidebarContent({
         {groups.map((g) => (
           <div key={g.label}>
             {show && (
-              <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/30">
+              <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-white/30">
                 {g.label}
               </p>
             )}
@@ -165,7 +165,7 @@ function SidebarContent({
                         show ? "px-3" : "justify-center mx-1",
                         active
                           ? "bg-brand-500/10 dark:bg-brand-500/20 text-brand-600 dark:text-white border border-brand-500/30 font-semibold shadow-sm"
-                          : "text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.04] border border-transparent"
+                          : "text-white/60 hover:text-white hover:bg-white/[0.04] border border-transparent"
                       )}
                     >
                       <Icon
@@ -173,7 +173,7 @@ function SidebarContent({
                           "w-[18px] h-[18px] flex-shrink-0",
                           active
                             ? "text-brand-600 dark:text-rose-400"
-                            : "text-slate-400 dark:text-white/40"
+                            : "text-white/40"
                         )}
                       />
                       {show && (
@@ -198,14 +198,14 @@ function SidebarContent({
       {/* Bottom */}
       <div
         className={cn(
-          "p-2.5 space-y-1 flex-shrink-0 border-t border-slate-200 dark:border-brand-500/15",
+          "p-2.5 space-y-1 flex-shrink-0 border-t border-brand-500/15",
           !show && "px-1"
         )}
       >
         <Link
           href="/help"
           className={cn(
-            "flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-all",
+            "flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/40 hover:text-white hover:bg-white/[0.04] transition-all",
             !show && "justify-center px-0"
           )}
         >
@@ -219,7 +219,7 @@ function SidebarContent({
             router.push("/login");
           }}
           className={cn(
-            "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-slate-500 dark:text-white/40 hover:text-rose-600 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all",
+            "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/40 hover:text-rose-600 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all",
             !show && "justify-center px-0"
           )}
         >
@@ -227,15 +227,15 @@ function SidebarContent({
           {show && <span>Sign Out</span>}
         </button>
         {show && user && (
-          <div className="flex items-center gap-3 px-3 py-2 mt-2 rounded-xl bg-slate-100 dark:bg-brand-500/10 border border-slate-200 dark:border-brand-500/20">
+          <div className="flex items-center gap-3 px-3 py-2 mt-2 rounded-xl bg-white/[0.04] dark:bg-brand-500/10 border border-brand-500/20">
             <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-sm bg-gradient-to-br from-brand-500 to-brand-700">
               {user.name?.[0]?.toUpperCase() ?? "U"}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+              <p className="text-xs font-semibold text-white truncate">
                 {user.name}
               </p>
-              <p className="text-[10px] capitalize truncate text-slate-500 dark:text-white/40">
+              <p className="text-[10px] capitalize truncate text-white/40">
                 {tenant?.name ?? user.role?.replace("_", " ")}
               </p>
             </div>
@@ -308,12 +308,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Guard against unauthenticated layout rendering during hydration
   if (!mounted || !sessionValidated || (!isAuthenticated && !accessToken)) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-[#0c0102]">
+      <div className="flex h-screen items-center justify-center bg-[#0c0102]">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center animate-pulse shadow-lg shadow-brand-500/20 bg-gradient-to-br from-brand-500 to-brand-700">
             <Zap className="w-5 h-5 text-white fill-white" />
           </div>
-          <p className="text-xs font-medium text-slate-500 dark:text-white/40">
+          <p className="text-xs font-medium text-white/40">
             Authenticating session...
           </p>
         </div>
@@ -332,7 +332,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ].filter((item) => item.show);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-[#0c0102] transition-colors duration-200">
+    <div className="flex h-screen overflow-hidden bg-[#0c0102] transition-colors duration-200">
       {/* Desktop sidebar */}
       <aside
         className={cn(
@@ -343,7 +343,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <SidebarContent collapsed={collapsed} />
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute -right-3 top-20 w-6 h-6 rounded-full flex items-center justify-center z-10 transition-all bg-white dark:bg-[#1a0405] border border-slate-300 dark:border-brand-500/30 text-slate-600 dark:text-white/50 shadow-md hover:border-brand-500 hover:text-brand-600 dark:hover:text-white"
+          className="absolute -right-3 top-20 w-6 h-6 rounded-full flex items-center justify-center z-10 transition-all bg-[#1a0405] border border-white/15 dark:border-brand-500/30 text-white/50 shadow-md hover:border-brand-500 hover:text-brand-600 dark:hover:text-white"
         >
           {collapsed ? (
             <ChevronRight className="w-3.5 h-3.5" />
@@ -380,11 +380,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Topbar */}
-        <header className="h-16 flex items-center justify-between px-4 sm:px-6 flex-shrink-0 z-30 border-b border-slate-200 dark:border-brand-500/15 bg-white/80 dark:bg-[#0f0102]/85 backdrop-blur-xl transition-colors duration-200">
+        <header className="h-16 flex items-center justify-between px-4 sm:px-6 flex-shrink-0 z-30 border-b border-brand-500/15 bg-[#0f0102]/85 backdrop-blur-xl transition-colors duration-200">
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setMobileOpen(true)}
-              className="lg:hidden p-2 rounded-xl text-slate-600 dark:text-white/60 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-all"
+              className="lg:hidden p-2 rounded-xl text-white/60 hover:bg-white/[0.06] transition-all"
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -397,13 +397,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   setNotifOpen(false);
                   setProfileOpen(false);
                 }}
-                className="hidden sm:flex items-center gap-2 px-3 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] border border-slate-200 dark:border-white/10 transition-all"
+                className="hidden sm:flex items-center gap-2 px-3 h-9 rounded-xl bg-white/[0.04] hover:bg-white/[0.04] dark:hover:bg-white/[0.08] border border-white/10 transition-all"
               >
                 <Building2 className="w-4 h-4 text-brand-600 dark:text-brand-400" />
-                <span className="text-sm font-semibold text-slate-800 dark:text-white max-w-[140px] truncate">
+                <span className="text-sm font-semibold text-white max-w-[140px] truncate">
                   {tenant?.name ?? "My Workspace"}
                 </span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-white/30" />
+                <ChevronDown className="w-3.5 h-3.5 text-white/30" />
               </button>
               <AnimatePresence>
                 {workspaceOpen && (
@@ -413,8 +413,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     exit={{ opacity: 0, y: 8, scale: 0.95 }}
                     className="absolute left-0 top-12 w-64 rounded-2xl overflow-hidden z-50 bg-surface-card dark:bg-[#180406] border border-line dark:border-brand-500/20 backdrop-blur-xl shadow-2xl"
                   >
-                    <div className="px-4 py-3 border-b border-slate-100 dark:border-white/[0.06]">
-                      <p className="text-xs font-semibold text-slate-500 dark:text-white/40 uppercase tracking-wide">
+                    <div className="px-4 py-3 border-b border-white/[0.06]">
+                      <p className="text-xs font-semibold text-white/40 uppercase tracking-wide">
                         Workspaces
                       </p>
                     </div>
@@ -424,11 +424,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           <Building2 className="w-4 h-4 text-white" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                          <p className="text-sm font-semibold text-white truncate">
                             {tenant?.name ?? "My Workspace"}
                           </p>
                           {tenant?.plan && (
-                            <span className="text-[10px] capitalize text-slate-500 dark:text-white/40">
+                            <span className="text-[10px] capitalize text-white/40">
                               {tenant.plan} plan
                             </span>
                           )}
@@ -438,7 +438,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <Link
                       href="/dashboard/workspace"
                       onClick={() => setWorkspaceOpen(false)}
-                      className="block px-4 py-2.5 text-sm text-brand-600 dark:text-brand-400 hover:bg-slate-50 dark:hover:bg-white/[0.04] border-t border-slate-100 dark:border-white/[0.06] transition-all"
+                      className="block px-4 py-2.5 text-sm text-brand-600 dark:text-brand-400 hover:bg-white/[0.04] border-t border-white/[0.06] transition-all"
                     >
                       Manage workspaces
                     </Link>
@@ -448,10 +448,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
 
             <div className="min-w-0">
-              <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight capitalize truncate">
+              <h1 className="text-base sm:text-lg font-bold text-white leading-tight capitalize truncate">
                 {pageLabel}
               </h1>
-              <p className="text-xs hidden sm:block text-slate-500 dark:text-white/40">
+              <p className="text-xs hidden sm:block text-white/40">
                 {new Date().toLocaleDateString("en-IN", {
                   weekday: "long",
                   day: "numeric",
@@ -473,14 +473,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     autoFocus
                     onBlur={() => setSearchOpen(false)}
                     placeholder="Search..."
-                    className="h-9 rounded-xl px-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/25 outline-none bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-brand-500/30"
+                    className="h-9 rounded-xl px-3 text-sm text-white placeholder:text-white/40 dark:placeholder:text-white/25 outline-none bg-white/[0.04] border border-brand-500/30"
                   />
                 ) : (
                   <motion.button
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     onClick={() => setSearchOpen(true)}
-                    className="w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] border border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/50"
+                    className="w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-white/[0.04] hover:bg-white/[0.04] dark:hover:bg-white/[0.08] border border-white/10 text-white/50"
                   >
                     <Search className="w-4 h-4" />
                   </motion.button>
@@ -498,7 +498,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   setNotifOpen(!notifOpen);
                   setProfileOpen(false);
                 }}
-                className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] border border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60"
+                className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-white/[0.04] hover:bg-white/[0.04] dark:hover:bg-white/[0.08] border border-white/10 text-white/60"
               >
                 <Bell className="w-4 h-4" />
                 {unread > 0 && (
@@ -513,10 +513,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     initial={{ opacity: 0, y: 8, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                    className="absolute right-0 top-12 w-80 rounded-2xl overflow-hidden z-50 bg-white dark:bg-[#180406] border border-slate-200 dark:border-brand-500/20 backdrop-blur-xl shadow-2xl"
+                    className="absolute right-0 top-12 w-80 rounded-2xl overflow-hidden z-50 bg-[#180406] border border-brand-500/20 backdrop-blur-xl shadow-2xl"
                   >
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-white/[0.06]">
-                      <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+                      <span className="text-sm font-semibold text-white">
                         Notifications
                       </span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-rose-300 border border-brand-200 dark:border-brand-500/30">
@@ -527,10 +527,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <div
                         key={n.id}
                         className={cn(
-                          "px-4 py-3 cursor-pointer transition-all border-b border-slate-100 dark:border-white/[0.04]",
+                          "px-4 py-3 cursor-pointer transition-all border-b border-white/[0.04]",
                           n.unread
                             ? "bg-brand-50/50 dark:bg-brand-500/10"
-                            : "hover:bg-slate-50 dark:hover:bg-white/[0.03]"
+                            : "hover:bg-white/[0.03]"
                         )}
                       >
                         <div className="flex gap-2.5">
@@ -538,17 +538,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 bg-brand-500" />
                           )}
                           <div className={n.unread ? "" : "pl-4"}>
-                            <p className="text-sm text-slate-800 dark:text-white/80">
+                            <p className="text-sm text-white/80">
                               {n.text}
                             </p>
-                            <p className="text-xs mt-0.5 text-slate-400 dark:text-white/40">
+                            <p className="text-xs mt-0.5 text-white/40">
                               {n.time}
                             </p>
                           </div>
                         </div>
                       </div>
                     ))}
-                    <div className="px-4 py-2.5 border-t border-slate-100 dark:border-white/[0.06]">
+                    <div className="px-4 py-2.5 border-t border-white/[0.06]">
                       <button className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">
                         View all →
                       </button>
@@ -576,15 +576,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   setProfileOpen(!profileOpen);
                   setNotifOpen(false);
                 }}
-                className="flex items-center gap-2 h-9 px-2 rounded-xl transition-all hover:bg-slate-100 dark:hover:bg-white/[0.06]"
+                className="flex items-center gap-2 h-9 px-2 rounded-xl transition-all hover:bg-white/[0.06]"
               >
                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm bg-gradient-to-br from-brand-500 to-brand-700">
                   {user?.name?.[0]?.toUpperCase() ?? "U"}
                 </div>
-                <span className="hidden sm:block text-xs font-medium max-w-[80px] truncate text-slate-700 dark:text-white/70">
+                <span className="hidden sm:block text-xs font-medium max-w-[80px] truncate text-white/70">
                   {user?.name}
                 </span>
-                <ChevronDown className="w-3.5 h-3.5 hidden sm:block text-slate-400 dark:text-white/30" />
+                <ChevronDown className="w-3.5 h-3.5 hidden sm:block text-white/30" />
               </button>
               <AnimatePresence>
                 {profileOpen && (
@@ -592,13 +592,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     initial={{ opacity: 0, y: 8, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                    className="absolute right-0 top-12 w-56 rounded-2xl overflow-hidden z-50 bg-white dark:bg-[#180406] border border-slate-200 dark:border-brand-500/20 backdrop-blur-xl shadow-2xl"
+                    className="absolute right-0 top-12 w-56 rounded-2xl overflow-hidden z-50 bg-[#180406] border border-brand-500/20 backdrop-blur-xl shadow-2xl"
                   >
-                    <div className="px-4 py-3 border-b border-slate-100 dark:border-white/[0.06]">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                    <div className="px-4 py-3 border-b border-white/[0.06]">
+                      <p className="text-sm font-semibold text-white">
                         {user?.name}
                       </p>
-                      <p className="text-xs truncate text-slate-500 dark:text-white/40">
+                      <p className="text-xs truncate text-white/40">
                         {user?.email}
                       </p>
                       <span className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full capitalize bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-rose-300 border border-brand-200 dark:border-brand-500/30">
@@ -615,12 +615,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <Link
                         key={item.href}
                         href={item.href}
-                        className="block px-4 py-2.5 text-sm text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-all"
+                        className="block px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/[0.04] transition-all"
                       >
                         {item.label}
                       </Link>
                     ))}
-                    <div className="border-t border-slate-100 dark:border-white/[0.06]">
+                    <div className="border-t border-white/[0.06]">
                       <button
                         onClick={() => {
                           success("You have been signed out safely.");
@@ -640,7 +640,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-[#0c0102] transition-colors duration-200">
+        <main className="flex-1 overflow-y-auto bg-[#0c0102] transition-colors duration-200">
           {children}
         </main>
       </div>

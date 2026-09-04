@@ -1,65 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
-  Zap, Plus, CheckCircle2, AlertCircle, ArrowRight,
+  Zap, Plus, CheckCircle2, AlertCircle,
   MessageSquare, Mail, Webhook, PhoneCall, RefreshCw,
-  Trash2, Play, Pause, Filter, Settings, FileText
+  Trash2, Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-interface AutomationRule {
-  id: string;
-  name: string;
-  trigger: "call_completed" | "lead_qualified" | "call_missed" | "deal_closed";
-  action: "whatsapp" | "sms" | "email" | "webhook" | "crm_update";
-  status: "active" | "paused";
-  executions: number;
-  lastRun: string;
-  template: string;
-}
-
-const INITIAL_RULES: AutomationRule[] = [
-  {
-    id: "rule-1",
-    name: "Instant WhatsApp Brochure on Qualified Lead",
-    trigger: "lead_qualified",
-    action: "whatsapp",
-    status: "active",
-    executions: 847,
-    lastRun: "12m ago",
-    template: "Hi {{lead_name}}, thank you for speaking with Priya AI! Here is our enterprise product overview...",
-  },
-  {
-    id: "rule-2",
-    name: "SMS Follow-up on Missed Inbound Call",
-    trigger: "call_missed",
-    action: "sms",
-    status: "active",
-    executions: 412,
-    lastRun: "25m ago",
-    template: "Sorry we missed your call! When is a good time for our AI assistant to ring you back?",
-  },
-  {
-    id: "rule-3",
-    name: "CRM Webhook Sync to Salesforce / HubSpot",
-    trigger: "call_completed",
-    action: "webhook",
-    status: "active",
-    executions: 2847,
-    lastRun: "2m ago",
-    template: "POST https://api.hubspot.com/crm/v3/objects/contacts/sync",
-  },
-  {
-    id: "rule-4",
-    name: "Confirmation Email with Meeting Calendar Invite",
-    trigger: "deal_closed",
-    action: "email",
-    status: "paused",
-    executions: 134,
-    lastRun: "1d ago",
-    template: "Demo scheduled with Acme team. Google Meet invite attached.",
-  },
-];
+import { automationsApi, AutomationRule } from "@/lib/api";
 
 const TRIGGER_LABELS: Record<string, { label: string; color: string }> = {
   call_completed: { label: "Call Completed", color: "bg-blue-500/10 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400 border-blue-500/30" },
@@ -76,9 +23,25 @@ const ACTION_ICONS: Record<string, { icon: any; label: string; color: string }> 
   crm_update: { icon: RefreshCw,     label: "CRM Property",    color: "text-purple-600 dark:text-purple-400 bg-purple-500/10" },
 };
 
+function fmtLastRun(iso?: string | null) {
+  if (!iso) return "Never run";
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
 export default function AutomationsPage() {
-  const [rules, setRules] = useState<AutomationRule[]>(INITIAL_RULES);
+  const [rules, setRules] = useState<AutomationRule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [newRule, setNewRule] = useState({
     name: "",
     trigger: "lead_qualified" as any,
@@ -86,33 +49,63 @@ export default function AutomationsPage() {
     template: "",
   });
 
-  const toggleStatus = (id: string) => {
-    setRules(prev => prev.map(r => r.id === id ? { ...r, status: r.status === "active" ? "paused" : "active" } : r));
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await automationsApi.listRules();
+      setRules(data);
+    } catch {
+      setError("Could not load automation rules. Please check your connection and retry.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const toggleStatus = async (rule: AutomationRule) => {
+    try {
+      await automationsApi.toggleRule(rule.id, rule.status === "active" ? "paused" : "active");
+      await load();
+    } catch {
+      setError("Could not update the rule status.");
+    }
   };
 
-  const deleteRule = (id: string) => {
-    setRules(prev => prev.filter(r => r.id !== id));
+  const deleteRule = async (id: string) => {
+    try {
+      await automationsApi.deleteRule(id);
+      await load();
+    } catch {
+      setError("Could not delete the rule.");
+    }
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newRule.name.trim()) return;
-
-    const created: AutomationRule = {
-      id: `rule-${Date.now()}`,
-      name: newRule.name,
-      trigger: newRule.trigger,
-      action: newRule.action,
-      status: "active",
-      executions: 0,
-      lastRun: "Just created",
-      template: newRule.template || "Standard automated trigger template",
-    };
-
-    setRules([created, ...rules]);
-    setShowModal(false);
-    setNewRule({ name: "", trigger: "lead_qualified", action: "whatsapp", template: "" });
+    if (!newRule.name.trim() || saving) return;
+    setSaving(true);
+    try {
+      await automationsApi.createRule({
+        name: newRule.name,
+        trigger: newRule.trigger,
+        action: newRule.action,
+        template: newRule.template || "Standard automated trigger template",
+        status: "active",
+      });
+      setShowModal(false);
+      setNewRule({ name: "", trigger: "lead_qualified", action: "whatsapp", template: "" });
+      await load();
+    } catch {
+      setError("Could not create the automation rule. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const totalSent = rules.reduce((sum, r) => sum + r.executions, 0);
+  const activeCount = rules.filter(r => r.status === "active").length;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
@@ -120,8 +113,8 @@ export default function AutomationsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Post-Call Automations</h1>
-          <p className="text-sm text-slate-500 dark:text-white/50 mt-1">Configure event-driven triggers that execute automatically when calls conclude.</p>
+          <h1 className="text-2xl font-black text-white tracking-tight">Post-Call Automations</h1>
+          <p className="text-sm text-white/50 mt-1">Configure event-driven triggers that execute automatically when calls conclude.</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -132,27 +125,50 @@ export default function AutomationsPage() {
         </button>
       </div>
 
+      {error && (
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-sm flex items-center gap-2">
+          <AlertCircle className="w-4 h-4" /> {error}
+        </div>
+      )}
+
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Active Workflows", value: rules.filter(r => r.status === "active").length, color: "text-emerald-600 dark:text-emerald-400" },
-          { label: "Total Triggers Sent", value: "4,240", color: "text-brand-600 dark:text-brand-400" },
+          { label: "Active Workflows", value: String(activeCount), color: "text-emerald-600 dark:text-emerald-400" },
+          { label: "Total Triggers Sent", value: totalSent.toLocaleString(), color: "text-brand-600 dark:text-brand-400" },
           { label: "Delivery Success Rate", value: "99.4%", color: "text-cyan-600 dark:text-cyan-400" },
           { label: "Average Latency", value: "1.2s", color: "text-purple-600 dark:text-purple-400" },
         ].map((s) => (
-          <div key={s.label} className="p-4 rounded-2xl bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] shadow-sm">
+          <div key={s.label} className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] shadow-sm">
             <p className={`text-2xl font-mono font-black ${s.color}`}>{s.value}</p>
-            <p className="text-xs text-slate-500 dark:text-white/40 mt-1">{s.label}</p>
+            <p className="text-xs text-white/40 mt-1">{s.label}</p>
           </div>
         ))}
       </div>
 
       {/* Workflows List */}
       <div className="space-y-4">
-        <h2 className="text-base font-bold text-slate-900 dark:text-white uppercase tracking-wider">Configured Rules</h2>
+        <h2 className="text-base font-bold text-white uppercase tracking-wider">Configured Rules</h2>
+
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-16 text-white/50">
+            <Loader2 className="w-6 h-6 animate-spin mb-3" />
+            <p className="text-sm">Loading automation rules&hellip;</p>
+          </div>
+        )}
+
+        {!loading && !error && rules.length === 0 && (
+          <div className="text-center py-16">
+            <Zap className="w-8 h-8 text-white/40 mx-auto mb-3" />
+            <p className="text-sm text-white/50">No automation rules yet.</p>
+            <button onClick={() => setShowModal(true)} className="mt-3 text-xs font-semibold text-brand-600 dark:text-brand-400 underline">
+              Create your first rule
+            </button>
+          </div>
+        )}
 
         <div className="space-y-3">
-          {rules.map((rule) => {
+          {!loading && rules.map((rule) => {
             const triggerInfo = TRIGGER_LABELS[rule.trigger] || { label: rule.trigger, color: "bg-white/10 text-white" };
             const actionInfo = ACTION_ICONS[rule.action] || { icon: Zap, label: rule.action, color: "text-white" };
             const ActionIcon = actionInfo.icon;
@@ -160,7 +176,7 @@ export default function AutomationsPage() {
             return (
               <div
                 key={rule.id}
-                className="rounded-2xl p-5 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] hover:border-brand-500/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm"
+                className="rounded-2xl p-5 bg-white/[0.03] border border-white/[0.08] hover:border-brand-500/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm"
               >
                 <div className="flex items-start gap-4">
                   <div className={`p-3 rounded-2xl ${actionInfo.color} flex-shrink-0 mt-0.5`}>
@@ -168,40 +184,40 @@ export default function AutomationsPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">{rule.name}</h3>
+                      <h3 className="text-sm font-bold text-white">{rule.name}</h3>
                       <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${triggerInfo.color}`}>
                         IF: {triggerInfo.label}
                       </span>
-                      <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-white/70 border border-slate-200 dark:border-white/10">
+                      <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-white/[0.05] text-white/70 border border-white/10">
                         THEN: {actionInfo.label}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-white/50 mt-1.5 line-clamp-1 max-w-xl font-mono">
-                      {rule.template}
+                    <p className="text-xs text-white/50 mt-1.5 line-clamp-1 max-w-xl font-mono">
+                      {rule.template || "No template set"}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 self-end md:self-auto flex-shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-200 dark:border-white/[0.05] w-full md:w-auto justify-between md:justify-end">
+                <div className="flex items-center gap-4 self-end md:self-auto flex-shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-white/[0.05] w-full md:w-auto justify-between md:justify-end">
                   <div className="text-right">
-                    <p className="text-xs font-mono font-bold text-slate-900 dark:text-white">{rule.executions.toLocaleString()} sent</p>
-                    <p className="text-[10px] text-slate-500 dark:text-white/40">{rule.lastRun}</p>
+                    <p className="text-xs font-mono font-bold text-white">{rule.executions.toLocaleString()} sent</p>
+                    <p className="text-[10px] text-white/40">{fmtLastRun(rule.lastRunAt)}</p>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => toggleStatus(rule.id)}
+                      onClick={() => toggleStatus(rule)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                         rule.status === "active"
-                          ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                          : "bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/40 border border-slate-200 dark:border-white/10"
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                          : "bg-white/[0.06] text-white/40 border border-white/10"
                       }`}
                     >
                       {rule.status === "active" ? "Active" : "Paused"}
                     </button>
                     <button
                       onClick={() => deleteRule(rule.id)}
-                      className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/[0.06] text-slate-400 dark:text-white/30 hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
+                      className="p-1.5 rounded-xl hover:bg-white/[0.06] text-white/30 hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -228,33 +244,33 @@ export default function AutomationsPage() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg bg-white dark:bg-[#140204] border border-slate-200 dark:border-white/15 rounded-3xl p-6 shadow-2xl z-10 space-y-5"
+              className="relative w-full max-w-lg bg-[#140204] border border-white/15 rounded-3xl p-6 shadow-2xl z-10 space-y-5"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/[0.08]">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">Create New Automation</h3>
-                <button onClick={() => setShowModal(false)} className="text-slate-400 dark:text-white/40 hover:text-slate-900 dark:hover:text-white text-lg">×</button>
+              <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+                <h3 className="text-base font-bold text-white">Create New Automation</h3>
+                <button onClick={() => setShowModal(false)} className="text-white/40 hover:text-white text-lg">×</button>
               </div>
 
               <form onSubmit={handleCreate} className="space-y-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-600 dark:text-white/70 block mb-1.5">Rule Name</label>
+                  <label className="text-xs font-semibold text-white/70 block mb-1.5">Rule Name</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Send WhatsApp Catalog on High Intent"
                     value={newRule.name}
                     onChange={e => setNewRule({ ...newRule, name: e.target.value })}
-                    className="w-full h-10 rounded-xl px-3 text-sm bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500"
+                    className="w-full h-10 rounded-xl px-3 text-sm bg-white/[0.04] border border-white/15 text-white outline-none focus:border-brand-500"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-semibold text-slate-600 dark:text-white/70 block mb-1.5">When (Trigger)</label>
+                    <label className="text-xs font-semibold text-white/70 block mb-1.5">When (Trigger)</label>
                     <select
                       value={newRule.trigger}
                       onChange={e => setNewRule({ ...newRule, trigger: e.target.value as any })}
-                      className="w-full h-10 rounded-xl px-3 text-xs bg-slate-100 dark:bg-[#1a0406] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
+                      className="w-full h-10 rounded-xl px-3 text-xs bg-white/[0.04] dark:bg-[#1a0406] border border-white/15 text-white outline-none"
                     >
                       <option value="lead_qualified">Lead Qualified</option>
                       <option value="call_completed">Call Completed</option>
@@ -264,45 +280,48 @@ export default function AutomationsPage() {
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-slate-600 dark:text-white/70 block mb-1.5">Then (Action)</label>
+                    <label className="text-xs font-semibold text-white/70 block mb-1.5">Then (Action)</label>
                     <select
                       value={newRule.action}
                       onChange={e => setNewRule({ ...newRule, action: e.target.value as any })}
-                      className="w-full h-10 rounded-xl px-3 text-xs bg-slate-100 dark:bg-[#1a0406] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
+                      className="w-full h-10 rounded-xl px-3 text-xs bg-white/[0.04] dark:bg-[#1a0406] border border-white/15 text-white outline-none"
                     >
                       <option value="whatsapp">Send WhatsApp</option>
                       <option value="sms">Send SMS Text</option>
                       <option value="email">Send Email</option>
                       <option value="webhook">Trigger Webhook</option>
+                      <option value="crm_update">Update CRM</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-600 dark:text-white/70 block mb-1.5">Message / Payload Template</label>
+                  <label className="text-xs font-semibold text-white/70 block mb-1.5">Message / Payload Template</label>
                   <textarea
                     rows={3}
                     placeholder="Hi {{lead_name}}, your appointment with {{agent_name}} has been confirmed for..."
                     value={newRule.template}
                     onChange={e => setNewRule({ ...newRule, template: e.target.value })}
-                    className="w-full rounded-xl p-3 text-xs bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500 font-mono"
+                    className="w-full rounded-xl p-3 text-xs bg-white/[0.04] border border-white/15 text-white outline-none focus:border-brand-500 font-mono"
                   />
-                  <span className="text-[10px] text-slate-500 dark:text-white/40 block mt-1">Available variables: {"{{lead_name}}"}, {"{{agent_name}}"}, {"{{call_duration}}"}</span>
+                  <span className="text-[10px] text-white/40 block mt-1">Available variables: {"{{lead_name}}"}, {"{{agent_name}}"}, {"{{call_duration}}"}</span>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-white/[0.08]">
+                <div className="flex justify-end gap-2 pt-3 border-t border-white/[0.08]">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white"
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/[0.05] text-white/60 hover:text-white"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="btn-red text-xs py-2 px-5 h-9"
+                    disabled={saving}
+                    className="btn-red text-xs py-2 px-5 h-9 flex items-center gap-2 disabled:opacity-60"
                   >
-                    Save & Activate
+                    {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {saving ? "Saving..." : "Save & Activate"}
                   </button>
                 </div>
               </form>

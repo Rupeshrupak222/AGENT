@@ -50,8 +50,10 @@ export class AuditService {
     page?: number;
     limit?: number;
   }) {
-    const { page = 1, limit = 50, action, resource, userId } = query;
-    const skip = (page - 1) * limit;
+    const pageNum = Math.max(1, Number(query?.page) || 1);
+    const limitNum = Math.max(1, Math.min(100, Number(query?.limit) || 50));
+    const skip = (pageNum - 1) * limitNum;
+    const { action, resource, userId } = query;
 
     const where: any = { tenantId };
     if (action) where.action = action;
@@ -62,7 +64,7 @@ export class AuditService {
       this.prisma.auditLog.findMany({
         where,
         skip,
-        take: limit,
+        take: limitNum,
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
@@ -78,6 +80,6 @@ export class AuditService {
       this.prisma.auditLog.count({ where }),
     ]);
 
-    return { items, total, page, limit, pages: Math.ceil(total / limit) };
+    return { items, total, page: pageNum, limit: limitNum, pages: Math.ceil(total / limitNum) };
   }
 }
