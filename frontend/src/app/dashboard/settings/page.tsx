@@ -1,18 +1,21 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Settings, Key, Bell, Shield, Globe, Webhook,
-  Save, CheckCircle2, Lock, Eye, EyeOff, RefreshCw, Copy,
+  Save, CheckCircle2, Lock, Eye, EyeOff, RefreshCw, Copy, Loader2,
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { useToast } from "@/components/ui/Toast";
+import { tenantApi, normalizeApiError } from "@/lib/api";
 
 export default function SettingsPage() {
   const user = useAuthStore(s => s.user);
   const tenant = useAuthStore(s => s.tenant);
+  const updateTenant = useAuthStore(s => s.updateTenant);
   const { success, error } = useToast();
   const [activeTab, setActiveTab] = useState<"general" | "api_keys" | "telephony" | "security">("general");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // General state
   const [companyName, setCompanyName] = useState(tenant?.name || "My Workspace");
@@ -24,11 +27,42 @@ export default function SettingsPage() {
   const [twilioToken, setTwilioToken] = useState("");
   const [callerId, setCallerId] = useState("");
 
-  const handleSave = (e: React.FormEvent) => {
+  // Hydrate from real tenant config
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await tenantApi.me();
+        if (cancelled) return;
+        if (data.name) setCompanyName(data.name);
+        if (data.settings) {
+          if (typeof data.settings.timezone === "string") setTimezone(data.settings.timezone);
+          if (typeof data.settings.currency === "string") setCurrency(data.settings.currency);
+        }
+      } catch {
+        // Non-fatal: keep local defaults
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaved(true);
-    success("Settings saved successfully");
-    setTimeout(() => setSaved(false), 2500);
+    setSaving(true);
+    try {
+      const updated = await tenantApi.updateMe({
+        name: companyName.trim() || undefined,
+        settings: { timezone, currency },
+      });
+      updateTenant({ name: updated.name });
+      setSaved(true);
+      success("Settings saved successfully");
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      error(normalizeApiError(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const copyKey = async (value: string) => {
@@ -212,8 +246,9 @@ export default function SettingsPage() {
         )}
 
         <div className="flex justify-end pt-4">
-          <button type="submit" className="btn-red text-xs py-2 px-6 h-10 shadow-lg shadow-brand-500/25 flex items-center gap-2">
-            <Save className="w-4 h-4" /> Save Preferences
+          <button type="submit" disabled={saving} className="btn-red text-xs py-2 px-6 h-10 shadow-lg shadow-brand-500/25 flex items-center gap-2 disabled:opacity-60">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {saving ? "Saving…" : "Save Preferences"}
           </button>
         </div>
 

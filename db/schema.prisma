@@ -121,6 +121,34 @@ enum IntegrationProvider {
   outlook_calendar
 }
 
+enum AppointmentStatus {
+  scheduled
+  confirmed
+  completed
+  cancelled
+  no_show
+}
+
+enum AutomationTrigger {
+  call_completed
+  call_missed
+  lead_qualified
+  deal_closed
+}
+
+enum AutomationAction {
+  whatsapp
+  sms
+  email
+  webhook
+  crm_update
+}
+
+enum AutomationRuleStatus {
+  active
+  paused
+}
+
 // ── Tenant (Company / Workspace) ────────────────────────────
 
 model Tenant {
@@ -144,6 +172,8 @@ model Tenant {
   calls         Call[]
   campaigns     Campaign[]
   automations   AutomationLog[]
+  automationRules AutomationRule[]
+  appointments  Appointment[]
   integrations  Integration[]
   invoices      Invoice[]
   apiKeys       ApiKey[]
@@ -404,6 +434,54 @@ model AutomationLog {
   @@index([type])
   @@index([status])
   @@map("AutomationLog")
+}
+
+// ── Appointment (Calendar) ─────────────────────────────────────
+
+model Appointment {
+  id        String             @id @default(cuid())
+  leadName  String
+  phone     String
+  email     String?
+  topic     String?
+  date      DateTime
+  duration  Int                @default(30) // minutes
+  status    AppointmentStatus  @default(scheduled)
+
+  tenantId  String
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  leadId    String?
+  agentId   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([date])
+  @@map("Appointment")
+}
+
+// ── Automation Rule (config) ───────────────────────────────────
+
+model AutomationRule {
+  id         String               @id @default(cuid())
+  name       String
+  trigger    AutomationTrigger
+  action     AutomationAction
+  template   String?
+  status     AutomationRuleStatus @default(active)
+  executions Int                  @default(0)
+  lastRunAt  DateTime?
+
+  tenantId  String
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@map("AutomationRule")
 }
 
 // ── Integration ────────────────────────────────────────────────

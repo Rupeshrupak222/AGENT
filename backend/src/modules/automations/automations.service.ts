@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService }      from '../prisma/prisma.service';
 import { ConfigService }      from '@nestjs/config';
+import { CreateAutomationRuleDto, UpdateAutomationRuleDto } from './dto/automation-rule.dto';
 
 export type AutomationType = 'whatsapp' | 'sms' | 'email';
 
@@ -94,5 +95,50 @@ export class AutomationsService {
 
   private resolveTemplate(template: string, vars: Record<string, string>): string {
     return template.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? `{{${k}}}`);
+  }
+
+  // ── Automation Rule CRUD ─────────────────────────────────────
+
+  async createRule(tenantId: string, dto: CreateAutomationRuleDto) {
+    return this.prisma.automationRule.create({
+      data: {
+        name:     dto.name,
+        trigger:  dto.trigger,
+        action:   dto.action,
+        template: dto.template,
+        status:   dto.status ?? 'active',
+        tenantId,
+      },
+    });
+  }
+
+  async listRules(tenantId: string) {
+    return this.prisma.automationRule.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async updateRule(tenantId: string, id: string, dto: UpdateAutomationRuleDto) {
+    const existing = await this.prisma.automationRule.findFirst({
+      where: { id, tenantId },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundException('Automation rule not found');
+    return this.prisma.automationRule.update({ where: { id }, data: dto as any });
+  }
+
+  async toggleRule(tenantId: string, id: string, status: 'active' | 'paused') {
+    return this.updateRule(tenantId, id, { status } as UpdateAutomationRuleDto);
+  }
+
+  async deleteRule(tenantId: string, id: string) {
+    const existing = await this.prisma.automationRule.findFirst({
+      where: { id, tenantId },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundException('Automation rule not found');
+    await this.prisma.automationRule.delete({ where: { id } });
+    return { success: true };
   }
 }

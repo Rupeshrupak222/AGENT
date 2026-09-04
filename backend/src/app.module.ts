@@ -14,6 +14,8 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { AutomationsModule } from './modules/automations/automations.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { VoicesModule } from './modules/voices/voices.module';
+import { CalendarModule } from './modules/calendar/calendar.module';
 import { CacheModule } from './modules/cache/cache.module';
 import { RbacModule } from './common/rbac/rbac.module';
 import { TelephonyModule } from './modules/telephony/telephony.module';
@@ -66,6 +68,8 @@ import { AppController } from './app.controller';
     BillingModule,
     AutomationsModule,
     AuditModule,
+    VoicesModule,
+    CalendarModule,
     CacheModule,
     TelephonyModule,
     AiModule,

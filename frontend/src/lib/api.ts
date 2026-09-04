@@ -272,6 +272,11 @@ export interface ConversionFunnelItem {
   pct: number;
 }
 
+export interface SentimentBucket {
+  bucket: string;
+  count: number;
+}
+
 export const analyticsApi = {
   overview: async (
     range: "today" | "week" | "month" = "week"
@@ -301,6 +306,13 @@ export const analyticsApi = {
   conversionFunnel: async (): Promise<ConversionFunnelItem[]> => {
     const res = await apiClient.get<ApiResponseWrapper<ConversionFunnelItem[]>>(
       "/analytics/conversion-funnel"
+    );
+    return res.data.data;
+  },
+
+  sentiment: async (): Promise<SentimentBucket[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<SentimentBucket[]>>(
+      "/analytics/sentiment"
     );
     return res.data.data;
   },
@@ -586,6 +598,289 @@ export const leadsApi = {
 
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/leads/${id}`);
+  },
+};
+
+// ── Team / Users API Contracts ────────────────────────────────────
+export interface TeamMember extends AuthUser {
+  createdAt?: string;
+  lastLoginAt?: string | null;
+}
+
+export interface InviteMemberInput {
+  name: string;
+  email: string;
+  role: string;
+}
+
+export const teamApi = {
+  list: async (): Promise<TeamMember[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<TeamMember[]>>("/users");
+    return res.data.data;
+  },
+
+  invite: async (dto: InviteMemberInput): Promise<TeamMember> => {
+    const res = await apiClient.post<ApiResponseWrapper<TeamMember>>(
+      "/users/invite",
+      dto
+    );
+    return res.data.data;
+  },
+
+  updateRole: async (
+    id: string,
+    role: string
+  ): Promise<TeamMember> => {
+    const res = await apiClient.patch<ApiResponseWrapper<TeamMember>>(
+      `/users/${id}/role`,
+      { role }
+    );
+    return res.data.data;
+  },
+
+  remove: async (id: string): Promise<void> => {
+    await apiClient.delete(`/users/${id}`);
+  },
+};
+
+// ── Tenant / Workspace Config API ─────────────────────────────────
+export interface TenantRecord {
+  id: string;
+  name: string;
+  slug: string;
+  logo?: string | null;
+  website?: string | null;
+  industry?: string | null;
+  plan: string;
+  isActive: boolean;
+  settings?: Record<string, any>;
+  whitelabelDomain?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { users: number; agents: number };
+}
+
+export interface TenantUsage {
+  agentCount: number;
+  callCount: number;
+  leadCount: number;
+  userCount: number;
+}
+
+export const tenantApi = {
+  me: async (): Promise<TenantRecord> => {
+    const res = await apiClient.get<ApiResponseWrapper<TenantRecord>>("/tenants/me");
+    return res.data.data;
+  },
+
+  usage: async (): Promise<TenantUsage> => {
+    const res = await apiClient.get<ApiResponseWrapper<TenantUsage>>(
+      "/tenants/me/usage"
+    );
+    return res.data.data;
+  },
+
+  updateMe: async (dto: {
+    name?: string;
+    logo?: string;
+    settings?: Record<string, any>;
+  }): Promise<TenantRecord> => {
+    const res = await apiClient.patch<ApiResponseWrapper<TenantRecord>>(
+      "/tenants/me",
+      dto
+    );
+    return res.data.data;
+  },
+};
+
+// ── Voices API ─────────────────────────────────────────────────
+export interface VoiceProfile {
+  id: string;
+  name: string;
+  gender: "Female" | "Male";
+  languages: string[];
+  accent: string;
+  tone: string;
+  avatarColor: string;
+}
+
+export const voicesApi = {
+  list: async (): Promise<VoiceProfile[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<VoiceProfile[]>>(
+      "/voices"
+    );
+    return res.data.data;
+  },
+};
+
+// ── Calendar / Appointments API ────────────────────────────────
+export type AppointmentStatus =
+  | "scheduled"
+  | "confirmed"
+  | "completed"
+  | "cancelled"
+  | "no_show";
+
+export interface Appointment {
+  id: string;
+  leadName: string;
+  phone: string;
+  email?: string | null;
+  topic?: string | null;
+  date: string;
+  duration: number;
+  status: AppointmentStatus;
+  leadId?: string | null;
+  agentId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AppointmentOverview {
+  total: number;
+  confirmed: number;
+  completed: number;
+  cancelled: number;
+  noShow: number;
+  showUpRatio: string;
+  avgDurationMins: number;
+}
+
+export interface CreateAppointmentInput {
+  leadName: string;
+  phone: string;
+  email?: string;
+  topic?: string;
+  date: string;
+  duration?: number;
+  status?: AppointmentStatus;
+  leadId?: string;
+  agentId?: string;
+}
+
+export const calendarApi = {
+  list: async (params?: {
+    status?: string;
+    from?: string;
+    to?: string;
+  }): Promise<Appointment[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<Appointment[]>>(
+      "/calendar/appointments",
+      { params }
+    );
+    return res.data.data;
+  },
+
+  overview: async (params?: {
+    from?: string;
+    to?: string;
+  }): Promise<AppointmentOverview> => {
+    const res = await apiClient.get<ApiResponseWrapper<AppointmentOverview>>(
+      "/calendar/overview",
+      { params }
+    );
+    return res.data.data;
+  },
+
+  create: async (dto: CreateAppointmentInput): Promise<Appointment> => {
+    const res = await apiClient.post<ApiResponseWrapper<Appointment>>(
+      "/calendar/appointments",
+      dto
+    );
+    return res.data.data;
+  },
+
+  update: async (
+    id: string,
+    dto: Partial<CreateAppointmentInput>
+  ): Promise<Appointment> => {
+    const res = await apiClient.patch<ApiResponseWrapper<Appointment>>(
+      `/calendar/appointments/${id}`,
+      dto
+    );
+    return res.data.data;
+  },
+
+  remove: async (id: string): Promise<void> => {
+    await apiClient.delete(`/calendar/appointments/${id}`);
+  },
+};
+
+// ── Automations (Rules CRUD) API ───────────────────────────────
+export type AutomationTrigger =
+  | "call_completed"
+  | "call_missed"
+  | "lead_qualified"
+  | "deal_closed";
+
+export type AutomationAction =
+  | "whatsapp"
+  | "sms"
+  | "email"
+  | "webhook"
+  | "crm_update";
+
+export interface AutomationRule {
+  id: string;
+  name: string;
+  trigger: AutomationTrigger;
+  action: AutomationAction;
+  template?: string | null;
+  status: "active" | "paused";
+  executions: number;
+  lastRunAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateAutomationRuleInput {
+  name: string;
+  trigger: AutomationTrigger;
+  action: AutomationAction;
+  template?: string;
+  status?: "active" | "paused";
+}
+
+export const automationsApi = {
+  listRules: async (): Promise<AutomationRule[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<AutomationRule[]>>(
+      "/automations/rules"
+    );
+    return res.data.data;
+  },
+
+  createRule: async (dto: CreateAutomationRuleInput): Promise<AutomationRule> => {
+    const res = await apiClient.post<ApiResponseWrapper<AutomationRule>>(
+      "/automations/rules",
+      dto
+    );
+    return res.data.data;
+  },
+
+  updateRule: async (
+    id: string,
+    dto: Partial<CreateAutomationRuleInput>
+  ): Promise<AutomationRule> => {
+    const res = await apiClient.patch<ApiResponseWrapper<AutomationRule>>(
+      `/automations/rules/${id}`,
+      dto
+    );
+    return res.data.data;
+  },
+
+  toggleRule: async (
+    id: string,
+    status: "active" | "paused"
+  ): Promise<AutomationRule> => {
+    const res = await apiClient.patch<ApiResponseWrapper<AutomationRule>>(
+      `/automations/rules/${id}/status`,
+      { status }
+    );
+    return res.data.data;
+  },
+
+  deleteRule: async (id: string): Promise<void> => {
+    await apiClient.delete(`/automations/rules/${id}`);
   },
 };
 

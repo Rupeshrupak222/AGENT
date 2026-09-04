@@ -1,12 +1,13 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Mic2, Play, Pause, Volume2, Sliders, Globe2,
-  Sparkles, Check, ArrowRight, Radio
+  Sparkles, Check, ArrowRight, Radio, Loader2
 } from "lucide-react";
 import { WaveAnimation } from "@/components/ui/WaveAnimation";
+import { voicesApi, VoiceProfile as ApiVoiceProfile } from "@/lib/api";
 
-interface VoiceProfile {
+interface PreviewVoice {
   id: string;
   name: string;
   gender: "Female" | "Male";
@@ -17,92 +18,86 @@ interface VoiceProfile {
   avatarColor: string;
 }
 
-const VOICES: VoiceProfile[] = [
-  {
-    id: "priya",
-    name: "Priya",
-    gender: "Female",
-    languages: ["Hindi", "English", "Hinglish"],
-    accent: "Urban Indian (Natural)",
-    tone: "Warm, empathetic & professional telecaller",
-    sampleAudio: "Namaste! Main Acme Corp se Priya bol rahi hoon. Kya meri baat Rahul ji se ho rahi hai?",
-    avatarColor: "from-rose-500 to-brand-600",
-  },
-  {
-    id: "arjun",
-    name: "Arjun",
-    gender: "Male",
-    languages: ["English", "Hindi"],
-    accent: "Corporate Indian (Clear)",
-    tone: "Authoritative, confident enterprise closer",
-    sampleAudio: "Hello! Arjun here from AgentCall AI. I noticed your team is scaling outbound outreach this quarter.",
-    avatarColor: "from-blue-600 to-indigo-700",
-  },
-  {
-    id: "meera",
-    name: "Meera",
-    gender: "Female",
-    languages: ["Hindi", "Marathi"],
-    accent: "Friendly Conversational",
-    tone: "Patient, screening specialist & recruiter",
-    sampleAudio: "Hi! Main Meera baat kar rahi hoon hiring team se. Humne aapka profile review kiya tha.",
-    avatarColor: "from-purple-500 to-pink-600",
-  },
-  {
-    id: "ravi",
-    name: "Ravi",
-    gender: "Male",
-    languages: ["Hindi", "Gujarati"],
-    accent: "Firm & Respectful",
-    tone: "Collections & polite reminder specialist",
-    sampleAudio: "Namaste sir, Ravi calling regarding your pending account verification and invoice clearance.",
-    avatarColor: "from-amber-500 to-orange-600",
-  },
-  {
-    id: "anjali",
-    name: "Anjali",
-    gender: "Female",
-    languages: ["English", "Tamil"],
-    accent: "Neutral Executive",
-    tone: "Polished front-desk receptionist",
-    sampleAudio: "Good morning! Thank you for calling Acme Headquarters. How may I direct your call today?",
-    avatarColor: "from-teal-500 to-emerald-600",
-  },
-  {
-    id: "dev",
-    name: "Dev",
-    gender: "Male",
-    languages: ["Hinglish", "Punjabi"],
-    accent: "Casual & Upbeat",
-    tone: "SaaS SDR & appointment setter",
-    sampleAudio: "Hey! Dev here. Just wanted to quickly share how we cut calling overhead by 80%. Have 2 minutes?",
-    avatarColor: "from-cyan-500 to-blue-600",
-  },
-];
+const GRADIENTS: Record<string, string> = {
+  "6366f1": "from-rose-500 to-brand-600",
+  "22c55e": "from-blue-600 to-indigo-700",
+  a855f7: "from-purple-500 to-pink-600",
+  f97316: "from-amber-500 to-orange-600",
+  "06b6d4": "from-teal-500 to-emerald-600",
+  eab308: "from-cyan-500 to-blue-600",
+  "0ea5e9": "from-sky-500 to-indigo-600",
+  "8b5cf6": "from-violet-500 to-fuchsia-600",
+};
+
+const SAMPLES: Record<string, string> = {
+  "priya-warm":         "Namaste! Main Acme Corp se Priya bol rahi hoon. Kya meri baat Rahul ji se ho rahi hai?",
+  "arjun-professional": "Hello! Arjun here from AgentCall AI. I noticed your team is scaling outbound outreach this quarter.",
+  "meera-soft":         "Hi! Main Meera baat kar rahi hoon hiring team se. Humne aapka profile review kiya tha.",
+  "kavya-crisp":        "Tandriga! Kavya matladutunnanu. Mee company kosam oka important update undi.",
+  "ravi-energetic":     "Namaste sir, Ravi yahan se bol raha hoon. Kya main aapke liye kuch madad kar sakta hoon?",
+  "anjali-confident":   "Good morning! Thank you for calling Acme Headquarters. How may I direct your call today?",
+  "natasha-usa":        "Hi there! I'm Natasha from AgentCall. Got a quick minute to go over your account?",
+  "daniel-british":     "Good afternoon. Daniel here from AgentCall AI. I'd love to walk you through our solution.",
+};
+
+function toPreview(v: ApiVoiceProfile): PreviewVoice {
+  return {
+    id: v.id,
+    name: v.name,
+    gender: v.gender,
+    languages: v.languages,
+    accent: v.accent,
+    tone: v.tone,
+    sampleAudio: SAMPLES[v.id] || "",
+    avatarColor: GRADIENTS[v.avatarColor.replace("#", "").toLowerCase()] || "from-brand-600 to-purple-600",
+  };
+}
 
 export default function VoicesPage() {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [speed, setSpeed] = useState(1.0);
   const [pitch, setPitch] = useState(1.0);
-  const [selectedVoice, setSelectedVoice] = useState<VoiceProfile>(VOICES[0]);
+  const [voices, setVoices] = useState<PreviewVoice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedVoice, setSelectedVoice] = useState<PreviewVoice | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await voicesApi.list();
+        if (cancelled) return;
+        const previews = data.map(toPreview);
+        setVoices(previews);
+        setSelectedVoice(previews[0] ?? null);
+      } catch {
+        if (!cancelled) setError("Could not load voices. Please check your connection and retry.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const togglePlay = (id: string) => {
+    const voice = voices.find(v => v.id === id) ?? selectedVoice;
+    if (!voice) return;
     if (playingId === id) {
       setPlayingId(null);
-    } else {
-      setPlayingId(id);
-      // Optional browser speech synthesis preview for local audio
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-        const voice = VOICES.find(v => v.id === id);
-        if (voice) {
-          const utterance = new SpeechSynthesisUtterance(voice.sampleAudio);
-          utterance.rate = speed;
-          utterance.pitch = pitch;
-          utterance.onend = () => setPlayingId(null);
-          window.speechSynthesis.speak(utterance);
-        }
-      }
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+      return;
+    }
+    setPlayingId(id);
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(voice.sampleAudio);
+      utterance.rate = speed;
+      utterance.pitch = pitch;
+      utterance.onend = () => setPlayingId(null);
+      window.speechSynthesis.speak(utterance);
     }
   };
 
@@ -129,9 +124,31 @@ export default function VoicesPage() {
         {/* Voices List */}
         <div className="lg:col-span-2 space-y-3">
           <h2 className="text-base font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-2">Available Voice Personas</h2>
-          {VOICES.map((v) => {
+
+          {loading && (
+            <div className="flex flex-col items-center justify-center py-16 text-slate-500 dark:text-white/50">
+              <Loader2 className="w-6 h-6 animate-spin mb-3" />
+              <p className="text-sm">Loading voice personas&hellip;</p>
+            </div>
+          )}
+
+          {!loading && error && (
+            <div className="text-center py-16">
+              <p className="text-sm text-brand-600 dark:text-brand-400 font-semibold mb-2">{error}</p>
+              <p className="text-xs text-slate-500 dark:text-white/50">No voices were loaded.</p>
+            </div>
+          )}
+
+          {!loading && !error && voices.length === 0 && (
+            <div className="text-center py-16">
+              <Radio className="w-8 h-8 text-slate-400 mx-auto mb-3" />
+              <p className="text-sm text-slate-500 dark:text-white/50">No voice personas available.</p>
+            </div>
+          )}
+
+          {!loading && !error && voices.map((v) => {
             const isPlaying = playingId === v.id;
-            const isSelected = selectedVoice.id === v.id;
+            const isSelected = selectedVoice?.id === v.id;
 
             return (
               <div
@@ -192,12 +209,12 @@ export default function VoicesPage() {
         {/* Voice Customizer Sidebar */}
         <div className="rounded-2xl p-6 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] shadow-2xl h-fit space-y-6">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-white/[0.06]">
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${selectedVoice.avatarColor} flex items-center justify-center text-slate-900 dark:text-white font-bold`}>
-              {selectedVoice.name[0]}
+            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${selectedVoice?.avatarColor ?? "from-brand-600 to-purple-600"} flex items-center justify-center text-slate-900 dark:text-white font-bold`}>
+              {selectedVoice?.name[0] ?? "V"}
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">{selectedVoice.name} (Customizer)</h3>
-              <p className="text-xs text-slate-500 dark:text-white/40">{selectedVoice.accent}</p>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">{selectedVoice?.name ?? "Voice"} (Customizer)</h3>
+              <p className="text-xs text-slate-500 dark:text-white/40">{selectedVoice?.accent ?? ""}</p>
             </div>
           </div>
 
@@ -237,16 +254,17 @@ export default function VoicesPage() {
             <div className="pt-4 border-t border-slate-200 dark:border-white/[0.06]">
               <label className="text-xs font-semibold text-slate-600 dark:text-white/70 block mb-2">Sample Sentence</label>
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 text-xs text-slate-700 dark:text-white/80 leading-relaxed font-mono">
-                &ldquo;{selectedVoice.sampleAudio}&rdquo;
+                &ldquo;{selectedVoice?.sampleAudio ?? ""}&rdquo;
               </div>
             </div>
 
             <button
-              onClick={() => togglePlay(selectedVoice.id)}
-              className="btn-red w-full text-xs h-10 shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2"
+              onClick={() => selectedVoice && togglePlay(selectedVoice.id)}
+              disabled={!selectedVoice}
+              className="btn-red w-full text-xs h-10 shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Volume2 className="w-4 h-4" />
-              {playingId === selectedVoice.id ? "Stop Sample" : "Test Live Speech"}
+              {playingId === selectedVoice?.id ? "Stop Sample" : "Test Live Speech"}
             </button>
           </div>
         </div>
