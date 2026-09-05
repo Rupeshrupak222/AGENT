@@ -3,13 +3,14 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger'
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { TenantGuard } from '../../common/guards/tenant.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ANALYTICS_VIEW } from '../../common/rbac/permissions';
 
 @ApiTags('analytics')
 @ApiBearerAuth('JWT')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard, TenantGuard)
 @Controller('analytics')
 export class AnalyticsController {
   constructor(private svc: AnalyticsService) {}

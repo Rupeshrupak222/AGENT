@@ -149,6 +149,7 @@ export interface RegisterPayload {
   email: string;
   password: string;
   companyName: string;
+  plan?: string;
 }
 
 export interface AuthResponseData {
@@ -565,6 +566,7 @@ export const leadsApi = {
     status?: string;
     search?: string;
     agentId?: string;
+    assignedTo?: string;
     sortBy?: string;
     sortOrder?: "asc" | "desc";
   }): Promise<LeadsListResponse> => {

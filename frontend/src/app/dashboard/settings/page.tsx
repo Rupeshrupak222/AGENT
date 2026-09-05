@@ -1,9 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import {
-  Settings, Key, Bell, Shield, Globe, Webhook,
-  Save, CheckCircle2, Lock, Eye, EyeOff, RefreshCw, Copy, Loader2,
-} from "lucide-react";
+import { Save, CheckCircle2, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { useToast } from "@/components/ui/Toast";
 import { tenantApi, normalizeApiError } from "@/lib/api";
@@ -21,11 +18,6 @@ export default function SettingsPage() {
   const [companyName, setCompanyName] = useState(tenant?.name || "My Workspace");
   const [timezone, setTimezone] = useState("Asia/Kolkata");
   const [currency, setCurrency] = useState("INR");
-
-  // Telephony state
-  const [twilioSid, setTwilioSid] = useState("");
-  const [twilioToken, setTwilioToken] = useState("");
-  const [callerId, setCallerId] = useState("");
 
   // Hydrate from real tenant config
   useEffect(() => {
@@ -62,15 +54,6 @@ export default function SettingsPage() {
       error(normalizeApiError(err));
     } finally {
       setSaving(false);
-    }
-  };
-
-  const copyKey = async (value: string) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      success("API key copied to clipboard");
-    } catch {
-      error("Could not copy to clipboard");
     }
   };
 
@@ -165,37 +148,21 @@ export default function SettingsPage() {
 
         {activeTab === "telephony" && (
           <div className="rounded-2xl p-6 panel-card border border-slate-200 dark:border-white/[0.08] shadow-xl space-y-5">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4">Twilio SIP Trunking & Numbers</h3>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4">Telephony Provider</h3>
+            <p className="text-xs text-slate-500 dark:text-white/50 leading-relaxed">
+              Outbound calling credentials (Twilio / Exotel account SID, auth token, verified caller ID) are
+              provisioned per-workspace through the platform telephony service. Per-workspace credential management
+              is not exposed by the API yet — live PSTN calling activates with the tenant provisioning flow.
+            </p>
 
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">Twilio Account SID</label>
-                <input
-                  type="text"
-                  value={twilioSid}
-                  onChange={e => setTwilioSid(e.target.value)}
-                  className="w-full h-10 rounded-xl px-3 text-sm bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none font-mono"
-                />
+            <div className="max-w-2xl space-y-2 text-sm">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06]">
+                <span className="font-semibold text-slate-700 dark:text-white/70">Twilio Account SID</span>
+                <span className="font-mono text-xs text-slate-400 dark:text-white/40">Not configured in this workspace</span>
               </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">Twilio Auth Token</label>
-                <input
-                  type="password"
-                  value={twilioToken}
-                  onChange={e => setTwilioToken(e.target.value)}
-                  className="w-full h-10 rounded-xl px-3 text-sm bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">Verified Outbound Caller ID</label>
-                <input
-                  type="text"
-                  value={callerId}
-                  onChange={e => setCallerId(e.target.value)}
-                  className="w-full max-w-sm h-10 rounded-xl px-3 text-sm bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none font-mono"
-                />
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06]">
+                <span className="font-semibold text-slate-700 dark:text-white/70">Verified Outbound Caller ID</span>
+                <span className="font-mono text-xs text-slate-400 dark:text-white/40">None</span>
               </div>
             </div>
           </div>
@@ -203,21 +170,15 @@ export default function SettingsPage() {
 
         {activeTab === "api_keys" && (
           <div className="rounded-2xl p-6 panel-card border border-slate-200 dark:border-white/[0.08] shadow-xl space-y-5">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4">REST API Keys</h3>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4">REST API Keys & Webhooks</h3>
             <p className="text-xs text-slate-500 dark:text-white/50">Use these keys to programmatically dispatch phone calls or sync contacts from your external CRM.</p>
 
-            <div className="p-4 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-bold text-slate-900 dark:text-white">Production Secret Key</p>
-                <p className="text-xs font-mono text-slate-500 dark:text-white/60 mt-1">agy_live_98a76b12f45c7890123456</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => copyKey("agy_live_98a76b12f45c7890123456")}
-                className="px-3 py-1.5 rounded-lg text-xs bg-slate-100 dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/20 text-slate-900 dark:text-white font-medium inline-flex items-center gap-1.5"
-              >
-                <Copy className="w-3 h-3" /> Copy
-              </button>
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10">
+              <p className="text-xs font-bold text-slate-900 dark:text-white">API Key Management</p>
+              <p className="text-xs text-slate-500 dark:text-white/60 mt-1 leading-relaxed">
+                No API keys are provisioned for this workspace yet. Key creation and webhook endpoint management
+                are not exposed by the platform service at this time.
+              </p>
             </div>
           </div>
         )}
@@ -228,25 +189,34 @@ export default function SettingsPage() {
             <div className="space-y-3 text-xs text-slate-700 dark:text-white/70">
               <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06]">
                 <div>
-                  <p className="font-semibold text-slate-900 dark:text-white">Enforce Two-Factor Authentication (2FA)</p>
-                  <p className="text-slate-500 dark:text-white/40 mt-0.5">Require TOTP for all team members.</p>
+                  <p className="font-semibold text-slate-900 dark:text-white">Two-Factor Authentication (2FA)</p>
+                  <p className="text-slate-500 dark:text-white/40 mt-0.5">TOTP enforcement is not configurable from this panel yet — rollout is tracked at the platform level.</p>
                 </div>
-                <input type="checkbox" defaultChecked className="accent-brand-500 w-4 h-4" />
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/50 border border-slate-200 dark:border-white/10">Not available</span>
               </div>
 
               <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06]">
                 <div>
-                  <p className="font-semibold text-slate-900 dark:text-white">Session Inactivity Timeout (30 mins)</p>
-                  <p className="text-slate-500 dark:text-white/40 mt-0.5">Automatically log out idle browser tabs.</p>
+                  <p className="font-semibold text-slate-900 dark:text-white">Session Inactivity Timeout</p>
+                  <p className="text-slate-500 dark:text-white/40 mt-0.5">Idle-session expiry is enforced by the auth layer and is not user-configurable at this time.</p>
                 </div>
-                <input type="checkbox" defaultChecked className="accent-brand-500 w-4 h-4" />
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/50 border border-slate-200 dark:border-white/10">Not available</span>
               </div>
             </div>
           </div>
         )}
 
-        <div className="flex justify-end pt-4">
-          <button type="submit" disabled={saving} className="btn-red text-xs py-2 px-6 h-10 shadow-lg shadow-brand-500/25 flex items-center gap-2 disabled:opacity-60">
+        <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-3 pt-4">
+          {activeTab !== "general" && (
+            <p className="text-xs text-slate-500 dark:text-white/40">
+              This tab has no server persistence yet — only General &amp; Branding settings are saved.
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={saving || activeTab !== "general"}
+            className="btn-red text-xs py-2 px-6 h-10 shadow-lg shadow-brand-500/25 flex items-center gap-2 disabled:opacity-60"
+          >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? "Saving…" : "Save Preferences"}
           </button>

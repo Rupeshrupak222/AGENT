@@ -134,10 +134,18 @@ export default function AutomationsPage() {
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Active Workflows", value: String(activeCount), color: "text-emerald-600 dark:text-emerald-400" },
-          { label: "Total Triggers Sent", value: totalSent.toLocaleString(), color: "text-brand-600 dark:text-brand-400" },
-          { label: "Delivery Success Rate", value: "99.4%", color: "text-cyan-600 dark:text-cyan-400" },
-          { label: "Average Latency", value: "1.2s", color: "text-purple-600 dark:text-purple-400" },
+          { label: "Active Workflows", value: `${activeCount} / ${rules.length}`, color: "text-emerald-600 dark:text-emerald-400" },
+          { label: "Total Triggers Fired", value: totalSent.toLocaleString(), color: "text-brand-600 dark:text-brand-400" },
+          { label: "Rules Configured", value: String(rules.length), color: "text-cyan-600 dark:text-cyan-400" },
+          {
+            label: "Last Execution",
+            value: rules.length ? fmtLastRun(rules.reduce((latest, r) => {
+              if (!r.lastRunAt) return latest;
+              if (!latest) return r.lastRunAt;
+              return r.lastRunAt > latest ? r.lastRunAt : latest;
+            }, null as string | null)) : "Never",
+            color: "text-purple-600 dark:text-purple-400",
+          },
         ].map((s) => (
           <div key={s.label} className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] shadow-sm">
             <p className={`text-2xl font-mono font-black ${s.color}`}>{s.value}</p>

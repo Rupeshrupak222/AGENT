@@ -46,6 +46,7 @@ import {
   AgentPerformanceItem,
   CallTrendItem,
   ConversionFunnelItem,
+  TenantUsage,
 } from "@/lib/api";
 
 const STAGE_COLORS: Record<string, string> = {
@@ -72,6 +73,8 @@ interface CompanyAdminViewProps {
   onRefresh: () => void;
   isRefreshing: boolean;
   companyName: string;
+  companyPlan: string | null;
+  companyUsage: TenantUsage | null;
 }
 
 function CustomChartTooltip({ active, payload, label }: any) {
@@ -108,6 +111,8 @@ export function CompanyAdminView({
   onRefresh,
   isRefreshing,
   companyName,
+  companyPlan,
+  companyUsage,
 }: CompanyAdminViewProps) {
   const totalCallsCount = metrics?.totalCalls ?? callMetrics?.total ?? 0;
   const connectedCallsCount = metrics?.connected ?? callMetrics?.completed ?? 0;
@@ -259,7 +264,7 @@ export function CompanyAdminView({
           </div>
         </div>
 
-        {/* Voice Minute Quota Burn-down Bar */}
+        {/* Monthly Call Volume (real usage) */}
         <div className="mt-6 pt-5 border-t border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400">
@@ -267,13 +272,20 @@ export function CompanyAdminView({
             </div>
             <div>
               <p className="text-xs font-bold text-white">
-                Monthly Voice Quota: <span className="text-brand-300 font-mono">1,420 / 10,000 mins used (14.2%)</span>
+                Monthly Call Volume:{" "}
+                <span className="text-brand-300 font-mono">
+                  {isLoading ? "—" : (companyUsage?.callCount ?? 0).toLocaleString() + " calls this cycle"}
+                </span>
               </p>
-              <p className="text-[11px] text-white/40">Growth Plan · 8,580 mins remaining this cycle</p>
+              <p className="text-[11px] text-white/40">
+                {companyPlan ? `${companyPlan.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())} Plan` : "Current plan"} · minute-level burn-down requires per-call duration aggregation (not exposed yet)
+              </p>
             </div>
           </div>
-          <div className="w-full sm:w-64 h-2 rounded-full bg-white/[0.08] overflow-hidden">
-            <div className="h-full rounded-full bg-gradient-to-r from-brand-500 to-rose-400" style={{ width: "14.2%" }} />
+          <div className="text-[11px] font-mono text-white/40 flex items-center gap-3">
+            <span>{companyUsage ? `${companyUsage.userCount} users` : "— users"}</span>
+            <span>{companyUsage ? `${companyUsage.leadCount} leads` : "— leads"}</span>
+            <span>{companyUsage ? `${companyUsage.agentCount} agents` : "— agents"}</span>
           </div>
         </div>
       </motion.div>

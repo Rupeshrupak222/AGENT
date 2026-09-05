@@ -1,6 +1,8 @@
 import { IsEmail, IsString, MinLength, IsOptional, IsEnum } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+export const PLAN_KEYS = ['starter', 'growth', 'business', 'enterprise'] as const;
+
 export class RegisterDto {
   @ApiProperty({ example: 'John Doe' })
   @IsString()
@@ -18,6 +20,11 @@ export class RegisterDto {
   @ApiProperty({ example: 'Acme Corp' })
   @IsString()
   companyName: string;
+
+  @ApiPropertyOptional({ example: 'growth', enum: PLAN_KEYS })
+  @IsOptional()
+  @IsEnum(PLAN_KEYS)
+  plan?: string;
 }
 
 export class LoginDto {

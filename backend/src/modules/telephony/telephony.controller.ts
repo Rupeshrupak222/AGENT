@@ -19,6 +19,7 @@ import { Permissions } from '../../common/decorators/permissions.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { TenantGuard } from '../../common/guards/tenant.guard';
 import { CALL_INITIATE } from '../../common/rbac/permissions';
 import { TelephonyService } from './services/telephony.service';
 import { DispatchOutboundCallDto } from './dto/outbound-call.dto';
@@ -41,7 +42,7 @@ export class TelephonyController {
   }
 
   @ApiBearerAuth('JWT')
-  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard, TenantGuard)
   @Permissions(CALL_INITIATE)
   @Post('dispatch')
   @ApiOperation({ summary: 'Trigger outbound call dispatch via telephony abstraction' })

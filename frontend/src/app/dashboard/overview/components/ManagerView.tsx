@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Users,
   Phone,
@@ -14,23 +14,11 @@ import {
   Radio,
   Headphones,
   CheckCircle2,
-  AlertCircle,
-  ArrowUpRight,
-  Filter,
-  Check,
-  X,
-  Volume2,
-  VolumeX,
-  Zap,
   Download,
-  Send,
-  Sliders,
-  PhoneForwarded,
-  Sparkles,
+  Check,
 } from "lucide-react";
 import { WaveAnimation } from "@/components/ui/WaveAnimation";
 import { useToast } from "@/components/ui/Toast";
-import { formatDuration } from "@/lib/utils";
 import { DashboardMetrics, CallMetrics, CallItem, AgentItem } from "@/lib/api";
 
 interface ManagerViewProps {
@@ -43,58 +31,16 @@ interface ManagerViewProps {
   isRefreshing: boolean;
 }
 
-const MOCK_LIVE_CALLS = [
-  {
-    id: "live-1",
-    caller: "Priya (AI Telecaller)",
-    lead: "Ananya Deshmukh",
-    phone: "+91 98450 11223",
-    duration: 142,
-    sentiment: "High Interest (4.8/5)",
-    sentimentColor: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
-    topic: "Enterprise Cloud ERP voice bot deployment",
-  },
-  {
-    id: "live-2",
-    caller: "Aman Sharma (Sales SDR)",
-    lead: "Karthik Pillai",
-    phone: "+91 99001 44556",
-    duration: 88,
-    sentiment: "Neutral (3.2/5)",
-    sentimentColor: "text-amber-400 bg-amber-500/10 border-amber-500/20",
-    topic: "Product demo rescheduling inquiry",
-  },
-];
-
-const MOCK_QA_APPROVALS = [
-  {
-    id: "qa-1",
-    lead: "Rajesh Kulkarni",
-    company: "FinTech Infra Ltd",
-    score: 94,
-    disposition: "Hot Demo Booked",
-    aiNotes: "Budget >₹500K approved, decision maker confirmed for Thursday 3 PM demo",
-    time: "12m ago",
-  },
-  {
-    id: "qa-2",
-    lead: "Meera Nair",
-    company: "OmniHealth Clinic",
-    score: 88,
-    disposition: "Qualified Callback",
-    aiNotes: "Interested in automated patient appointment booking via Hindi voice bot",
-    time: "25m ago",
-  },
-  {
-    id: "qa-3",
-    lead: "Saurabh Goyal",
-    company: "Goyal Logistics",
-    score: 82,
-    disposition: "Pricing Review",
-    aiNotes: "Requested custom SLA agreement for 20,000 monthly calls",
-    time: "40m ago",
-  },
-];
+function timeAgo(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const mins = Math.floor((Date.now() - then) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
 
 export function ManagerView({
   metrics,
@@ -105,22 +51,7 @@ export function ManagerView({
   onRefresh,
   isRefreshing,
 }: ManagerViewProps) {
-  const { success, info } = useToast();
-  const [activeCampaign, setActiveCampaign] = useState("q3-enterprise");
-  const [qaList, setQaList] = useState(MOCK_QA_APPROVALS);
-
-  // Interactive Live Call Supervisions
-  const [eavesdroppingCall, setEavesdroppingCall] = useState<(typeof MOCK_LIVE_CALLS)[0] | null>(null);
-  const [eavesdropVolume, setEavesdropVolume] = useState(80);
-  const [isEavesdropMuted, setIsEavesdropMuted] = useState(false);
-
-  // Whisper Coaching Modal
-  const [whisperingCall, setWhisperingCall] = useState<(typeof MOCK_LIVE_CALLS)[0] | null>(null);
-  const [whisperMessage, setWhisperMessage] = useState("");
-
-  // Re-assign QA Modal
-  const [reassigningQa, setReassigningQa] = useState<(typeof MOCK_QA_APPROVALS)[0] | null>(null);
-  const [selectedReassignRep, setSelectedReassignRep] = useState("Aman Sharma (Sales SDR)");
+  const { success } = useToast();
 
   const totalCallsCount = metrics?.totalCalls ?? callMetrics?.total ?? 0;
   const connectedCallsCount = metrics?.connected ?? callMetrics?.completed ?? 0;
@@ -128,78 +59,62 @@ export function ManagerView({
   const avgDurationSeconds = metrics?.avgDuration ?? callMetrics?.avgDuration ?? 0;
   const appointmentsCount = metrics?.appointments ?? 0;
 
-  const handleStartListen = (call: (typeof MOCK_LIVE_CALLS)[0]) => {
-    setEavesdroppingCall(call);
-    info(`Eavesdrop session active: Monitoring audio stream between ${call.caller} & ${call.lead}`);
+  const liveCalls = recentCalls.filter(
+    (c) => c.status === "in_progress" || c.status === "ringing"
+  );
+
+  const pendingReviews = recentCalls.filter(
+    (c) => c.status === "completed" && (c.qualityScore == null || c.sentimentScore == null)
+  );
+
+  const [queue, setQueue] = useState<CallItem[]>(() => pendingReviews);
+
+  useEffect(() => {
+    setQueue(
+      recentCalls.filter(
+        (c) =>
+          c.status === "completed" &&
+          (c.qualityScore == null || c.sentimentScore == null)
+      )
+    );
+  }, [recentCalls]);
+
+  const handleDismiss = (id: string) => {
+    setQueue((prev) => prev.filter((c) => c.id !== id));
+    success("Call removed from review queue");
   };
 
-  const handleStopListen = () => {
-    setEavesdroppingCall(null);
-    info("Eavesdrop monitor session disconnected.");
-  };
-
-  const handleBargeTakeover = () => {
-    if (!eavesdroppingCall) return;
-    success(`Supervisor takeover active! Audio redirected to manager headset. ${eavesdroppingCall.caller} muted.`);
-    setEavesdroppingCall(null);
-  };
-
-  const handleOpenWhisper = (call: (typeof MOCK_LIVE_CALLS)[0]) => {
-    setWhisperingCall(call);
-    setWhisperMessage("Focus on the multi-lingual feature and mention we offer 14 days free trial.");
-  };
-
-  const handleSendWhisper = () => {
-    if (!whisperingCall || !whisperMessage.trim()) return;
-    success(`Whisper coaching delivered to ${whisperingCall.caller}'s earpiece! Customer cannot hear.`);
-    setWhisperingCall(null);
-    setWhisperMessage("");
-  };
-
-  const handleApprove = (qa: (typeof MOCK_QA_APPROVALS)[0]) => {
-    setQaList((prev) => prev.filter((item) => item.id !== qa.id));
-    success(`Lead "${qa.lead}" (${qa.company}) approved and synced to CRM!`);
-  };
-
-  const handleConfirmReassign = () => {
-    if (!reassigningQa) return;
-    setQaList((prev) => prev.filter((item) => item.id !== reassigningQa.id));
-    info(`Lead "${reassigningQa.lead}" reassigned to ${selectedReassignRep}.`);
-    setReassigningQa(null);
-  };
-
-  const handleCampaignChange = (campaignId: string) => {
-    setActiveCampaign(campaignId);
-    info(`Switched campaign view to: ${campaignId.replace("-", " ").toUpperCase()}`);
-  };
-
-  const handleExportCampaignCsv = () => {
+  const handleExportCalls = () => {
     const rows = [
-      ["AGENTCALL AI - CAMPAIGN OPERATIONS REPORT"],
-      ["Active Campaign", activeCampaign],
-      ["Generated At", new Date().toLocaleString()],
-      [],
-      ["CAMPAIGN SUMMARY METRICS"],
-      ["Total Dialed Attempts", totalCallsCount],
-      ["Connected Connections", connectedCallsCount],
-      ["QA Qualified Leads", qualifiedLeadsCount],
-      ["Appointments Booked", appointmentsCount],
-      ["Average Handle Time (seconds)", avgDurationSeconds],
-      [],
-      ["QA AUDIT QUEUE ENTRIES"],
-      ["Lead Name", "Company", "QA Score", "Disposition", "AI Notes"],
-      ...qaList.map((qa) => [qa.lead, qa.company, `${qa.score}%`, qa.disposition, qa.aiNotes]),
+      ["id", "phone", "direction", "status", "startedAt", "duration", "lead name", "agent name"],
+      ...recentCalls.map((c) => [
+        c.id,
+        c.lead?.phone ?? c.phone,
+        c.direction,
+        c.status,
+        c.startedAt,
+        c.duration != null ? String(c.duration) : "",
+        c.lead?.name ?? "",
+        c.agent?.name ?? "",
+      ]),
     ];
-
-    const csvContent = "data:text/csv;charset=utf-8," + rows.map((r) => r.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
-    const encodedUri = encodeURI(csvContent);
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      rows
+        .map((r) =>
+          r
+            .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
+            .join(",")
+        )
+        .join("\n");
+    const encodedUri = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `campaign_operations_${activeCampaign}_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute("download", `calls_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    success("Campaign operations & QA audit CSV downloaded successfully!");
+    success("Calls CSV downloaded successfully");
   };
 
   return (
@@ -234,29 +149,19 @@ export function ManagerView({
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-white/60 mt-1.5 max-w-2xl leading-relaxed">
-                Supervise active calling campaigns, monitor ongoing conversations with live eavesdrop, 
-                audit AI lead qualifications, and manage representative queues.
+                Monitor active calling campaigns, review live conversations and audit call quality.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 flex-shrink-0 flex-wrap">
-            <select
-              value={activeCampaign}
-              onChange={(e) => handleCampaignChange(e.target.value)}
-              className="h-10 px-3 rounded-xl bg-white/[0.06] border border-white/10 text-xs font-semibold text-white/90 focus:outline-none focus:border-purple-500/50"
-            >
-              <option value="q3-enterprise" className="bg-[#150305]">Q3 Enterprise Real Estate Campaign</option>
-              <option value="inbound-support" className="bg-[#150305]">Inbound Support Lead Qualifier</option>
-              <option value="collections" className="bg-[#150305]">Payment Reminders Auto-Dialer</option>
-            </select>
-
             <button
-              onClick={handleExportCampaignCsv}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white/90 hover:text-white transition-all shadow-sm"
+              onClick={handleExportCalls}
+              disabled={recentCalls.length === 0}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white/90 hover:text-white transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Download className="w-3.5 h-3.5 text-purple-400" />
-              Export Report
+              Export calls
             </button>
 
             <Link
@@ -381,70 +286,64 @@ export function ManagerView({
         ))}
       </div>
 
-      {/* ── Section 1: Live Calls Monitoring & Eavesdrop ───────── */}
+      {/* ── Section 1: Live Calls Monitoring ─────────────────── */}
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 rounded-2xl p-5 sm:p-6 panel-card border border-white/[0.08]">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Radio className="w-4 h-4 text-emerald-400 animate-pulse" />
-                Live Ongoing Calls (Supervisor Eavesdrop Desk)
+                Live Ongoing Calls
               </h3>
               <p className="text-xs text-white/40 mt-0.5">
-                Active calls in progress. Click Silent Listen to monitor or Whisper to coach representative
+                Active calls currently in progress
               </p>
             </div>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-              2 Live Now
+              {liveCalls.length} Live Now
             </span>
           </div>
 
-          <div className="space-y-3.5">
-            {MOCK_LIVE_CALLS.map((call) => (
-              <div
-                key={call.id}
-                className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-purple-500/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-              >
-                <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <WaveAnimation active size="sm" bars={4} color="bg-emerald-400" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-bold text-white">{call.lead}</p>
-                      <span className="text-[10px] font-mono text-white/40">{call.phone}</span>
-                      <span className={`text-[10px] font-bold px-2 py-0.2 rounded-full border ${call.sentimentColor}`}>
-                        {call.sentiment}
-                      </span>
+          {liveCalls.length === 0 ? (
+            <div className="text-center py-10 text-white/40 text-xs">
+              No active calls right now.
+            </div>
+          ) : (
+            <div className="space-y-3.5">
+              {liveCalls.map((call) => (
+                <div
+                  key={call.id}
+                  className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-purple-500/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                >
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <WaveAnimation active size="sm" bars={4} color="bg-emerald-400" />
                     </div>
-                    <p className="text-xs text-white/60 mt-1">Topic: {call.topic}</p>
-                    <p className="text-[11px] text-purple-300 mt-0.5">Caller: {call.caller}</p>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-bold text-white">
+                          {call.lead?.name || call.phone}
+                        </p>
+                        <span className="text-[10px] font-mono text-white/40">{call.phone}</span>
+                        <span className="text-[10px] font-bold px-2 py-0.2 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 capitalize">
+                          {call.status.replace("_", " ")}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-purple-300 mt-0.5">
+                        Agent: {call.agent?.name || "—"}
+                      </p>
+                      <p className="text-[11px] text-white/40 mt-0.5">
+                        Started {timeAgo(call.startedAt)} ·{" "}
+                        {call.duration != null ? `${Math.floor(call.duration / 60)}m ${call.duration % 60}s` : "—"}
+                        {" · "}
+                        <span className="capitalize">{call.direction}</span>
+                      </p>
+                    </div>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => handleStartListen(call)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 ${
-                      eavesdroppingCall?.id === call.id
-                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 animate-pulse"
-                        : "bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white/90 hover:text-white"
-                    }`}
-                  >
-                    <Headphones className="w-3.5 h-3.5 text-purple-400" />
-                    {eavesdroppingCall?.id === call.id ? "Listening..." : "Silent Listen"}
-                  </button>
-                  <button
-                    onClick={() => handleOpenWhisper(call)}
-                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 transition-all flex items-center gap-1.5"
-                  >
-                    <Volume2 className="w-3.5 h-3.5" />
-                    Whisper
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Campaign Dispositions Summary */}
@@ -490,58 +389,54 @@ export function ManagerView({
           <div>
             <h3 className="text-base font-bold text-white flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-purple-400" />
-              AI Lead Qualification QA Audit Queue
+              Call Review Queue
             </h3>
             <p className="text-xs text-white/40 mt-0.5">
-              High-intent prospects qualified by conversational AI models pending supervisor sign-off before CRM sync
+              Completed calls awaiting review (missing quality or sentiment score)
             </p>
           </div>
           <span className="text-xs font-mono text-purple-300 font-bold px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20">
-            {qaList.length} Pending Approval
+            {queue.length} Pending Review
           </span>
         </div>
 
-        {qaList.length === 0 ? (
+        {queue.length === 0 ? (
           <div className="text-center py-8 text-white/40 text-xs">
-            All AI qualified leads have been audited and synced!
+            No calls awaiting review.
           </div>
         ) : (
           <div className="space-y-3">
-            {qaList.map((qa) => (
+            {queue.map((call) => (
               <div
-                key={qa.id}
+                key={call.id}
                 className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-purple-500/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               >
                 <div className="flex items-start gap-3.5">
                   <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-300 font-bold text-xs flex-shrink-0 mt-0.5">
-                    {qa.score}%
+                    {call.qualityScore != null ? call.qualityScore : "—"}
                   </div>
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-bold text-white">{qa.lead}</p>
-                      <span className="text-xs text-white/40 font-medium">({qa.company})</span>
-                      <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        {qa.disposition}
+                      <p className="text-sm font-bold text-white">{call.lead?.name || call.phone}</p>
+                      <span className="text-xs text-white/40 font-medium">{call.phone}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 capitalize">
+                        {call.status.replace("_", " ")}
                       </span>
-                      <span className="text-[10px] text-white/40 font-mono">{qa.time}</span>
+                      <span className="text-[10px] text-white/40 font-mono">{timeAgo(call.startedAt)}</span>
                     </div>
-                    <p className="text-xs text-white/70 mt-1 leading-relaxed">{qa.aiNotes}</p>
+                    <p className="text-xs text-white/70 mt-1 leading-relaxed">
+                      Quality: {call.qualityScore ?? "not scored"} · Sentiment: {call.sentimentScore ?? "—"}
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button
-                    onClick={() => handleApprove(qa)}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 transition-all flex items-center gap-1.5"
+                    onClick={() => handleDismiss(call.id)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-white/60 hover:text-white transition-all flex items-center gap-1.5"
                   >
                     <Check className="w-3.5 h-3.5" />
-                    Approve to CRM
-                  </button>
-                  <button
-                    onClick={() => setReassigningQa(qa)}
-                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-white/60 hover:text-white transition-all"
-                  >
-                    Re-assign
+                    Dismiss
                   </button>
                 </div>
               </div>
@@ -549,235 +444,6 @@ export function ManagerView({
           </div>
         )}
       </div>
-
-      {/* ── Interactive Floating Audio Eavesdrop Dock ─────────── */}
-      <AnimatePresence>
-        {eavesdroppingCall && (
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 30 }}
-            className="fixed bottom-6 right-6 z-50 max-w-md w-full bg-[#160318]/95 backdrop-blur-2xl border border-purple-500/40 rounded-2xl p-4 shadow-2xl shadow-purple-950/80"
-          >
-            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300">
-                  <Headphones className="w-4 h-4 animate-bounce" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                    Live Audio Stream
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  </p>
-                  <p className="text-[11px] text-white/50">{eavesdroppingCall.lead} ↔ {eavesdroppingCall.caller}</p>
-                </div>
-              </div>
-              <button
-                onClick={handleStopListen}
-                className="w-7 h-7 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] flex items-center justify-center text-white/60 hover:text-white transition-all"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="py-3 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <WaveAnimation active={!isEavesdropMuted} size="md" bars={6} color="bg-purple-400" />
-                <span className="text-[11px] font-mono text-purple-300">
-                  {isEavesdropMuted ? "Stream Muted" : "Monitoring HD Voice"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setIsEavesdropMuted(!isEavesdropMuted)}
-                  className="p-1.5 rounded-lg bg-white/[0.04] text-white/60 hover:text-white text-xs"
-                >
-                  {isEavesdropMuted ? <VolumeX className="w-3.5 h-3.5 text-rose-400" /> : <Volume2 className="w-3.5 h-3.5" />}
-                </button>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={isEavesdropMuted ? 0 : eavesdropVolume}
-                  onChange={(e) => {
-                    setEavesdropVolume(Number(e.target.value));
-                    setIsEavesdropMuted(false);
-                  }}
-                  className="w-20 accent-purple-500 h-1 bg-white/20 rounded-lg cursor-pointer"
-                />
-              </div>
-            </div>
-
-            <div className="p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.04] text-[11px] text-white/70 italic mb-3">
-              &quot;{eavesdroppingCall.topic}&quot;
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleBargeTakeover}
-                className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 shadow-lg shadow-purple-600/30 flex items-center justify-center gap-1.5 transition-all"
-              >
-                <PhoneForwarded className="w-3.5 h-3.5" />
-                Barge & Take Over Call
-              </button>
-              <button
-                onClick={handleStopListen}
-                className="px-3 py-2 rounded-xl text-xs font-semibold bg-white/[0.06] hover:bg-white/[0.12] text-white/70 hover:text-white transition-all"
-              >
-                Disconnect
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Interactive Whisper Coaching Modal ───────────────── */}
-      <AnimatePresence>
-        {whisperingCall && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[#17051a] border border-purple-500/30 rounded-2xl p-6 max-w-lg w-full shadow-2xl shadow-purple-950/80 relative"
-            >
-              <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300">
-                    <Volume2 className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white">Supervisor Whisper Coaching</h3>
-                    <p className="text-xs text-purple-300">To {whisperingCall.caller} (Speaking with {whisperingCall.lead})</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setWhisperingCall(null)}
-                  className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-white/[0.1] flex items-center justify-center text-white/50 hover:text-white"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="py-4 space-y-3">
-                <p className="text-xs text-white/60">
-                  Audio guidance will be whispered directly into the representative&apos;s earphone via WebRTC audio injection. The customer cannot hear this channel.
-                </p>
-
-                <div className="space-y-1.5">
-                  <span className="text-[11px] font-semibold text-white/40">Quick Canned Suggestions:</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {[
-                      "Suggest 15% discount",
-                      "Ask about decision timeline",
-                      "Highlight 99.98% SLA",
-                      "Propose meeting for Thursday 3 PM",
-                    ].map((tip) => (
-                      <button
-                        key={tip}
-                        onClick={() => setWhisperMessage(tip)}
-                        className="px-2.5 py-1 rounded-lg text-[11px] bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-300 transition-all"
-                      >
-                        + {tip}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 pt-2">
-                  <label className="text-xs font-bold text-white/80">Whisper Coaching Audio Prompt</label>
-                  <textarea
-                    rows={3}
-                    value={whisperMessage}
-                    onChange={(e) => setWhisperMessage(e.target.value)}
-                    placeholder="Type coaching instructions..."
-                    className="w-full p-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-purple-500/50"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/[0.08]">
-                <button
-                  onClick={() => setWhisperingCall(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-white/60 hover:text-white"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSendWhisper}
-                  disabled={!whisperMessage.trim()}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-lg shadow-purple-500/25 flex items-center gap-1.5 disabled:opacity-50"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  Transmit Whisper to Headset
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Reassign QA Lead Modal ───────────────────────────── */}
-      <AnimatePresence>
-        {reassigningQa && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[#17051a] border border-purple-500/30 rounded-2xl p-6 max-w-md w-full shadow-2xl shadow-purple-950/80 relative"
-            >
-              <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
-                <div>
-                  <h3 className="text-sm font-bold text-white">Re-assign Lead for Callback</h3>
-                  <p className="text-xs text-purple-300">{reassigningQa.lead} ({reassigningQa.company})</p>
-                </div>
-                <button
-                  onClick={() => setReassigningQa(null)}
-                  className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-white/[0.1] flex items-center justify-center text-white/50 hover:text-white"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="py-4 space-y-3">
-                <p className="text-xs text-white/60">
-                  Select a senior closer or another AI autonomous agent to take over the next outreach session.
-                </p>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-white/80">Assignee</label>
-                  <select
-                    value={selectedReassignRep}
-                    onChange={(e) => setSelectedReassignRep(e.target.value)}
-                    className="w-full h-10 px-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-white focus:outline-none focus:border-purple-500/50"
-                  >
-                    <option value="Aman Sharma (Sales SDR)" className="bg-[#150305]">Aman Sharma (Sales SDR)</option>
-                    <option value="Vikram Rao (Enterprise AE)" className="bg-[#150305]">Vikram Rao (Enterprise AE)</option>
-                    <option value="Priya (AI Telecaller)" className="bg-[#150305]">Priya (AI Autonomous Telecaller)</option>
-                    <option value="Rahul (Hindi Specialist AI)" className="bg-[#150305]">Rahul (Hindi Specialist AI)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/[0.08]">
-                <button
-                  onClick={() => setReassigningQa(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-white/60 hover:text-white"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirmReassign}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-lg shadow-purple-500/25"
-                >
-                  Confirm Reassignment
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

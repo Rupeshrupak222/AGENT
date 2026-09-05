@@ -4,6 +4,7 @@ import { CallsService, InitiateCallDto } from './calls.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { TenantGuard } from '../../common/guards/tenant.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
@@ -11,7 +12,7 @@ import { Response } from 'express';
 import { CALL_VIEW, CALL_INITIATE } from '../../common/rbac/permissions';
 
 @ApiTags('calls')
-@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard, TenantGuard)
 @Controller('calls')
 export class CallsController {
   constructor(private calls: CallsService) {}

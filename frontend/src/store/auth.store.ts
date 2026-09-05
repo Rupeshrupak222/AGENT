@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { setSessionCookie, clearSessionCookie } from "@/lib/session-cookie";
 
 export interface AuthUser {
   id: string;
@@ -40,29 +41,35 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       isAuthenticated: false,
 
-      login: (user, tenant, accessToken, refreshToken) =>
-        set({
+      login: (user, tenant, accessToken, refreshToken) => {
+        setSessionCookie();
+        return set({
           user,
           tenant,
           accessToken,
           refreshToken: refreshToken || null,
           isAuthenticated: true,
-        }),
+        });
+      },
 
-      setTokens: (accessToken, refreshToken) =>
-        set((state) => ({
+      setTokens: (accessToken, refreshToken) => {
+        setSessionCookie();
+        return set((state) => ({
           accessToken,
           refreshToken: refreshToken !== undefined ? refreshToken : state.refreshToken,
-        })),
+        }));
+      },
 
-      logout: () =>
-        set({
+      logout: () => {
+        clearSessionCookie();
+        return set({
           user: null,
           tenant: null,
           accessToken: null,
           refreshToken: null,
           isAuthenticated: false,
-        }),
+        });
+      },
 
       updateUser: (data) =>
         set((s) => ({ user: s.user ? { ...s.user, ...data } : null })),

@@ -8,13 +8,14 @@ import { CreateAppointmentDto, UpdateAppointmentDto } from './dto/appointment.dt
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { TenantGuard } from '../../common/guards/tenant.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CALENDAR_VIEW, CALENDAR_MANAGE } from '../../common/rbac/permissions';
 
 @ApiTags('calendar')
 @ApiBearerAuth('JWT')
-@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard, TenantGuard)
 @Controller('calendar')
 export class CalendarController {
   constructor(private readonly calendar: CalendarService) {}

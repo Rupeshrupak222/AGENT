@@ -1,6 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { TENANT_KEY } from '../decorators/current-tenant.decorator';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 /**
  * TenantGuard ensures:
@@ -14,6 +15,14 @@ export class TenantGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    const isPublic = (this.reflector as any)?.getAllAndOverride?.(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) {
+      return true;
+    }
+
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 

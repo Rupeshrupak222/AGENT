@@ -3,14 +3,12 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navLinks = [
   { label: "Features",     href: "#features"     },
   { label: "How It Works", href: "#how-it-works"  },
   { label: "Pricing",      href: "#pricing"       },
   { label: "Integrations", href: "#integrations"  },
-  { label: "Docs",         href: "/docs"          },
 ];
 
 export function Navbar() {
@@ -66,7 +64,6 @@ export function Navbar() {
 
           {/* Desktop CTAs */}
           <div className="hidden md:flex items-center gap-3">
-            <ThemeToggle />
             <Link href="/login"
               className="px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 text-brand-600 dark:text-white border border-brand-500/30 bg-brand-500/5 hover:bg-brand-500/10 hover:border-brand-500/50"
             >
@@ -79,7 +76,6 @@ export function Navbar() {
 
           {/* Mobile hamburger */}
           <div className="flex md:hidden items-center gap-2">
-            <ThemeToggle />
             <button onClick={()=>setMobileOpen(!mobileOpen)}
               className="p-2 rounded-xl transition-all text-slate-600 dark:text-white/70 hover:bg-slate-100 dark:hover:bg-white/[0.06]"
             >

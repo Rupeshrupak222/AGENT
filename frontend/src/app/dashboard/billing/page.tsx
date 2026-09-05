@@ -1,12 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
 import {
-  CreditCard, CheckCircle2, ShieldCheck, Zap,
-  TrendingUp, Clock, Users, ArrowRight, RefreshCw, AlertCircle
+  CheckCircle2, Zap,
+  Clock, Users, ArrowRight, RefreshCw, AlertCircle, Headphones, PhoneCall, Target, CalendarClock
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { apiClient } from "@/lib/api";
-import { useAuthStore } from "@/store/auth.store";
+import { apiClient, tenantApi, TenantUsage } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 interface PlanConfig {
   name: string;
@@ -39,21 +39,28 @@ const PLANS_DISPLAY: Record<string, { desc: string; features: string[]; popular?
 export default function BillingPage() {
   const [plans, setPlans] = useState<Record<string, PlanConfig>>({});
   const [subscription, setSubscription] = useState<any>(null);
+  const [usage, setUsage] = useState<TenantUsage | null>(null);
   const [loading, setLoading] = useState(true);
+  const [billingError, setBillingError] = useState<string | null>(null);
   const [upgradingPlan, setUpgradingPlan] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const toast = useToast();
 
   const fetchBillingInfo = async () => {
     try {
       setLoading(true);
-      const [plansRes, subRes] = await Promise.all([
+      setBillingError(null);
+      const [plansRes, subRes, usageRes] = await Promise.all([
         apiClient.get("/billing/plans"),
-        apiClient.get("/billing/subscription").catch(() => ({ data: { plan: "growth" } })),
+        apiClient.get("/billing/subscription"),
+        tenantApi.usage(),
       ]);
       setPlans(plansRes.data || {});
-      setSubscription(subRes.data || { plan: "growth" });
+      setSubscription(subRes.data || null);
+      setUsage(usageRes || null);
     } catch (err) {
       console.error("Billing fetch error:", err);
+      setBillingError("Couldn't load billing details from the backend. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -84,10 +91,15 @@ export default function BillingPage() {
       await fetchBillingInfo();
     } catch (err: any) {
       console.error("Upgrade error:", err);
+      toast.error(`Plan change failed: ${err?.response?.data?.message?.[0] || err?.message || "Could not update subscription."}`);
     } finally {
       setUpgradingPlan(null);
     }
   };
+
+  const planExpiresAt = subscription?.planExpiresAt
+    ? new Date(subscription.planExpiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+    : null;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
@@ -99,12 +111,22 @@ export default function BillingPage() {
           <p className="text-sm text-slate-500 dark:text-white/50 mt-1">Manage your plan, calling minutes allocation, and payment history.</p>
         </div>
         <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-1.5">
+          <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse" />
-            Current Plan: <strong className="capitalize">{subscription?.plan || "Growth"}</strong>
+            Current Plan: <strong className="capitalize">{subscription?.plan || "—"}</strong>
           </span>
         </div>
       </div>
+
+      {billingError && (
+        <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 text-sm font-medium flex items-center gap-2" role="alert">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          {billingError}
+          <button onClick={fetchBillingInfo} className="ml-auto px-3 py-1 rounded-lg text-xs font-semibold bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 transition-colors">
+            Retry
+          </button>
+        </div>
+      )}
 
       {successMessage && (
         <motion.div
@@ -123,39 +145,74 @@ export default function BillingPage() {
           <div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Clock className="w-4 h-4 text-brand-500 dark:text-brand-400" />
-              Monthly Minutes Allowance
+              Workspace Usage
             </h3>
-            <p className="text-xs text-slate-500 dark:text-white/40 mt-0.5">Renews automatically every billing cycle</p>
+            <p className="text-xs text-slate-500 dark:text-white/40 mt-0.5">Live counts from your workspace this billing cycle</p>
           </div>
           <span className="text-xs font-mono text-slate-500 dark:text-white/60">
-            <strong className="text-slate-900 dark:text-white">1,847</strong> / 5,000 mins used (36.9%)
+            {loading ? "Loading…" : (
+              <>
+                <strong className="text-slate-900 dark:text-white">
+                  {usage?.callCount ?? "—"}
+                </strong>{" "}
+                calls this month
+              </>
+            )}
           </span>
         </div>
 
-        {/* Progress bar */}
-        <div className="w-full h-3 rounded-full bg-slate-100 dark:bg-white/10 overflow-hidden relative">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-brand-600 to-rose-500 transition-all duration-500 shadow-lg shadow-brand-500/40"
-            style={{ width: "36.9%" }}
-          />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs pt-2">
+          <div>
+            <p className="text-slate-500 dark:text-white/40 flex items-center gap-1.5">
+              <PhoneCall className="w-3.5 h-3.5 text-brand-500 dark:text-brand-400" /> Calls (this month)
+            </p>
+            <span className="text-lg font-bold text-slate-900 dark:text-white font-mono mt-1 block">
+              {loading ? "—" : (usage?.callCount ?? 0).toLocaleString()}
+            </span>
+          </div>
+          <div>
+            <p className="text-slate-500 dark:text-white/40 flex items-center gap-1.5">
+              <Headphones className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Active AI Agents
+            </p>
+            <span className="text-lg font-bold text-slate-900 dark:text-white font-mono mt-1 block">
+              {loading ? "—" : (usage?.agentCount ?? 0).toLocaleString()}
+            </span>
+          </div>
+          <div>
+            <p className="text-slate-500 dark:text-white/40 flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> Team Members
+            </p>
+            <span className="text-lg font-bold text-slate-900 dark:text-white font-mono mt-1 block">
+              {loading ? "—" : (usage?.userCount ?? 0).toLocaleString()}
+            </span>
+          </div>
+          <div>
+            <p className="text-slate-500 dark:text-white/40 flex items-center gap-1.5">
+              <Target className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" /> Leads Tracked
+            </p>
+            <span className="text-lg font-bold text-slate-900 dark:text-white font-mono mt-1 block">
+              {loading ? "—" : (usage?.leadCount ?? 0).toLocaleString()}
+            </span>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-200 dark:border-white/[0.06] text-xs">
-          <div>
-            <span className="text-slate-500 dark:text-white/40 block">Concurrent Channels</span>
-            <span className="text-base font-bold text-slate-900 dark:text-white font-mono mt-0.5 block">25 Calls</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-6 pt-5 border-t border-slate-200 dark:border-white/[0.06] text-xs">
+          <div className="flex items-center gap-1.5 text-slate-500 dark:text-white/40">
+            <CalendarClock className="w-3.5 h-3.5" />
+            Renewal date:{" "}
+            <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+              {planExpiresAt ?? "—"}
+            </span>
+            <span className="text-white/30">(not set if plan is annual/unbilled)</span>
           </div>
-          <div>
-            <span className="text-slate-500 dark:text-white/40 block">Total Dispatched</span>
-            <span className="text-base font-bold text-slate-900 dark:text-white font-mono mt-0.5 block">2,847 Calls</span>
-          </div>
-          <div>
-            <span className="text-slate-500 dark:text-white/40 block">Avg Duration</span>
-            <span className="text-base font-bold text-slate-900 dark:text-white font-mono mt-0.5 block">3m 24s</span>
-          </div>
-          <div>
-            <span className="text-slate-500 dark:text-white/40 block">Renewal Date</span>
-            <span className="text-base font-bold text-emerald-600 dark:text-emerald-400 font-mono mt-0.5 block">30 Sept 2026</span>
+          <div className="flex items-center gap-1.5 text-slate-500 dark:text-white/40">
+            <Zap className="w-3.5 h-3.5" />
+            Minutes allowance:{" "}
+            <span className="font-bold text-slate-900 dark:text-white">
+              {subscription?.plan
+                ? (PLANS_DISPLAY[subscription.plan]?.features?.[1] || "See plan below")
+                : "—"}
+            </span>
           </div>
         </div>
       </div>

@@ -8,6 +8,7 @@ import { CreateAgentDto, UpdateAgentDto } from './dto/agent.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { TenantGuard } from '../../common/guards/tenant.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import {
@@ -16,7 +17,7 @@ import {
 
 @ApiTags('agents')
 @ApiBearerAuth('JWT')
-@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard, TenantGuard)
 @Controller('agents')
 export class AgentsController {
   constructor(private agents: AgentsService) {}

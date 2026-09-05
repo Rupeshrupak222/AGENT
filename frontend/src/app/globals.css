@@ -101,6 +101,17 @@
     -moz-osx-font-smoothing: grayscale;
   }
   ::selection { background: rgba(212,32,39,0.18); color: #D42027; }
+
+  /* Keyboard accessibility: visible focus indicator on interactive elements */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:not([tabindex="-1"]):focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+  }
 }
 
 /* ── Component Classes ──────────────────────────────────────── */
@@ -169,6 +180,26 @@
   }
   .nav-item:hover { color: var(--text-primary); background: var(--bg-hover); }
   .nav-item.active { color: #D42027; background: var(--bg-active); border-color: rgba(212,32,39,0.2); }
+
+  /* ── Primary action button (brand gradient) ────────────────── */
+  .btn-red {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    font-weight: 600;
+    color: #ffffff;
+    background-image: linear-gradient(135deg, var(--brand-500), var(--brand-700));
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    transition: filter 0.15s, transform 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+  }
+  .btn-red:hover { filter: brightness(1.08); box-shadow: var(--shadow-lg); }
+  .btn-red:active { transform: scale(0.98); }
+  .btn-red:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-red:focus-visible { outline-offset: 2px; }
 }
 
 /* ── Utilities ─────────────────────────────────────────────── */

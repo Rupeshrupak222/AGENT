@@ -41,20 +41,21 @@ export class LeadsService {
   }
 
   async findAll(tenantId: string, query: {
-    status?: string; search?: string; agentId?: string;
+    status?: string; search?: string; agentId?: string; assignedTo?: string;
     page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc';
   }) {
     try {
       const pageNum = Math.max(1, Number(query?.page) || 1);
       const limitNum = Math.max(1, Math.min(100, Number(query?.limit) || 20));
       const skip = (pageNum - 1) * limitNum;
-      const { status, search, agentId, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+      const { status, search, agentId, assignedTo, sortBy = 'createdAt', sortOrder = 'desc' } = query;
 
       const where: any = {
         tenantId,
         deletedAt: null,
         ...(status && { status }),
         ...(agentId && { assignedAgentId: agentId }),
+        ...(assignedTo && { assignedToId: assignedTo }),
         ...(search && {
           OR: [
             { name: { contains: search, mode: 'insensitive' } },

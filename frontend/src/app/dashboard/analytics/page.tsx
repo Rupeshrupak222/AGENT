@@ -1,13 +1,12 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import {
-  Brain, Zap, Target, AlertTriangle, CheckCircle2, Star, ArrowUpRight,
-  RefreshCw, Info, Loader2,
+  Brain, Zap, Target, Star, RefreshCw, Info, Loader2,
 } from "lucide-react";
 import {
   BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Cell, ScatterChart, Scatter, ZAxis,
+  Cell,
 } from "recharts";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge }   from "@/components/ui/Badge";
@@ -43,25 +42,13 @@ const SENTIMENT_META: Record<string, { label: string; color: string }> = {
 
 const FUNNEL_COLORS = ["#6366f1","#8b5cf6","#06b6d4","#22c55e","#84cc16","#eab308","#f97316"];
 
-const intentData = [
-  { intent:"High Intent",    count:412, convRate:68, color:"#6366f1" },
-  { intent:"Medium Intent",  count:635, convRate:34, color:"#8b5cf6" },
-  { intent:"Low Intent",     count:890, convRate:12, color:"#a855f7" },
-  { intent:"No Intent",      count:310, convRate:2,  color:"#374151" },
-];
-
-const aiInsights = [
-  { type:"success",  icon:<CheckCircle2 className="w-4 h-4 text-green-400"/>,  title:"Peak Performance Window",       body:"Calls between 10AM–12PM have 42% higher conversion. Schedule more campaigns in this window.", impact:"+12% conv." },
-  { type:"warning",  icon:<AlertTriangle className="w-4 h-4 text-yellow-400"/>, title:"Objection Spike Detected",      body:"'Price too high' objection increased 23% this week. Update agents' scripts with new value props.", impact:"-8% conv." },
-  { type:"info",     icon:<Brain className="w-4 h-4 text-brand-400"/>,          title:"Language Optimisation",         body:"Hindi leads respond 31% better to Hinglish. Consider switching to Hinglish for Hindi numbers.", impact:"+8% response" },
-  { type:"success",  icon:<Zap className="w-4 h-4 text-purple-400"/>,           title:"High-Intent Lead Batch Ready",  body:"47 leads scored 85+ are ready for immediate callback. Estimated ₹2.1L pipeline value.", impact:"₹2.1L pipeline" },
-];
-
-const leadPriorityScatter = Array.from({ length: 40 }, (_, i) => ({
-  score: Math.floor(Math.random() * 60 + 40),
-  conv:  Math.floor(Math.random() * 80 + 10),
-  calls: Math.floor(Math.random() * 8 + 1),
-}));
+interface DerivedInsight {
+  type: "success" | "warning" | "info";
+  icon: ReactNode;
+  title: string;
+  body: string;
+  impact: string;
+}
 
 // ── Tooltip ────────────────────────────────────────────────────
 function ChartTip({ active, payload, label }: any) {
@@ -80,8 +67,8 @@ function ChartTip({ active, payload, label }: any) {
   );
 }
 
-// ── AI Insight card ────────────────────────────────────────────
-function InsightCard({ insight }: { insight: typeof aiInsights[0] }) {
+// ── Insight card ────────────────────────────────────────────────
+function InsightCard({ insight }: { insight: DerivedInsight }) {
   const borderColor = insight.type === "success" ? "border-green-500/20" : insight.type === "warning" ? "border-yellow-500/20" : "border-brand-500/20";
   const bgColor     = insight.type === "success" ? "bg-green-500/5"      : insight.type === "warning" ? "bg-yellow-500/5"      : "bg-brand-500/5";
   return (
@@ -144,6 +131,87 @@ export default function AnalyticsPage() {
   const handleRange = (p: string) => {
     if (p === "today" || p === "week" || p === "month") setPeriod(p);
   };
+
+  const rangeLabel = period === "today" ? "today" : period === "week" ? "last 7 days" : "last 30 days";
+  const topAgent = agents.reduce<AgentPerformanceItem | null>(
+    (best, a) => (!best || a.totalCalls > best.totalCalls ? a : best),
+    null
+  );
+  const mostCommonSentiment = [...sentiment].sort((a, b) => b.count - a.count)[0] ?? null;
+
+  const insights: DerivedInsight[] = [];
+  if (metrics) {
+    insights.push({
+      type: "info",
+      icon: <Zap className="w-4 h-4 text-brand-400" />,
+      title: "Total Calls",
+      body: `${metrics.totalCalls.toLocaleString()} calls recorded over the ${rangeLabel}.`,
+      impact: metrics.totalCalls.toLocaleString(),
+    });
+  } else {
+    insights.push({
+      type: "info",
+      icon: <Info className="w-4 h-4 text-brand-400" />,
+      title: "Total Calls",
+      body: "No data available yet.",
+      impact: "—",
+    });
+  }
+
+  if (metrics) {
+    insights.push({
+      type: "success",
+      icon: <Target className="w-4 h-4 text-green-400" />,
+      title: "Connect Rate",
+      body: `${(metrics.connectRate ?? 0).toFixed(1)}% of calls were connected over the ${rangeLabel}.`,
+      impact: `${(metrics.connectRate ?? 0).toFixed(1)}%`,
+    });
+  } else {
+    insights.push({
+      type: "info",
+      icon: <Info className="w-4 h-4 text-green-400" />,
+      title: "Connect Rate",
+      body: "No data available yet.",
+      impact: "—",
+    });
+  }
+
+  if (topAgent) {
+    insights.push({
+      type: "success",
+      icon: <Star className="w-4 h-4 text-yellow-400" />,
+      title: "Top Agent by Calls",
+      body: `${topAgent.name} handled the most calls with ${topAgent.totalCalls} total.`,
+      impact: `${topAgent.totalCalls}`,
+    });
+  } else {
+    insights.push({
+      type: "info",
+      icon: <Info className="w-4 h-4 text-yellow-400" />,
+      title: "Top Agent by Calls",
+      body: "No data available yet.",
+      impact: "—",
+    });
+  }
+
+  if (mostCommonSentiment) {
+    const meta = SENTIMENT_META[mostCommonSentiment.bucket] || { label: mostCommonSentiment.bucket };
+    insights.push({
+      type: "info",
+      icon: <Brain className="w-4 h-4 text-purple-400" />,
+      title: "Most Common Sentiment",
+      body: `${meta.label} was the most frequent sentiment with ${mostCommonSentiment.count} calls.`,
+      impact: `${mostCommonSentiment.count}`,
+    });
+  } else {
+    insights.push({
+      type: "info",
+      icon: <Info className="w-4 h-4 text-purple-400" />,
+      title: "Most Common Sentiment",
+      body: "No data available yet.",
+      impact: "—",
+    });
+  }
 
   if (loading && !metrics) {
     return (
@@ -303,73 +371,85 @@ export default function AnalyticsPage() {
             )}
           </Card>
 
-          {/* Intent breakdown (no backend endpoint yet) */}
+          {/* Call sentiment distribution */}
           <Card className="p-6">
-            <CardHeader><CardTitle>Customer Intent Detection</CardTitle></CardHeader>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={intentData} layout="vertical" margin={{ top:0, right:10, left:10, bottom:0 }}>
-                <XAxis type="number" tick={{ fill:"#64748b", fontSize:10 }} axisLine={false} tickLine={false}/>
-                <YAxis dataKey="intent" type="category" tick={{ fill:"#64748b", fontSize:10 }} axisLine={false} tickLine={false} width={90}/>
-                <Tooltip content={<ChartTip/>}/>
-                <Bar dataKey="count" radius={[0,4,4,0]}>
-                  {intentData.map((e,i)=><Cell key={i} fill={e.color}/>)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-            <div className="mt-3 space-y-1.5">
-              {intentData.map(d=>(
-                <div key={d.intent} className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full" style={{background:d.color}}/>
-                    <span className="text-slate-500 dark:text-white/50">{d.intent}</span>
-                  </div>
-                  <span className="text-green-400 font-medium">{d.convRate}% conv</span>
+            <CardHeader><CardTitle>Call Sentiment</CardTitle></CardHeader>
+            {sentiment.length === 0 ? (
+              <p className="text-sm text-slate-400 dark:text-white/30 py-10 text-center">No call sentiment data yet.</p>
+            ) : (
+              <>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={sentiment} layout="vertical" margin={{ top:0, right:10, left:10, bottom:0 }}>
+                    <XAxis type="number" tick={{ fill:"#64748b", fontSize:10 }} axisLine={false} tickLine={false}/>
+                    <YAxis dataKey="bucket" type="category" tick={{ fill:"#64748b", fontSize:10 }} axisLine={false} tickLine={false} width={90}/>
+                    <Tooltip content={<ChartTip/>}/>
+                    <Bar dataKey="count" name="Calls" radius={[0,4,4,0]}>
+                      {sentiment.map((s)=>(
+                        <Cell key={s.bucket} fill={(SENTIMENT_META[s.bucket] || { color: "#6366f1" }).color}/>
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+                <div className="mt-3 space-y-1.5">
+                  {sentiment.map(s=>{
+                    const meta = SENTIMENT_META[s.bucket] || { label: s.bucket, color: "#6366f1" };
+                    return (
+                      <div key={s.bucket} className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2 h-2 rounded-full" style={{background:meta.color}}/>
+                          <span className="text-slate-500 dark:text-white/50">{meta.label}</span>
+                        </div>
+                        <span className="text-green-400 font-medium">{s.count} calls</span>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
+              </>
+            )}
           </Card>
         </div>
 
-        {/* AI Insights panel (static until backend endpoint exists) */}
+        {/* Derived insights panel (computed from real loaded data) */}
         <Card className="p-6">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Brain className="w-5 h-5 text-brand-400"/>
-              <CardTitle>AI-Generated Insights</CardTitle>
-              <Badge variant="purple">Analysis</Badge>
+              <CardTitle>Derived Insights</CardTitle>
+              <Badge variant="purple">Data</Badge>
             </div>
-            <Button variant="secondary" size="sm" iconRight={<ArrowUpRight className="w-4 h-4"/>}>Full Report</Button>
           </CardHeader>
           <div className="grid md:grid-cols-2 gap-4">
-            {aiInsights.map((insight,i)=>(
+            {insights.map((insight, i)=>(
               <InsightCard key={i} insight={insight}/>
             ))}
           </div>
         </Card>
 
-        {/* Lead priority scatter */}
+        {/* Per-agent call detail */}
         <Card className="p-6">
           <CardHeader>
-            <CardTitle>Lead Priority Score Distribution</CardTitle>
-            <p className="text-xs text-slate-500 dark:text-white/40">Score vs Conversion Rate (bubble size = calls made)</p>
+            <CardTitle>Agent Call Detail</CardTitle>
           </CardHeader>
-          <ResponsiveContainer width="100%" height={200}>
-            <ScatterChart margin={{ top:5, right:5, left:-20, bottom:0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)"/>
-              <XAxis dataKey="score" name="Priority Score" tick={{ fill:"#64748b", fontSize:10 }} label={{ value:"Priority Score", position:"insideBottom", offset:-2, fill:"#64748b", fontSize:10 }} axisLine={false} tickLine={false}/>
-              <YAxis dataKey="conv"  name="Conv Rate %" tick={{ fill:"#64748b", fontSize:10 }} axisLine={false} tickLine={false}/>
-              <ZAxis dataKey="calls" range={[20, 100]}/>
-              <Tooltip cursor={{ strokeDasharray:"3 3" }} content={({ active, payload })=>
-                active && payload?.length ? (
-                  <div className="glass-card rounded-xl p-2.5 text-xs border border-slate-200 dark:border-white/10">
-                    <p className="text-slate-500 dark:text-white/60">Score: <span className="text-slate-900 dark:text-white font-medium">{payload[0]?.value}</span></p>
-                    <p className="text-slate-500 dark:text-white/60">Conv: <span className="text-green-400 font-medium">{payload[1]?.value}%</span></p>
+          {agents.length === 0 ? (
+            <p className="text-sm text-slate-400 dark:text-white/30 py-10 text-center">No agent data available yet.</p>
+          ) : (
+            <div className="space-y-3 mt-2">
+              {agents.map(a=>(
+                <div key={a.id} className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06]">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-semibold text-slate-900 dark:text-white">{a.name}</span>
+                    <span className="text-xs text-slate-500 dark:text-white/50 capitalize">{a.role}</span>
                   </div>
-                ) : null
-              }/>
-              <Scatter data={leadPriorityScatter} fill="#6366f1" fillOpacity={0.7}/>
-            </ScatterChart>
-          </ResponsiveContainer>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-slate-500 dark:text-white/50 mt-2">
+                    <span>Total: <span className="text-slate-900 dark:text-white font-medium">{a.totalCalls}</span></span>
+                    <span>Completed: <span className="text-slate-900 dark:text-white font-medium">{a.completedCalls}</span></span>
+                    <span>Avg quality: <span className="text-slate-900 dark:text-white font-medium">{a.avgQuality != null ? a.avgQuality : "—"}</span></span>
+                    <span>Avg sentiment: <span className="text-slate-900 dark:text-white font-medium">{a.avgSentiment != null ? a.avgSentiment : "—"}</span></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
       </div>
     </div>

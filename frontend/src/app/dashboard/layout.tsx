@@ -22,17 +22,15 @@ import {
   Menu,
   X,
   Plus,
-  Search,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { bootstrapAuth } from "@/lib/api";
+import { bootstrapAuth, callsApi, CallItem } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
 import { usePermissions } from "@/hooks/usePermissions";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/components/ui/Toast";
 import { PERMISSIONS, Permission } from "@/lib/permissions";
 import { Badge } from "@/components/ui/Badge";
@@ -92,11 +90,25 @@ const ALL_GROUPS: { label: string; items: NavItem[] }[] = [
   },
 ];
 
-const NOTIFS = [
-  { id: 1, text: "Priya AI completed 50 calls today", time: "2m ago", unread: true },
-  { id: 2, text: "New lead qualified: Rahul Sharma", time: "15m ago", unread: true },
-  { id: 3, text: "Campaign 'Q3 Drive' reached 500 calls", time: "1h ago", unread: false },
-];
+const NOTIF_STATUS_STYLE: Record<CallItem["status"], string> = {
+  queued: "bg-slate-400",
+  ringing: "bg-amber-400",
+  in_progress: "bg-amber-400",
+  completed: "bg-emerald-500",
+  missed: "bg-rose-500",
+  failed: "bg-rose-500",
+  transferred: "bg-sky-500",
+};
+
+const NOTIF_STATUS_LABEL: Record<CallItem["status"], string> = {
+  queued: "Queued",
+  ringing: "Ringing",
+  in_progress: "In progress",
+  completed: "Completed",
+  missed: "Missed",
+  failed: "Failed",
+  transferred: "Transferred",
+};
 
 function SidebarContent({
   collapsed = false,
@@ -211,7 +223,7 @@ active
         )}
       >
         <Link
-          href="/help"
+          href="/dashboard/settings"
           className={cn(
             "flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-all",
             !show && "justify-center px-0"
@@ -266,8 +278,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [recentCalls, setRecentCalls] = useState<CallItem[]>([]);
+  const [notifError, setNotifError] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -312,6 +325,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  // Live notification feed: most recent calls in the workspace
+  useEffect(() => {
+    if (!mounted || !isAuthenticated) return;
+    let active = true;
+    callsApi
+      .list({ limit: 4 })
+      .then((res) => {
+        if (active) {
+          setRecentCalls(res.items || []);
+          setNotifError(false);
+        }
+      })
+      .catch(() => {
+        if (active) setNotifError(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [mounted, isAuthenticated]);
 
   useEffect(() => {
     const fn = () => {
@@ -364,7 +397,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  const unread = NOTIFS.filter((n) => n.unread).length;
   const pageLabel = pathname.split("/").pop()?.replace(/-/g, " ") || "Dashboard";
 
   // Profile dropdown items filtered by permissions
@@ -386,6 +418,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <SidebarContent collapsed={collapsed} />
         <button
           onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           className="absolute -right-3 top-20 w-6 h-6 rounded-full flex items-center justify-center z-10 transition-all bg-input border border-slate-200 dark:border-brand-500/30 text-slate-500 dark:text-white/50 shadow-md hover:border-brand-500 hover:text-brand-600 dark:hover:text-white"
         >
           {collapsed ? (
@@ -427,6 +460,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setMobileOpen(true)}
+              aria-label="Open sidebar menu"
               className="lg:hidden p-2 rounded-xl text-slate-500 dark:text-white/60 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-all"
             >
               <Menu className="w-5 h-5" />
@@ -440,6 +474,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   setNotifOpen(false);
                   setProfileOpen(false);
                 }}
+                aria-label="Switch workspace"
+                aria-expanded={workspaceOpen}
                 className="hidden sm:flex items-center gap-2 px-3 h-9 rounded-xl bg-slate-100/70 dark:bg-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.08] border border-slate-200 dark:border-white/10 transition-all"
               >
                 <Building2 className="w-4 h-4 text-brand-600 dark:text-brand-400" />
@@ -537,38 +573,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Search */}
-            <div className="relative hidden sm:block">
-              <AnimatePresence>
-                {searchOpen ? (
-                  <motion.input
-                    initial={{ width: 0, opacity: 0 }}
-                    animate={{ width: 200, opacity: 1 }}
-                    exit={{ width: 0, opacity: 0 }}
-                    autoFocus
-                    onBlur={() => setSearchOpen(false)}
-                    placeholder="Search..."
-                    className="h-9 rounded-xl px-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/25 outline-none bg-slate-100/70 dark:bg-white/[0.04] border border-slate-200 dark:border-brand-500/30"
-                  />
-                ) : (
-                  <motion.button
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    onClick={() => setSearchOpen(true)}
-                    className="w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-slate-100/70 dark:bg-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.08] border border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/50"
-                  >
-                    <Search className="w-4 h-4" />
-                  </motion.button>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Theme Toggle */}
-            <ThemeToggle />
-
             {/* Notifications */}
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
+                aria-label="Recent activity"
+                aria-expanded={notifOpen}
                 onClick={() => {
                   setNotifOpen(!notifOpen);
                   setProfileOpen(false);
@@ -576,11 +585,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-slate-100/70 dark:bg-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.08] border border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/60"
               >
                 <Bell className="w-4 h-4" />
-                {unread > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-sm bg-brand-500">
-                    {unread}
-                  </span>
-                )}
               </button>
               <AnimatePresence>
                 {notifOpen && (
@@ -592,41 +596,55 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   >
                     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-white/[0.06]">
                       <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                        Notifications
+                        Recent Activity
                       </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-rose-300 border border-brand-200 dark:border-brand-500/30">
-                        {unread} new
-                      </span>
-                    </div>
-                    {NOTIFS.map((n) => (
-                      <div
-                        key={n.id}
-                        className={cn(
-                          "px-4 py-3 cursor-pointer transition-all border-b border-slate-200/70 dark:border-white/[0.04]",
-                          n.unread
-                            ? "bg-brand-50/50 dark:bg-brand-500/10"
-                            : "hover:bg-slate-100 dark:hover:bg-white/[0.03]"
-                        )}
+                      <Link
+                        href="/dashboard/calls"
+                        className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-rose-300 border border-brand-200 dark:border-brand-500/30"
                       >
-                        <div className="flex gap-2.5">
-                          {n.unread && (
-                            <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 bg-brand-500" />
-                          )}
-                          <div className={n.unread ? "" : "pl-4"}>
-                            <p className="text-sm text-slate-700 dark:text-white/80">
-                              {n.text}
+                        View all
+                      </Link>
+                    </div>
+                    {notifError ? (
+                      <p className="px-4 py-6 text-sm text-center text-slate-500 dark:text-white/40">
+                        Unable to load recent activity.
+                      </p>
+                    ) : recentCalls.length === 0 ? (
+                      <p className="px-4 py-6 text-sm text-center text-slate-500 dark:text-white/40">
+                        No recent activity yet.
+                      </p>
+                    ) : (
+                      recentCalls.map((c) => (
+                        <Link
+                          key={c.id}
+                          href="/dashboard/calls"
+                          className="flex gap-2.5 items-start px-4 py-3 transition-all border-b border-slate-200/70 dark:border-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.03]"
+                        >
+                          <div
+                            className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${NOTIF_STATUS_STYLE[c.status]}`}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm text-slate-700 dark:text-white/80 truncate">
+                              Call with {c.lead?.name || c.phone}
                             </p>
-                            <p className="text-xs mt-0.5 text-slate-500 dark:text-white/40">
-                              {n.time}
+                            <p className="text-xs mt-0.5 text-slate-500 dark:text-white/40 capitalize">
+                              {NOTIF_STATUS_LABEL[c.status]} · {c.direction} ·{" "}
+                              {new Date(c.startedAt).toLocaleTimeString("en-IN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
                             </p>
                           </div>
-                        </div>
-                      </div>
-                    ))}
+                        </Link>
+                      ))
+                    )}
                     <div className="px-4 py-2.5 border-t border-slate-200/70 dark:border-white/[0.06]">
-                      <button className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">
+                      <Link
+                        href="/dashboard/calls"
+                        className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline"
+                      >
                         View all →
-                      </button>
+                      </Link>
                     </div>
                   </motion.div>
                 )}
@@ -651,6 +669,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   setProfileOpen(!profileOpen);
                   setNotifOpen(false);
                 }}
+                aria-label="Account menu"
+                aria-expanded={profileOpen}
                 className="flex items-center gap-2 h-9 px-2 rounded-xl transition-all hover:bg-slate-100 dark:hover:bg-white/[0.06]"
               >
                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm bg-gradient-to-br from-brand-500 to-brand-700">

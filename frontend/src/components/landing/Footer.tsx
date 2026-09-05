@@ -4,10 +4,8 @@ import { Zap, Twitter, Linkedin, Youtube, Github } from "lucide-react";
 const R = "#D42027";
 
 const cols = {
-  Product:    [{ l:"Features",href:"#features" },{ l:"Pricing",href:"#pricing" },{ l:"Integrations",href:"#integrations" },{ l:"Changelog",href:"/changelog" },{ l:"Roadmap",href:"/roadmap" }],
-  Solutions:  [{ l:"AI Telecaller",href:"/solutions/telecaller" },{ l:"AI Recruiter",href:"/solutions/recruiter" },{ l:"AI Receptionist",href:"/solutions/receptionist" },{ l:"AI Sales Agent",href:"/solutions/sales" },{ l:"AI Collections",href:"/solutions/collections" }],
-  Developers: [{ l:"Documentation",href:"/docs" },{ l:"API Reference",href:"/docs/api" },{ l:"SDKs",href:"/docs/sdks" },{ l:"Webhooks",href:"/docs/webhooks" },{ l:"Status Page",href:"/status" }],
-  Company:    [{ l:"About",href:"/about" },{ l:"Blog",href:"/blog" },{ l:"Careers",href:"/careers" },{ l:"Contact",href:"/contact" },{ l:"Press",href:"/press" }],
+  Product:    [{ l:"Features",href:"#features" },{ l:"How It Works",href:"#how-it-works" },{ l:"Integrations",href:"#integrations" },{ l:"Pricing",href:"#pricing" }],
+  "Get Started": [{ l:"Sign In",href:"/login" },{ l:"Start Free Trial",href:"/signup" }],
 };
 const socials = [
   { icon:<Twitter className="w-4 h-4"/>,  href:"https://twitter.com",  label:"Twitter" },
@@ -62,11 +60,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-gray-200 dark:border-white/[0.08]">
           <p className="text-xs text-gray-400 dark:text-white/40">© 2026 AgentCall AI. All rights reserved.</p>
-          <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
-            {["Privacy Policy","Terms of Service","Cookie Policy","GDPR"].map(t=>(
-              <Link key={t} href="#" className="text-xs text-gray-400 dark:text-white/40 hover:text-red-600 transition-colors">{t}</Link>
-            ))}
-          </div>
+          <p className="text-xs text-gray-400 dark:text-white/40">Made in India 🇮🇳</p>
         </div>
       </div>
     </footer>

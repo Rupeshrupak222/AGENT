@@ -45,57 +45,42 @@ const GATEWAY_STACK = [
     name: "Twilio WebRTC SIP Gateway",
     type: "Telephony Trunk",
     region: "Global SIP Routing",
-    latency: "22ms",
-    jitter: "0.8ms",
-    packetLoss: "0.00%",
-    status: "Operational",
-    statusColor: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
     desc: "Primary WebSockets audio stream ingestion and E.164 dialout dispatcher",
   },
   {
     name: "Exotel India PSTN Gateway",
     type: "Telephony Trunk",
     region: "Mumbai / India Central",
-    latency: "28ms",
-    jitter: "1.2ms",
-    packetLoss: "0.01%",
-    status: "Operational",
-    statusColor: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
     desc: "+91 Direct Inward Dialing and Indian telecom regulatory compliance trunk",
   },
   {
     name: "Deepgram Nova-2 ASR",
     type: "Speech AI Engine",
     region: "US East (WS Streaming)",
-    latency: "118ms",
-    jitter: "Buffer 20ms",
-    packetLoss: "WER 3.8%",
-    status: "Active",
-    statusColor: "text-purple-400 bg-purple-500/10 border-purple-500/30",
-    desc: "Ultra low-latency speech-to-text with auto-punctuation and multilingual diarization",
+    desc: "Low-latency speech-to-text with auto-punctuation and multilingual diarization",
   },
   {
-    name: "Groq LLaMA-3 70B Engine",
+    name: "Groq LLM Engine",
     type: "LLM Reasoning",
     region: "LPU Cluster",
-    latency: "180ms TTFT",
-    jitter: "820 tokens/s",
-    packetLoss: "Temp 0.3",
-    status: "Optimal",
-    statusColor: "text-amber-400 bg-amber-500/10 border-amber-500/30",
-    desc: "Sub-second conversational intelligence, intent extraction, and slot fulfillment",
+    desc: "Conversational intelligence, intent extraction, and slot fulfillment",
   },
   {
     name: "Edge-TTS Neural Voice",
     type: "Speech Synthesis",
     region: "Multi-Edge CDN",
-    latency: "210ms",
-    jitter: "14+ Accents",
-    packetLoss: "48kHz HiFi",
-    status: "Active",
-    statusColor: "text-blue-400 bg-blue-500/10 border-blue-500/30",
     desc: "Natural human-like vocal inflection in Hindi, English (India/US/UK), and Hinglish",
   },
+];
+
+const DEFAULT_DIAG_ROWS = [
+  { name: "Backend API Engine", detail: "localhost:3001/api/v1/health", status: "Not probed", ping: "-", color: "text-white/50" },
+  { name: "PostgreSQL Database", detail: "Reached via backend pool", status: "Not exposed", ping: "-", color: "text-white/50" },
+  { name: "Redis / Cache Broker", detail: "Reached via backend pool", status: "Not exposed", ping: "-", color: "text-white/50" },
+  { name: "Socket.IO WebSockets", detail: "/calls namespace", status: "Not exposed", ping: "-", color: "text-white/50" },
+  { name: "Twilio SIP Telephony", detail: "External provider", status: "Not exposed", ping: "-", color: "text-white/50" },
+  { name: "Deepgram STT", detail: "External provider", status: "Not exposed", ping: "-", color: "text-white/50" },
+  { name: "Groq LLM", detail: "External provider", status: "Not exposed", ping: "-", color: "text-white/50" },
 ];
 
 export function SuperAdminView({
@@ -118,6 +103,12 @@ export function SuperAdminView({
 
   const [pingingGateway, setPingingGateway] = useState<string | null>(null);
   const [gatewayLatencies, setGatewayLatencies] = useState<Record<string, string>>({});
+  const [apiHealth, setApiHealth] = useState<{ status: string; latencyMs: number; checkedAt: Date | null }>({
+    status: "Not checked",
+    latencyMs: -1,
+    checkedAt: null,
+  });
+  const [diagRows, setDiagRows] = useState(DEFAULT_DIAG_ROWS);
   const [showDiagnosticsModal, setShowDiagnosticsModal] = useState(false);
   const [diagnosticTesting, setDiagnosticTesting] = useState(false);
 
@@ -162,26 +153,55 @@ export function SuperAdminView({
     }
   };
 
-  const handlePingGateway = (gwName: string) => {
+  const handlePingGateway = async (gwName: string) => {
     setPingingGateway(gwName);
-    setTimeout(() => {
-      const pingMs = Math.floor(Math.random() * 12) + 16;
+    try {
+      const t0 = performance.now();
+      await healthApi.check();
+      const latencyMs = Math.max(1, Math.round(performance.now() - t0));
       setGatewayLatencies((prev) => ({
         ...prev,
-        [gwName]: `${pingMs}ms`,
+        [gwName]: `${latencyMs}ms`,
       }));
+      success(`${gwName} health probe: API responded in ${latencyMs}ms.`);
+    } catch (err) {
+      setGatewayLatencies((prev) => ({
+        ...prev,
+        [gwName]: "unreachable",
+      }));
+      toastError(`${gwName} health probe failed - ${normalizeApiError(err)}`);
+    } finally {
       setPingingGateway(null);
-      success(`${gwName} ping test OK — Latency: ${pingMs}ms (0.0% loss)`);
-    }, 550);
+    }
   };
 
   const runFullDiagnostics = async () => {
     setDiagnosticTesting(true);
     try {
-      await healthApi.check().catch(() => null);
-      success("Full Platform Telemetry Check Passed: 0 anomalies detected.");
+      const t0 = performance.now();
+      const res = await healthApi.check();
+      const latencyMs = Math.max(1, Math.round(performance.now() - t0));
+      setApiHealth({ status: res?.status || "unknown", latencyMs, checkedAt: new Date() });
+      setDiagRows((prev) =>
+        prev.map((r) =>
+          r.name === "Backend API Engine"
+            ? { ...r, status: "Healthy", ping: `${latencyMs}ms`, color: "text-emerald-400" }
+            : r
+        )
+      );
+      success(`Diagnostic probe complete - API responded in ${latencyMs}ms.`);
+    } catch (err) {
+      setApiHealth({ status: "unreachable", latencyMs: -1, checkedAt: new Date() });
+      setDiagRows((prev) =>
+        prev.map((r) =>
+          r.name === "Backend API Engine"
+            ? { ...r, status: "Unreachable", ping: "n/a", color: "text-rose-400" }
+            : r
+        )
+      );
+      toastError(`Diagnostic probe failed - ${normalizeApiError(err)}`);
     } finally {
-      setTimeout(() => setDiagnosticTesting(false), 500);
+      setDiagnosticTesting(false);
     }
   };
 
@@ -549,8 +569,8 @@ export function SuperAdminView({
                       <span className="text-[10px] font-mono text-white/40 bg-white/[0.05] px-2 py-0.2 rounded">
                         {gw.type}
                       </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.2 rounded-full border ${gw.statusColor}`}>
-                        {gw.status}
+                      <span className={`text-[10px] font-bold px-2 py-0.2 rounded-full border ${gatewayLatencies[gw.name] === "unreachable" ? "text-rose-400 bg-rose-500/10 border-rose-500/30" : gatewayLatencies[gw.name] ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" : "text-white/40 bg-white/[0.05] border-white/10"}`}>
+                        {gatewayLatencies[gw.name] === "unreachable" ? "API Unreachable" : gatewayLatencies[gw.name] ? "API Reachable" : "No telemetry"}
                       </span>
                     </div>
                     <p className="text-xs text-white/50 mt-1 leading-relaxed">{gw.desc}</p>
@@ -560,17 +580,18 @@ export function SuperAdminView({
                 <div className="flex items-center gap-3 sm:flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/[0.04]">
                   <div className="text-left sm:text-right">
                     <p className="text-xs font-mono font-bold text-white">
-                      {gatewayLatencies[gw.name] || gw.latency}
+                      {gatewayLatencies[gw.name] || "-"}
                     </p>
                     <p className="text-[10px] text-white/40 font-mono">{gw.region}</p>
                   </div>
                   <button
                     onClick={() => handlePingGateway(gw.name)}
                     disabled={pingingGateway === gw.name}
+                    aria-label={`Run health check for ${gw.name}`}
                     className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 transition-all flex items-center gap-1.5 disabled:opacity-50"
                   >
                     <Zap className={`w-3 h-3 ${pingingGateway === gw.name ? "animate-spin" : ""}`} />
-                    {pingingGateway === gw.name ? "Pinging..." : "Ping Test"}
+                    {pingingGateway === gw.name ? "Checking..." : "Health Check"}
                   </button>
                 </div>
               </div>
@@ -578,53 +599,64 @@ export function SuperAdminView({
           </div>
         </div>
 
-        {/* Real-time Platform Audio Concurrency Visualizer */}
+        {/* API Platform Health */}
         <div className="rounded-2xl p-5 sm:p-6 panel-card border border-white/[0.08] flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
                 <Activity className="w-4 h-4 text-emerald-400" />
-                Live Audio Concurrency
+                API Platform Health
               </h3>
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 animate-pulse">
-                4 Active Streams
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${apiHealth.status === "unreachable" ? "text-rose-400 bg-rose-500/10 border-rose-500/20" : apiHealth.status === "Not checked" ? "text-white/40 bg-white/[0.05] border-white/10" : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"}`}>
+                {apiHealth.status === "unreachable" ? "API Offline" : apiHealth.status === "Not checked" ? "Not checked" : "API Online"}
               </span>
             </div>
 
             <div className="p-5 rounded-2xl bg-gradient-to-b from-[#180306] to-[#0d0102] border border-white/[0.06] text-center my-4">
-              <p className="text-xs text-white/40 font-mono">WebRTC Dispatcher Stream Peak</p>
+              <p className="text-xs text-white/40 font-mono">Backend API Health Endpoint</p>
               <p className="text-3xl font-black text-white font-mono my-2">
-                4 <span className="text-xs font-normal text-white/50">of 100 max ports</span>
+                {apiHealth.latencyMs >= 0 ? `${apiHealth.latencyMs}ms` : "-"}
+                <span className="text-xs font-normal text-white/50"> response time</span>
               </p>
-              <div className="flex justify-center my-3">
-                <WaveAnimation active size="md" bars={8} color="bg-gradient-to-t from-emerald-500 to-teal-300" />
-              </div>
-              <p className="text-[11px] text-emerald-400 font-mono">Zero Media Packet Drops</p>
+              <p className="text-[11px] text-emerald-400 font-mono">GET /api/v1/health</p>
             </div>
 
             <div className="space-y-2.5 pt-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-white/60">PostgreSQL 16 Pool:</span>
-                <span className="font-mono text-white font-semibold">12 / 100 Connected</span>
+                <span className="text-white/60">Status:</span>
+                <span className="font-mono text-white font-semibold capitalize">{apiHealth.status}</span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-white/60">Redis 7.2 Broker:</span>
-                <span className="font-mono text-emerald-400 font-semibold">&lt; 1ms Latency</span>
+                <span className="text-white/60">Last checked:</span>
+                <span className="font-mono text-emerald-400 font-semibold">
+                  {apiHealth.checkedAt
+                    ? apiHealth.checkedAt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+                    : "Never"}
+                </span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-white/60">WebSocket Dispatchers:</span>
-                <span className="font-mono text-white font-semibold">Port 3001 Ready</span>
+                <span className="text-white/60">Telemetry probes:</span>
+                <span className="font-mono text-white font-semibold">Health endpoint only</span>
               </div>
             </div>
           </div>
 
-          <button
-            onClick={() => setShowDiagnosticsModal(true)}
-            className="mt-6 w-full text-center text-xs font-semibold py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-white/80 hover:text-white transition-all flex items-center justify-center gap-2"
-          >
-            <Activity className="w-3.5 h-3.5 text-amber-400" />
-            Open System Health & Diagnostic Logs →
-          </button>
+          <div className="mt-6 flex flex-col gap-1.5">
+            <button
+              onClick={runFullDiagnostics}
+              disabled={diagnosticTesting}
+              className="w-full text-center text-xs font-semibold py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-white/80 hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <Activity className={`w-3.5 h-3.5 text-amber-400 ${diagnosticTesting ? "animate-pulse" : ""}`} />
+              {diagnosticTesting ? "Probing API..." : "Run Health Probe"}
+            </button>
+            <button
+              onClick={() => setShowDiagnosticsModal(true)}
+              className="w-full text-center text-xs font-semibold py-2 rounded-lg text-white/50 hover:text-white transition-all"
+            >
+              View diagnostic log →
+            </button>
+          </div>
         </div>
       </div>
 
@@ -673,14 +705,15 @@ export function SuperAdminView({
                     onChange={(e) => setProvisionPlan(e.target.value)}
                     className="w-full h-11 px-3.5 rounded-xl text-sm bg-input border border-white/10 text-white outline-none focus:border-amber-500"
                   >
-                    <option value="growth" className="bg-neutral-900">Growth Plan (10,000 Mins / Month)</option>
-                    <option value="enterprise" className="bg-neutral-900">Enterprise Plan (Unlimited)</option>
-                    <option value="starter" className="bg-neutral-900">Starter Plan (2,000 Mins / Month)</option>
+                    <option value="starter" className="bg-neutral-900">Starter Plan (500 Mins / Month)</option>
+                    <option value="growth" className="bg-neutral-900">Growth Plan (5,000 Mins / Month)</option>
+                    <option value="business" className="bg-neutral-900">Business Plan (50,000 Mins / Month)</option>
+                    <option value="enterprise" className="bg-neutral-900">Enterprise Plan (Custom)</option>
                   </select>
                 </div>
 
                 <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-200">
-                  ⚡ Allocates dedicated PostgreSQL schema isolation & SIP gateway credentials automatically.
+                  ⚡ Provisions an isolated tenant with a company admin user. The subscription plan tier is stored on the tenant at provision time.
                 </div>
 
                 <div className="flex items-center justify-end gap-3 pt-2">
@@ -733,20 +766,17 @@ export function SuperAdminView({
                     onChange={(e) => setQuotaPlan(e.target.value)}
                     className="w-full h-11 px-3.5 rounded-xl text-sm bg-input border border-white/10 text-white outline-none focus:border-amber-500"
                   >
-                    <option value="starter" className="bg-neutral-900">Starter Plan (2,000 Mins)</option>
-                    <option value="growth" className="bg-neutral-900">Growth Plan (10,000 Mins)</option>
-                    <option value="enterprise" className="bg-neutral-900">Enterprise Plan (Custom / Unlimited)</option>
+                    <option value="starter" className="bg-neutral-900">Starter Plan (500 Mins / Month)</option>
+                    <option value="growth" className="bg-neutral-900">Growth Plan (5,000 Mins / Month)</option>
+                    <option value="business" className="bg-neutral-900">Business Plan (50,000 Mins / Month)</option>
+                    <option value="enterprise" className="bg-neutral-900">Enterprise Plan (Custom)</option>
                   </select>
                 </div>
 
                 <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10 text-xs text-white/70 space-y-1">
                   <div className="flex justify-between">
-                    <span>Monthly Calling Cap:</span>
-                    <span className="font-bold text-amber-300 uppercase">{quotaPlan === "enterprise" ? "Unlimited" : quotaPlan === "growth" ? "10,000 Mins" : "2,000 Mins"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>SIP Concurrency:</span>
-                    <span className="font-bold text-emerald-400">{quotaPlan === "enterprise" ? "50 Trunks" : "15 Trunks"}</span>
+                    <span>Monthly Calling Allowance:</span>
+                    <span className="font-bold text-amber-300 uppercase">{quotaPlan === "enterprise" ? "Custom" : quotaPlan === "business" ? "50,000 Mins" : quotaPlan === "growth" ? "5,000 Mins" : "500 Mins"}</span>
                   </div>
                 </div>
 
@@ -789,7 +819,7 @@ export function SuperAdminView({
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-white">System Health & Telemetry Diagnostics</h3>
-                    <p className="text-xs text-white/40">Real-time infrastructure probes</p>
+                    <p className="text-xs text-white/40">Live probes of the backend health endpoint</p>
                   </div>
                 </div>
                 <button onClick={() => setShowDiagnosticsModal(false)} className="p-1 rounded-lg text-white/40 hover:text-white">
@@ -798,19 +828,11 @@ export function SuperAdminView({
               </div>
 
               <div className="mt-4 space-y-3">
-                {[
-                  { name: "PostgreSQL 16 Primary DB", host: "localhost:5432", status: "Healthy", ping: "1.2ms", color: "text-emerald-400" },
-                  { name: "Redis 7.2 Cache & Broker", host: "localhost:6379", status: "Online", ping: "0.4ms", color: "text-emerald-400" },
-                  { name: "NestJS Backend API Engine", host: "localhost:3001/api/v1", status: "Healthy", ping: "4ms", color: "text-emerald-400" },
-                  { name: "Socket.IO WebSockets Dispatcher", host: "/calls namespace", status: "Operational", ping: "2ms", color: "text-cyan-400" },
-                  { name: "Twilio SIP Telephony Gateway", host: "sip.twilio.com", status: "Connected", ping: "22ms", color: "text-emerald-400" },
-                  { name: "Deepgram Nova-2 STT Streaming", host: "api.deepgram.com", status: "Active", ping: "118ms", color: "text-purple-400" },
-                  { name: "Groq LPU LLM Inference", host: "api.groq.com", status: "Optimal", ping: "180ms TTFT", color: "text-amber-400" },
-                ].map((item) => (
+                {diagRows.map((item) => (
                   <div key={item.name} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] flex items-center justify-between text-xs">
                     <div>
                       <p className="font-bold text-white">{item.name}</p>
-                      <p className="text-[10px] font-mono text-white/40">{item.host}</p>
+                      <p className="text-[10px] font-mono text-white/40">{item.detail}</p>
                     </div>
                     <div className="text-right">
                       <span className={`font-bold ${item.color}`}>{item.status}</span>

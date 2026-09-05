@@ -4,13 +4,14 @@ import { TenantsService } from './tenants.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { TenantGuard } from '../../common/guards/tenant.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { TENANT_VIEW, TENANT_UPDATE, PLATFORM_TENANT_MANAGE } from '../../common/rbac/permissions';
 
 @ApiTags('tenants')
 @ApiBearerAuth('JWT')
-@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard, TenantGuard)
 @Controller('tenants')
 export class TenantsController {
   constructor(private svc: TenantsService) {}

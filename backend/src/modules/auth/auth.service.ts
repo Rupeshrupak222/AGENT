@@ -31,7 +31,7 @@ export class AuthService {
         data: {
           name: dto.companyName,
           slug: `${slug}-${Date.now()}`,
-          plan: 'starter',
+          plan: dto.plan || 'starter',
         },
       });
 

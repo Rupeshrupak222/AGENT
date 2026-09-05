@@ -138,15 +138,16 @@ export default function LoginPage() {
             <p className="text-sm text-slate-500 dark:text-white/50">Sign in to your AgentCall AI workspace</p>
           </div>
 
-          {/* 1-Click Role Login Selector */}
-          <div className="mb-6 p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2.5 shadow-xl">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                1-Click Quick Role Sign In
-              </span>
-              <span className="text-[10px] text-white/40">Instant access</span>
-            </div>
+          {/* Development demo logins — hidden in production */}
+          {process.env.NODE_ENV !== "production" && (
+            <div className="mb-6 p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2.5 shadow-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                  Demo Sign In
+                </span>
+                <span className="text-[10px] text-white/40">Development only</span>
+              </div>
 
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -183,15 +184,19 @@ export default function LoginPage() {
               onClick={() => quickLogin("viewer@acmecorp.com", "Demo@1234")}
               className="w-full py-2 rounded-xl text-[10px] font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 hover:bg-cyan-500/20 transition-all text-center flex items-center justify-center gap-1.5"
             >
-              👁️ Observer / Auditor (Viewer)
+👁️ Observer / Auditor (Viewer)
             </button>
-          </div>
+            </div>
+          )}
 
           {/* Error */}
           {error && (
-            <motion.div initial={{ opacity:0,y:-8 }} animate={{ opacity:1,y:0 }}
-              className="mb-5 p-3.5 rounded-xl text-sm"
-              style={{ background:"rgba(212,32,39,0.12)", border:"1px solid rgba(212,32,39,0.35)", color:"#ffaaaa" }}>
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              role="alert"
+              className="mb-5 p-3.5 rounded-xl text-sm bg-rose-500/10 border border-rose-500/30 text-rose-200"
+            >
               {error}
             </motion.div>
           )}
@@ -215,7 +220,7 @@ export default function LoginPage() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium text-slate-600 dark:text-white/65">Password</label>
-                <Link href="#" className="text-xs font-medium transition-colors" style={{ color:R }}>Forgot password?</Link>
+                <span className="text-xs text-slate-500 dark:text-white/40">Forgot your password? Contact your workspace admin.</span>
               </div>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-slate-400 dark:text-white/30"/>
@@ -224,8 +229,13 @@ export default function LoginPage() {
                   onFocus={e=>(e.target.style.borderColor="rgba(212,32,39,0.65)")}
                   onBlur={e=>(e.target.style.borderColor="")}
                 />
-                <button type="button" onClick={()=>setShowPwd(!showPwd)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors text-slate-400 dark:text-white/30">
+                {/* Demo password toggle */}
+                <button
+                  type="button"
+                  onClick={()=>setShowPwd(!showPwd)}
+                  aria-label={showPwd ? "Hide password" : "Show password"}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors text-slate-400 dark:text-white/30"
+                >
                   {showPwd ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>}
                 </button>
               </div>
@@ -243,28 +253,6 @@ export default function LoginPage() {
               ) : <>Sign In <ArrowRight className="w-4 h-4"/></>}
             </button>
           </form>
-
-          {/* Divider */}
-          <div className="flex items-center gap-4 my-6">
-            <div className="flex-1 h-px" style={{ background:"rgba(212,32,39,0.15)" }}/>
-            <span className="text-xs text-slate-400 dark:text-white/30">or continue with</span>
-            <div className="flex-1 h-px" style={{ background:"rgba(212,32,39,0.15)" }}/>
-          </div>
-
-          {/* Social */}
-          <div className="grid grid-cols-2 gap-3">
-            {[{ label:"Google", letter:"G" },{ label:"Microsoft", letter:"M" }].map(s=>(
-              <button key={s.label} type="button"
-                className="h-11 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all text-slate-600 dark:text-white/65 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10"
-                onMouseEnter={e=>{const t=e.currentTarget;t.style.borderColor="rgba(212,32,39,0.35)";t.style.color=R}}
-                onMouseLeave={e=>{const t=e.currentTarget;t.style.borderColor="";t.style.color=""}}
-              >
-                <span className="w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center text-white"
-                  style={{ background:R }}>{s.letter}</span>
-                {s.label}
-              </button>
-            ))}
-          </div>
 
           {/* Development Seed Helper */}
           {process.env.NODE_ENV !== "production" && (

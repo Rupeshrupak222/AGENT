@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -8,24 +8,20 @@ import {
   Phone,
   PhoneCall,
   Target,
-  Clock,
-  Calendar,
-  Award,
   Zap,
-  Check,
   UserCheck,
-  Radio,
   Mic,
   MicOff,
   Volume2,
   ArrowUpRight,
-  Sparkles,
   MessageSquare,
   AlertTriangle,
   RefreshCw,
 } from "lucide-react";
 import { WaveAnimation } from "@/components/ui/WaveAnimation";
 import { useToast } from "@/components/ui/Toast";
+import { leadsApi, LeadItem } from "@/lib/api";
+import { useAuthStore } from "@/store/auth.store";
 
 interface AgentViewProps {
   agentName: string;
@@ -36,41 +32,15 @@ interface AgentViewProps {
   isRefreshing: boolean;
 }
 
-const INITIAL_QUEUE_LEADS = [
-  {
-    id: "lead-1",
-    name: "Rohit Verma",
-    company: "Verma Enterprises",
-    phone: "+91 98765 43210",
-    stage: "Hot Interest",
-    time: "10:30 AM Callback",
-    countdown: "Due in 15 mins",
-    notes: "AI agent spoke earlier; customer requested demo on multi-lingual outbound calling for 15,000 monthly minutes.",
-    priority: "high",
-  },
-  {
-    id: "lead-2",
-    name: "Sneha Patel",
-    company: "Patel Agro Exports",
-    phone: "+91 98234 56789",
-    stage: "Demo Follow-up",
-    time: "02:15 PM Callback",
-    countdown: "Due this afternoon",
-    notes: "Attended demo yesterday; needs formal price quote and WhatsApp API integration details.",
-    priority: "medium",
-  },
-  {
-    id: "lead-3",
-    name: "Vikram Rao",
-    company: "Rao Tech Ventures",
-    phone: "+91 97112 34567",
-    stage: "Contract Review",
-    time: "04:45 PM Callback",
-    countdown: "Due at 4:45 PM",
-    notes: "Enterprise agreement under legal review; confirm start date for voice AI rollout.",
-    priority: "high",
-  },
-];
+const STATUS_MAP: Record<LeadItem["status"], { label: string; classes: string }> = {
+  new: { label: "New Lead", classes: "bg-slate-500/10 text-slate-400 border-slate-500/20" },
+  contacted: { label: "Contacted", classes: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+  interested: { label: "Interested", classes: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
+  qualified: { label: "Qualified", classes: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+  appointment: { label: "Appointment", classes: "bg-teal-500/10 text-teal-400 border-teal-500/20" },
+  closed_won: { label: "Won", classes: "bg-green-500/10 text-green-400 border-green-500/20" },
+  closed_lost: { label: "Lost", classes: "bg-rose-500/10 text-rose-400 border-rose-500/20" },
+};
 
 export function AgentView({
   agentName,
@@ -81,10 +51,52 @@ export function AgentView({
   isRefreshing,
 }: AgentViewProps) {
   const { success, info, warning } = useToast();
+  const user = useAuthStore((s) => s.user);
+
   const [agentStatus, setAgentStatus] = useState<"available" | "break" | "busy">("available");
-  const [queue, setQueue] = useState(INITIAL_QUEUE_LEADS);
+  const [queueLeads, setQueueLeads] = useState<LeadItem[]>([]);
+  const [queueTotal, setQueueTotal] = useState(0);
+  const [queueLoading, setQueueLoading] = useState(true);
+  const [queueError, setQueueError] = useState<string | null>(null);
   const [quickPhone, setQuickPhone] = useState("");
   const [callingState, setCallingState] = useState<string | null>(null);
+
+  const prevLoadingRef = useRef(isLoading);
+  const hasFetchedRef = useRef(false);
+
+  const fetchQueue = useCallback(async () => {
+    if (!user?.id) return;
+    setQueueLoading(true);
+    setQueueError(null);
+    try {
+      const res = await leadsApi.list({ assignedTo: user.id, limit: 50 });
+      setQueueLeads(res.items);
+      setQueueTotal(res.total);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setQueueError(msg);
+    } finally {
+      setQueueLoading(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (user?.id && !hasFetchedRef.current) {
+      hasFetchedRef.current = true;
+      fetchQueue();
+    }
+  }, [user?.id, fetchQueue]);
+
+  useEffect(() => {
+    if (prevLoadingRef.current && !isLoading && user?.id) {
+      fetchQueue();
+    }
+    prevLoadingRef.current = isLoading;
+  }, [isLoading, user?.id, fetchQueue]);
+
+  const avgScore = queueLeads.length
+    ? Math.round(queueLeads.reduce((a, l) => a + (l.score || 0), 0) / queueLeads.length)
+    : 0;
 
   const handleSetStatus = (status: "available" | "break" | "busy") => {
     setAgentStatus(status);
@@ -95,31 +107,15 @@ export function AgentView({
 
   const handleRefreshQueue = () => {
     onRefresh();
-    success("Refreshed assigned lead queue and appointment schedule!");
+    fetchQueue();
+    success("Refreshed assigned lead queue!");
   };
 
-  const handleDial = (lead: typeof INITIAL_QUEUE_LEADS[0]) => {
+  const handleDial = (lead: LeadItem) => {
     setCallingState(lead.name);
     success(`Dialing ${lead.name} (${lead.phone})...`);
     setTimeout(() => {
       window.location.href = `/dashboard/calls?leadPhone=${encodeURIComponent(lead.phone)}`;
-    }, 600);
-  };
-
-  const handleSnoozeLead = (id: string) => {
-    setQueue((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, countdown: "Snoozed +30m" } : item
-      )
-    );
-    info("Lead follow-up snoozed by 30 minutes.");
-  };
-
-  const handleDialCallback = (name: string, phone: string) => {
-    setCallingState(name);
-    success(`Connecting instant callback with ${name} (${phone})...`);
-    setTimeout(() => {
-      window.location.href = `/dashboard/calls?leadPhone=${encodeURIComponent(phone)}`;
     }, 600);
   };
 
@@ -155,14 +151,13 @@ export function AgentView({
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-white/60 mt-1.5 max-w-2xl leading-relaxed">
-                Your personalized caller workstation: Review warm leads transferred by autonomous AI bots, 
+                Your personalized caller workstation: Review warm leads transferred by autonomous AI bots,
                 place instant 1-click dials, and fulfill scheduled appointment callbacks.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 flex-shrink-0 flex-wrap">
-            {/* Rep Availability Toggle */}
             <div className="flex items-center bg-white/[0.04] border border-white/10 rounded-xl p-1">
               <button
                 onClick={() => handleSetStatus("available")}
@@ -216,83 +211,52 @@ export function AgentView({
           </div>
         </div>
 
-        {/* Rep Gamified Daily Target Progress Bar */}
+        {/* Real Daily Call Volume Stats */}
         <div className="mt-6 pt-5 border-t border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-              <Award className="w-4 h-4" />
+              <PhoneCall className="w-4 h-4" />
             </div>
             <div>
               <p className="text-xs font-bold text-white">
-                Daily Closer Target: <span className="text-emerald-300 font-mono">18 / 21 Calls Placed (85%)</span>
+                Today&apos;s Call Volume: <span className="text-emerald-300 font-mono">{totalCallsCount} calls placed today</span>
               </p>
-              <p className="text-[11px] text-white/40">🎯 Just 3 more calls to unlock today&apos;s Daily Closer Achievement!</p>
+              <p className="text-[11px] text-white/40">Qualified prospects: {qualifiedLeadsCount}</p>
             </div>
-          </div>
-          <div className="w-full sm:w-64 h-2 rounded-full bg-white/[0.08] overflow-hidden">
-            <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400" style={{ width: "85%" }} />
           </div>
         </div>
       </motion.div>
 
-      {/* ── Personal Desk KPIs (8 Cards) ─────────────────────── */}
+      {/* ── Personal Desk KPIs (4 Cards) ─────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         {[
           {
             title: "My Assigned Leads",
-            value: "24 Leads",
-            subtext: "In your queue",
+            value: queueLoading ? "—" : String(queueTotal),
+            subtext: "Assigned to you",
             icon: <UserCheck className="w-5 h-5 text-blue-400" />,
             color: "from-blue-500/20 to-blue-600/10 border-blue-500/30",
           },
           {
-            title: "My Outbound Dials",
-            value: isLoading ? "—" : (totalCallsCount > 0 ? totalCallsCount.toLocaleString() : "18 Dials"),
-            subtext: "Completed today",
+            title: "Outbound Calls Today",
+            value: totalCallsCount.toLocaleString(),
+            subtext: "Across tenant today",
             icon: <PhoneCall className="w-5 h-5 text-emerald-400" />,
             color: "from-emerald-500/20 to-emerald-600/10 border-emerald-500/30",
           },
           {
-            title: "My Pickup Rate",
-            value: "72.2%",
-            subtext: "13 connected",
-            icon: <Phone className="w-5 h-5 text-purple-400" />,
-            color: "from-purple-500/20 to-purple-600/10 border-purple-500/30",
-          },
-          {
             title: "Qualified Prospects",
-            value: isLoading ? "—" : (qualifiedLeadsCount > 0 ? qualifiedLeadsCount.toLocaleString() : "7"),
-            subtext: "High intent passed",
+            value: qualifiedLeadsCount.toLocaleString(),
+            subtext: "High-intent leads",
             icon: <Target className="w-5 h-5 text-amber-400" />,
             color: "from-amber-500/20 to-amber-600/10 border-amber-500/30",
           },
           {
-            title: "Avg Talk Duration",
-            value: "3m 42s",
-            subtext: "Per connected lead",
-            icon: <Clock className="w-5 h-5 text-cyan-400" />,
-            color: "from-cyan-500/20 to-cyan-600/10 border-cyan-500/30",
-          },
-          {
-            title: "Callbacks Due Today",
-            value: "3 Pending",
-            subtext: "Upcoming timeslots",
-            icon: <Calendar className="w-5 h-5 text-rose-400" />,
-            color: "from-rose-500/20 to-rose-600/10 border-rose-500/30",
-          },
-          {
-            title: "Demos Scheduled",
-            value: "4 Booked",
-            subtext: "Calendar invites sent",
-            icon: <Check className="w-5 h-5 text-teal-400" />,
-            color: "from-teal-500/20 to-teal-600/10 border-teal-500/30",
-          },
-          {
-            title: "Daily Goal Progress",
-            value: "85%",
-            subtext: "On track for bonus",
-            icon: <Award className="w-5 h-5 text-emerald-400" />,
-            color: "from-emerald-500/20 to-emerald-600/10 border-emerald-500/30",
+            title: "In-Queue Lead Score Avg",
+            value: queueLoading ? "—" : String(avgScore),
+            subtext: `Top ${queueLeads.length} assigned`,
+            icon: <Zap className="w-5 h-5 text-purple-400" />,
+            color: "from-purple-500/20 to-purple-600/10 border-purple-500/30",
           },
         ].map((k, idx) => (
           <motion.div
@@ -332,54 +296,86 @@ export function AgentView({
               </p>
             </div>
             <span className="text-xs font-mono text-emerald-300 font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-              {queue.length} Ready in Queue
+              {queueTotal} Ready in Queue · Assigned to you
             </span>
           </div>
 
           <div className="space-y-4">
-            {queue.map((lead) => (
-              <div
-                key={lead.id}
-                className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-emerald-500/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-              >
-                <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-300 flex-shrink-0 mt-0.5">
-                    <Headphones className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-bold text-white">{lead.name}</p>
-                      <span className="text-xs text-white/40 font-medium">({lead.company})</span>
-                      <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        {lead.stage}
-                      </span>
-                      <span className="text-[10px] font-mono text-amber-300 bg-amber-500/10 px-2 py-0.2 rounded border border-amber-500/20">
-                        {lead.countdown}
-                      </span>
-                    </div>
-                    <p className="text-xs text-white/70 mt-1 leading-relaxed">{lead.notes}</p>
-                    <p className="text-xs font-mono text-white/40 mt-1">Phone: {lead.phone}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => handleSnoozeLead(lead.id)}
-                    className="px-3 py-2 rounded-xl text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-white/60 hover:text-white transition-all"
-                  >
-                    Snooze
-                  </button>
-                  <button
-                    onClick={() => handleDial(lead)}
-                    disabled={callingState === lead.name}
-                    className="btn-red text-xs py-2 px-4 h-9 shadow-md shadow-brand-500/25 flex items-center gap-1.5"
-                  >
-                    <Zap className="w-3.5 h-3.5 fill-white" />
-                    {callingState === lead.name ? "Connecting WebRTC..." : "Call Customer Now"}
-                  </button>
-                </div>
+            {queueLoading && (
+              <div className="flex items-center justify-center py-10 gap-2 text-white/50 text-sm">
+                <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
+                Loading assigned leads…
               </div>
-            ))}
+            )}
+
+            {!queueLoading && queueError && (
+              <div className="text-center py-10 space-y-3">
+                <p className="text-sm text-rose-400">Couldn&apos;t load your assigned leads. {queueError}</p>
+                <button
+                  onClick={fetchQueue}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white/80 hover:text-white transition-all"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {!queueLoading && !queueError && queueLeads.length === 0 && (
+              <div className="text-center py-10 space-y-2">
+                <p className="text-sm text-white/50">No leads assigned to you yet. Leads assigned by your team will appear here.</p>
+                <Link
+                  href="/dashboard/crm"
+                  className="inline-block text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+                >
+                  Open My Full Leads CRM →
+                </Link>
+              </div>
+            )}
+
+            {!queueLoading && !queueError && queueLeads.map((lead) => {
+              const st = STATUS_MAP[lead.status];
+              return (
+                <div
+                  key={lead.id}
+                  className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-emerald-500/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                >
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-300 flex-shrink-0 mt-0.5">
+                      <Headphones className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-bold text-white">{lead.name}</p>
+                        <span className="text-xs text-white/40 font-medium">({lead.company || "—"})</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.2 rounded-full border ${st.classes}`}>
+                          {st.label}
+                        </span>
+                        {lead.score > 0 && (
+                          <span className="text-[10px] font-mono text-purple-300 bg-purple-500/10 px-2 py-0.2 rounded border border-purple-500/20">
+                            Score {lead.score}
+                          </span>
+                        )}
+                      </div>
+                      {lead.notes && (
+                        <p className="text-xs text-white/70 mt-1 leading-relaxed">{lead.notes}</p>
+                      )}
+                      <p className="text-xs font-mono text-white/40 mt-1">Phone: {lead.phone}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => handleDial(lead)}
+                      disabled={callingState === lead.name}
+                      className="btn-red text-xs py-2 px-4 h-9 shadow-md shadow-brand-500/25 flex items-center gap-1.5"
+                    >
+                      <Zap className="w-3.5 h-3.5 fill-white" />
+                      {callingState === lead.name ? "Connecting WebRTC..." : "Call Customer Now"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -420,33 +416,9 @@ export function AgentView({
               <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-3">
                 Today&apos;s Callback Schedule
               </h4>
-              <div className="space-y-2.5">
-                {[
-                  { name: "Rohit Verma", sub: "Multi-lingual demo", time: "10:30 AM", phone: "+91 98765 43210", color: "text-emerald-400" },
-                  { name: "Sneha Patel", sub: "Pricing inquiry", time: "02:15 PM", phone: "+91 98234 56789", color: "text-amber-400" },
-                  { name: "Vikram Rao", sub: "Contract review", time: "04:45 PM", phone: "+91 97112 34567", color: "text-purple-400" },
-                ].map((cb) => (
-                  <div
-                    key={cb.name}
-                    className="p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-emerald-500/30 flex items-center justify-between text-xs transition-all"
-                  >
-                    <div>
-                      <p className="font-bold text-white">{cb.name}</p>
-                      <p className="text-[10px] text-white/40">{cb.sub}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`font-mono font-semibold ${cb.color}`}>{cb.time}</span>
-                      <button
-                        onClick={() => handleDialCallback(cb.name, cb.phone)}
-                        className="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 transition-all flex items-center gap-1"
-                      >
-                        <Phone className="w-2.5 h-2.5" />
-                        Dial
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <p className="text-xs text-white/40 leading-relaxed">
+                No appointment callbacks are tracked in this view. Open a lead in the CRM to schedule follow-ups.
+              </p>
             </div>
           </div>
 

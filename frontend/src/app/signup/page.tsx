@@ -11,9 +11,9 @@ const R = "#D42027";
 const STEPS = ["Account","Company","Plan","Done"];
 
 const PLANS = [
-  { id:"starter",  name:"Starter",  price:"₹4,999", detail:"Up to 3 agents · 2,500 calls/mo", popular:false },
-  { id:"growth",   name:"Growth",   price:"₹11,999",detail:"Up to 10 agents · 10,000 calls/mo",popular:true  },
-  { id:"business", name:"Business", price:"₹29,999",detail:"Unlimited · 50K calls/mo",   popular:false },
+  { id:"starter",  name:"Starter",  price:"₹2,999", detail:"Up to 2 agents · 500 min/mo", popular:false },
+  { id:"growth",   name:"Growth",   price:"₹9,999", detail:"Up to 10 agents · 5,000 min/mo", popular:true  },
+  { id:"business", name:"Business", price:"₹29,999", detail:"Unlimited · 50K min/mo",   popular:false },
 ];
 
 const INDUSTRIES = ["Technology","Finance & Banking","Healthcare","Education","Real Estate","E-Commerce","Recruitment","Manufacturing","Other"];
@@ -56,6 +56,7 @@ export default function SignupPage() {
         email: form.email.trim().toLowerCase(),
         password: form.password,
         companyName: form.company.trim(),
+        plan: form.plan,
       });
 
       loginFn(data.user, data.tenant, data.accessToken, data.refreshToken);
