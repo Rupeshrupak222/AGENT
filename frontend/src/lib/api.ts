@@ -213,15 +213,25 @@ export async function bootstrapAuth(): Promise<boolean> {
   }
 
   try {
-    const data = await authApi.me();
+    // 2.5s timeout safeguard so users never get stuck indefinitely on "Authenticating session..."
+    const timeoutPromise = new Promise<null>((_, reject) =>
+      setTimeout(() => reject(new Error("Auth timeout")), 2500)
+    );
+    const data = await Promise.race([authApi.me(), timeoutPromise]);
     if (data) {
       const { tenant: userTenant, ...userData } = data;
       state.login(userData as AuthUser, userTenant, state.accessToken ?? "", state.refreshToken ?? undefined);
       return true;
     }
+    // If response was null but we have cached session, preserve it
+    if (state.user) return true;
     state.logout();
     return false;
   } catch {
+    // If network timed out or failed, preserve valid cached user session instead of blocking
+    if (state.user && state.accessToken) {
+      return true;
+    }
     state.logout();
     return false;
   }

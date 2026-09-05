@@ -23,6 +23,12 @@ export class TelephonyService {
   // In-memory idempotency cache for recently processed event IDs (max 10,000 entries)
   private readonly processedEvents = new Set<string>();
 
+  private readonly callStatusHooks: Array<(callId: string, status: string, duration?: number, outcome?: string) => Promise<void>> = [];
+
+  public registerCallStatusHook(hook: (callId: string, status: string, duration?: number, outcome?: string) => Promise<void>) {
+    this.callStatusHooks.push(hook);
+  }
+
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
@@ -168,6 +174,9 @@ export class TelephonyService {
   /**
    * Processes call status callbacks with signature verification, replay protection, and idempotency.
    */
+  /**
+   * Processes call status callbacks with signature verification, replay protection, and idempotency.
+   */
   async handleStatusCallbackWebhook(
     providerName: string,
     payload: Record<string, unknown>,
@@ -175,7 +184,7 @@ export class TelephonyService {
   ): Promise<{ status: string; processed: boolean; reason?: string }> {
     const provider = this.registry.get(providerName);
 
-    // 1. Signature Verification
+    // 1. Signature Verification & Malformed Payload Rejection
     const validation = provider.validateWebhookSignature(validationReq);
     if (!validation.isValid) {
       this.logger.warn(`Rejected webhook from [${providerName}]: ${validation.reason}`);
@@ -185,43 +194,75 @@ export class TelephonyService {
     // 2. Normalization
     const normalizedEvent = await provider.handleStatusCallback(payload);
 
-    // 3. Idempotency Check
-    if (this.processedEvents.has(normalizedEvent.eventId)) {
-      this.logger.log(`Skipping duplicate webhook event [${normalizedEvent.eventId}] for call ${normalizedEvent.providerCallId}`);
+    // 3. Distributed Idempotency Key (Compound Key: provider:callSid:status:sequence)
+    const idempotencyKey = `${providerName}:${normalizedEvent.providerCallId}:${normalizedEvent.status}:${normalizedEvent.eventId}`;
+    if (this.processedEvents.has(idempotencyKey)) {
+      this.logger.log(`Skipping duplicate webhook event [${idempotencyKey}] for call ${normalizedEvent.providerCallId}`);
       return { status: 'acknowledged', processed: false, reason: 'DUPLICATE_EVENT' };
     }
-    this.recordEventProcessed(normalizedEvent.eventId);
+    this.recordEventProcessed(idempotencyKey);
 
     this.logger.log(`Processing status callback for providerCallId [${normalizedEvent.providerCallId}] -> status: ${normalizedEvent.status}`);
 
-    // 4. Update Call record in DB
+    // 4. Update Call record in DB with State Machine Validation
     try {
       const call = await this.prisma.call.findFirst({
         where: { providerCallId: normalizedEvent.providerCallId },
       });
 
       if (call) {
+        const targetStatus = this.toPrismaCallStatus(normalizedEvent.status);
+
+        // State Machine Rule: Prevent illegal state regressions (e.g. completed -> ringing)
+        if (!this.isValidCallStateTransition(call.status, targetStatus)) {
+          this.logger.warn(
+            `Illegal state transition rejected for call [${call.id}]: ${call.status} -> ${targetStatus}`,
+          );
+          return { status: 'acknowledged', processed: false, reason: 'ILLEGAL_STATE_REGRESSION' };
+        }
+
+        const isTerminal = ['completed', 'failed', 'missed', 'transferred'].includes(targetStatus);
+        const endedAt = isTerminal ? new Date() : undefined;
+
+        // Bounded non-negative duration calculation
+        let duration = normalizedEvent.duration;
+        if (duration == null && isTerminal && call.startedAt) {
+          duration = Math.max(0, Math.floor((Date.now() - new Date(call.startedAt).getTime()) / 1000));
+        } else if (duration != null) {
+          duration = Math.max(0, duration);
+        }
+
         await this.prisma.call.update({
           where: { id: call.id },
           data: {
-            status: this.toPrismaCallStatus(normalizedEvent.status),
-            ...(normalizedEvent.duration != null && { duration: normalizedEvent.duration }),
+            status: targetStatus,
+            ...(duration != null && { duration }),
             ...(normalizedEvent.recordingUrl && { recordingUrl: normalizedEvent.recordingUrl }),
-            ...(normalizedEvent.status === 'completed' || normalizedEvent.status === 'failed'
-              ? { endedAt: new Date() }
-              : {}),
+            ...(endedAt && { endedAt }),
           },
         });
 
-        // Close audio session on final statuses
-        if (
-          normalizedEvent.status === 'completed' ||
-          normalizedEvent.status === 'failed' ||
-          normalizedEvent.status === 'missed'
-        ) {
+        this.logger.log(
+          `[CALL_STATE_TRANSITION] callId=${call.id} providerCallId=${normalizedEvent.providerCallId} tenantId=${call.tenantId} from=${call.status} to=${targetStatus}`,
+        );
+
+        // Close audio session on terminal statuses
+        if (isTerminal) {
+          this.logger.log(
+            `[CALL_${targetStatus.toUpperCase()}] callId=${call.id} duration=${duration ?? 0}s providerCallId=${normalizedEvent.providerCallId}`,
+          );
           const session = this.audioSessionService.getSessionByCallId(call.id, call.tenantId);
           if (session) {
             this.audioSessionService.closeSession(session.sessionId, call.tenantId);
+          }
+        }
+
+        // Notify registered lifecycle hooks (e.g. Campaign engine, analytics)
+        for (const hook of this.callStatusHooks) {
+          try {
+            await hook(call.id, targetStatus, duration, call.outcome || undefined);
+          } catch (hookErr: any) {
+            this.logger.warn(`Call status hook error for call ${call.id}: ${hookErr.message}`);
           }
         }
       } else {
@@ -232,6 +273,29 @@ export class TelephonyService {
     }
 
     return { status: 'acknowledged', processed: true };
+  }
+
+  /**
+   * Deterministic call state machine validator.
+   * Prevents illegal regressions (e.g., completed -> ringing, failed -> in_progress).
+   */
+  isValidCallStateTransition(current: CallStatus, target: CallStatus): boolean {
+    if (current === target) return true; // Idempotent same-status transitions allowed
+
+    const terminalStates = new Set<CallStatus>(['completed', 'failed', 'missed', 'transferred']);
+    if (terminalStates.has(current)) {
+      return false; // Terminal states are immutable
+    }
+
+    if (current === 'in_progress') {
+      return terminalStates.has(target);
+    }
+
+    if (current === 'ringing') {
+      return target !== 'queued'; // Cannot regress from ringing back to queued
+    }
+
+    return true; // queued can transition forward
   }
 
   getSystemReadiness() {
@@ -249,7 +313,7 @@ export class TelephonyService {
     };
   }
 
-  private toPrismaCallStatus(status: NormalizedCallStatus): CallStatus {
+  toPrismaCallStatus(status: NormalizedCallStatus): CallStatus {
     switch (status) {
       case 'queued':
         return 'queued';

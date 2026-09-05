@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
+  public isConnected = false;
 
   constructor() {
     super({
@@ -18,8 +19,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   async onModuleInit() {
     try {
       await this.$connect();
+      this.isConnected = true;
       this.logger.log('Database connected');
     } catch (err: any) {
+      this.isConnected = false;
       this.logger.warn(`Database connection deferred (PostgreSQL not reachable at localhost:5432): ${err.message}`);
     }
   }

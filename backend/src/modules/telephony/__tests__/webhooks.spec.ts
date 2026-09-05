@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { TwilioTelephonyProvider } from '../providers/twilio.provider';
 import { ExotelTelephonyProvider } from '../providers/exotel.provider';
@@ -5,7 +6,7 @@ import { TelephonyService } from '../services/telephony.service';
 import { TelephonyProviderRegistry } from '../providers/provider-registry.service';
 import { AudioSessionService } from '../services/audio-session.service';
 
-describe('Webhook Processing & Idempotency', () => {
+describe('Webhook Processing, State Machine & Idempotency', () => {
   let twilioProvider: TwilioTelephonyProvider;
   let exotelProvider: ExotelTelephonyProvider;
   let registry: TelephonyProviderRegistry;
@@ -13,8 +14,27 @@ describe('Webhook Processing & Idempotency', () => {
   let telephonyService: TelephonyService;
   let mockPrisma: any;
 
+  const testAuthToken = 'test-token-1234567890abcdef';
+
+  function generateTwilioSignature(url: string, params: Record<string, any>, token: string): string {
+    const keys = Object.keys(params).sort();
+    let data = url;
+    for (const key of keys) {
+      data += `${key}${params[key]}`;
+    }
+    return crypto.createHmac('sha1', token).update(Buffer.from(data, 'utf-8')).digest('base64');
+  }
+
   beforeEach(() => {
-    const configService = new ConfigService();
+    const configService = {
+      get: jest.fn((key: string, defaultVal?: string) => {
+        if (key === 'TWILIO_ACCOUNT_SID') return 'AC_TEST_123';
+        if (key === 'TWILIO_AUTH_TOKEN') return testAuthToken;
+        if (key === 'TWILIO_PHONE_NUMBER') return '+15551234567';
+        return defaultVal;
+      }),
+    } as any;
+
     twilioProvider = new TwilioTelephonyProvider(configService);
     exotelProvider = new ExotelTelephonyProvider(configService);
     registry = new TelephonyProviderRegistry(configService, twilioProvider, exotelProvider);
@@ -26,6 +46,8 @@ describe('Webhook Processing & Idempotency', () => {
           id: 'call-100',
           tenantId: 'tenant-1',
           providerCallId: 'CA1234567890',
+          status: 'ringing',
+          startedAt: new Date(Date.now() - 60000),
         }),
         update: jest.fn().mockResolvedValue({ id: 'call-100' }),
       },
@@ -101,6 +123,50 @@ describe('Webhook Processing & Idempotency', () => {
     });
   });
 
+  describe('Webhook Security & Signature Verification', () => {
+    it('should reject callback with missing signature', async () => {
+      const payload = { CallSid: 'CA_TEST', CallStatus: 'ringing' };
+      const validationReq = {
+        payload,
+        headers: {},
+        requestUrl: 'https://example.com/status',
+      };
+
+      await expect(
+        telephonyService.handleStatusCallbackWebhook('twilio', payload, validationReq),
+      ).rejects.toThrow('Webhook signature validation failed: MISSING_TWILIO_SIGNATURE');
+    });
+
+    it('should reject callback with invalid signature', async () => {
+      const payload = { CallSid: 'CA_TEST', CallStatus: 'ringing' };
+      const validationReq = {
+        payload,
+        headers: { 'x-twilio-signature': 'invalid-sig-base64' },
+        requestUrl: 'https://example.com/status',
+      };
+
+      await expect(
+        telephonyService.handleStatusCallbackWebhook('twilio', payload, validationReq),
+      ).rejects.toThrow('Webhook signature validation failed: SIGNATURE_MISMATCH');
+    });
+
+    it('should accept callback with valid HMAC-SHA1 signature', async () => {
+      const payload = { CallSid: 'CA_TEST_OK', CallStatus: 'ringing' };
+      const requestUrl = 'https://example.com/status';
+      const sig = generateTwilioSignature(requestUrl, payload, testAuthToken);
+
+      const validationReq = {
+        payload,
+        headers: { 'x-twilio-signature': sig },
+        requestUrl,
+      };
+
+      const result = await telephonyService.handleStatusCallbackWebhook('twilio', payload, validationReq);
+      expect(result.status).toBe('acknowledged');
+      expect(result.processed).toBe(true);
+    });
+  });
+
   describe('Idempotency & Duplicate Prevention', () => {
     it('should process first event and reject second duplicate event', async () => {
       const payload = {
@@ -108,11 +174,13 @@ describe('Webhook Processing & Idempotency', () => {
         CallStatus: 'completed',
         SequenceNumber: 'evt-unique-001',
       };
+      const requestUrl = 'https://example.com/status/twilio';
+      const sig = generateTwilioSignature(requestUrl, payload, testAuthToken);
 
       const validationReq = {
         payload,
-        headers: {},
-        requestUrl: 'http://localhost/status/twilio',
+        headers: { 'x-twilio-signature': sig },
+        requestUrl,
       };
 
       const first = await telephonyService.handleStatusCallbackWebhook('twilio', payload, validationReq);
@@ -123,6 +191,52 @@ describe('Webhook Processing & Idempotency', () => {
       expect(second.status).toBe('acknowledged');
       expect(second.processed).toBe(false);
       expect(second.reason).toBe('DUPLICATE_EVENT');
+    });
+  });
+
+  describe('Call State Machine & Illegal Regression Prevention', () => {
+    it('should prevent completed call from regressing back to ringing', async () => {
+      mockPrisma.call.findFirst.mockResolvedValueOnce({
+        id: 'call-completed-1',
+        tenantId: 'tenant-1',
+        providerCallId: 'CA_COMPLETED_1',
+        status: 'completed',
+      });
+
+      const payload = {
+        CallSid: 'CA_COMPLETED_1',
+        CallStatus: 'ringing',
+        SequenceNumber: 'seq-late-ringing',
+      };
+      const requestUrl = 'https://example.com/status/twilio';
+      const sig = generateTwilioSignature(requestUrl, payload, testAuthToken);
+
+      const res = await telephonyService.handleStatusCallbackWebhook('twilio', payload, {
+        payload,
+        headers: { 'x-twilio-signature': sig },
+        requestUrl,
+      });
+
+      expect(res.status).toBe('acknowledged');
+      expect(res.processed).toBe(false);
+      expect(res.reason).toBe('ILLEGAL_STATE_REGRESSION');
+      expect(mockPrisma.call.update).not.toHaveBeenCalled();
+    });
+
+    it('should correctly allow forward transition from ringing to in_progress to completed', () => {
+      expect(telephonyService.isValidCallStateTransition('queued', 'ringing')).toBe(true);
+      expect(telephonyService.isValidCallStateTransition('ringing', 'in_progress')).toBe(true);
+      expect(telephonyService.isValidCallStateTransition('in_progress', 'completed')).toBe(true);
+      expect(telephonyService.isValidCallStateTransition('ringing', 'completed')).toBe(true);
+      expect(telephonyService.isValidCallStateTransition('ringing', 'missed')).toBe(true);
+      expect(telephonyService.isValidCallStateTransition('in_progress', 'failed')).toBe(true);
+
+      // Regressions must fail
+      expect(telephonyService.isValidCallStateTransition('completed', 'ringing')).toBe(false);
+      expect(telephonyService.isValidCallStateTransition('completed', 'in_progress')).toBe(false);
+      expect(telephonyService.isValidCallStateTransition('failed', 'in_progress')).toBe(false);
+      expect(telephonyService.isValidCallStateTransition('missed', 'ringing')).toBe(false);
+      expect(telephonyService.isValidCallStateTransition('in_progress', 'ringing')).toBe(false);
     });
   });
 });

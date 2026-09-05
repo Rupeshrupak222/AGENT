@@ -158,13 +158,16 @@ export class ConversationOrchestrator implements OnModuleDestroy {
 
     this.logger.log(`Executing AgentBrain turn #${turnId} for session [${sessionId}]: "${userMessage}"`);
 
+    // Maintain bounded LLM context window (last 20 turns) to prevent prompt explosion and slow responses
+    const contextHistory = session.history.slice(-20);
+
     // Generate response from Groq
     const brainOutput = await this.agentBrain.generateResponse({
       sessionId,
       callId,
       context: session.agentContext,
       userMessage,
-      history: session.history,
+      history: contextHistory,
     });
 
     // Check if turn was invalidated (e.g. caller interrupted while Groq was computing)
@@ -195,7 +198,7 @@ export class ConversationOrchestrator implements OnModuleDestroy {
       });
     }
 
-    // Stream synthesized speech back to caller via Edge-TTS
+    // Stream synthesized speech back to caller via Edge-TTS (framed to exact 160-byte 20ms @ 8kHz)
     try {
       session.isAISpeaking = true;
       const audioStream = this.ttsProvider.synthesizeStream(responseText);

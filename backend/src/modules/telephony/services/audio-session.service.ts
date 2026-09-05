@@ -33,6 +33,9 @@ export class AudioSessionService implements OnModuleDestroy {
 
   constructor() {
     this.cleanupInterval = setInterval(() => this.reapIdleSessions(), 60 * 1000);
+    if (this.cleanupInterval && typeof this.cleanupInterval.unref === 'function') {
+      this.cleanupInterval.unref();
+    }
   }
 
   onModuleDestroy() {

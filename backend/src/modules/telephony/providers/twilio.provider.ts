@@ -205,7 +205,24 @@ export class TwilioTelephonyProvider extends BaseTelephonyProvider {
       return { isValid: true, reason: 'DEVELOPMENT_UNCONFIGURED_BYPASS' };
     }
 
-    const signature = req.headers['x-twilio-signature'] as string;
+    if (!req.payload || typeof req.payload !== 'object') {
+      return { isValid: false, reason: 'MALFORMED_PAYLOAD' };
+    }
+
+    if (!req.requestUrl) {
+      return { isValid: false, reason: 'MISSING_REQUEST_URL' };
+    }
+
+    // Replay protection: Check timestamp header if present (max 5 minutes clock skew)
+    const timestampHeader = req.headers?.['x-twilio-timestamp'] as string;
+    if (timestampHeader) {
+      const ts = parseInt(timestampHeader, 10);
+      if (!isNaN(ts) && Math.abs(Date.now() - ts) > 5 * 60 * 1000) {
+        return { isValid: false, reason: 'TIMESTAMP_EXPIRED' };
+      }
+    }
+
+    const signature = req.headers?.['x-twilio-signature'] as string;
     if (!signature) {
       return { isValid: false, reason: 'MISSING_TWILIO_SIGNATURE' };
     }
