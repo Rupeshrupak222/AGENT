@@ -95,4 +95,93 @@ describe('AudioFormatConverterService', () => {
       expect(outB).toBeDefined();
     });
   });
+
+  describe('Carrier Frame Alignment (20ms / 160 bytes @ 8kHz)', () => {
+    it('should slice arbitrary mu-law buffer into exact 160-byte frames', () => {
+      const arbitraryBuffer = Buffer.alloc(400, 0xff); // 400 bytes = two 160-byte frames (320 bytes) + 80-byte remainder
+      const { frames, remainder } = service.sliceIntoFrames(arbitraryBuffer, 160);
+
+      expect(frames.length).toBe(2);
+      expect(frames[0].length).toBe(160);
+      expect(frames[1].length).toBe(160);
+      expect(remainder.length).toBe(80);
+    });
+
+    it('should return empty frames if buffer is smaller than frame size', () => {
+      const smallBuffer = Buffer.alloc(100, 0xaa);
+      const { frames, remainder } = service.sliceIntoFrames(smallBuffer, 160);
+
+      expect(frames.length).toBe(0);
+      expect(remainder.length).toBe(100);
+    });
+
+    it('should validate 160-byte carrier frame specification', () => {
+      const validFrame = Buffer.alloc(160);
+      const invalidShortFrame = Buffer.alloc(159);
+      const invalidLongFrame = Buffer.alloc(161);
+
+      expect(service.isValidMuLawFrame(validFrame, 160)).toBe(true);
+      expect(service.isValidMuLawFrame(invalidShortFrame, 160)).toBe(false);
+      expect(service.isValidMuLawFrame(invalidLongFrame, 160)).toBe(false);
+    });
+  });
+
+  describe('Audio Format Header Detection', () => {
+    it('should detect raw MP3 sync headers to prevent transmission to Twilio', () => {
+      const mp3FrameHeader = Buffer.from([0xff, 0xfb, 0x90, 0x64]); // standard MP3 frame header
+      const { hasMp3Header, hasWavHeader } = service.detectAudioFormatHeaders(mp3FrameHeader);
+
+      expect(hasMp3Header).toBe(true);
+      expect(hasWavHeader).toBe(false);
+    });
+
+    it('should detect WAV RIFF headers', () => {
+      const wavHeader = Buffer.from('RIFF....WAVE', 'ascii');
+      const { hasMp3Header, hasWavHeader } = service.detectAudioFormatHeaders(wavHeader);
+
+      expect(hasMp3Header).toBe(false);
+      expect(hasWavHeader).toBe(true);
+    });
+
+    it('should verify raw mu-law audio has no embedded MP3 or WAV headers', () => {
+      const rawMuLaw = Buffer.alloc(160, 0x7e);
+      const { hasMp3Header, hasWavHeader } = service.detectAudioFormatHeaders(rawMuLaw);
+
+      expect(hasMp3Header).toBe(false);
+      expect(hasWavHeader).toBe(false);
+    });
+  });
+
+  describe('Streaming Jitter Buffer & Bounded Memory', () => {
+    it('should buffer and yield exact 160-byte frames across chunk boundaries', async () => {
+      const session = service.createSessionConverter();
+
+      // Send 100 bytes (no full frame yet)
+      const frames1 = await session.convertChunkToFrames(Buffer.alloc(100, 0xff), 160);
+      expect(frames1.length).toBe(0);
+      expect(session.getBufferedBytes()).toBe(100);
+
+      // Send another 100 bytes (total 200: yields one 160-byte frame, remainder 40)
+      const frames2 = await session.convertChunkToFrames(Buffer.alloc(100, 0xff), 160);
+      expect(frames2.length).toBe(1);
+      expect(frames2[0].length).toBe(160);
+      expect(session.getBufferedBytes()).toBe(40);
+    });
+
+    it('should clear jitter buffer immediately on barge-in reset', async () => {
+      const session = service.createSessionConverter();
+      await session.convertChunkToFrames(Buffer.alloc(120, 0xff), 160);
+      expect(session.getBufferedBytes()).toBe(120);
+
+      session.reset();
+      expect(session.getBufferedBytes()).toBe(0);
+    });
+
+    it('should enforce bounded memory limit to prevent runaway queue growth', async () => {
+      const session = service.createSessionConverter();
+      // Send 10,000 bytes without draining (exceeds 8,000 byte limit)
+      await session.convertChunkToFrames(Buffer.alloc(10000, 0xff), 20000);
+      expect(session.getBufferedBytes()).toBeLessThanOrEqual(8000);
+    });
+  });
 });

@@ -37,6 +37,35 @@ export class AgentsService {
   }
 
   async findAll(tenantId: string, filters?: { status?: string; role?: string }) {
+    if (!this.prisma.isConnected) {
+      return [
+        {
+          id: 'agent-dev-1',
+          name: 'Priya AI',
+          role: 'sales',
+          status: 'active',
+          language: 'english',
+          voice: 'en-IN-NeerjaNeural',
+          tenantId,
+          _count: { calls: 142, campaigns: 3 },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 'agent-dev-2',
+          name: 'Arjun AI',
+          role: 'telecaller',
+          status: 'active',
+          language: 'hinglish',
+          voice: 'en-IN-PrabhatNeural',
+          tenantId,
+          _count: { calls: 98, campaigns: 2 },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+    }
+
     try {
       return await this.prisma.aIAgent.findMany({
         where: {

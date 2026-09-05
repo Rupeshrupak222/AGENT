@@ -56,6 +56,32 @@ export class AuthService {
 
   // ── Login ───────────────────────────────────────────────────
   async login(dto: LoginDto) {
+    if (!this.prisma.isConnected && this.config.get('NODE_ENV') !== 'production') {
+      const email = dto.email.trim().toLowerCase();
+      const isAcme = email === 'admin@acmecorp.com' && dto.password === 'Demo@1234';
+      const isAgentCall = (email === 'admin@agentcall.ai' || email === 'admin@acmecorp.com') && (dto.password === 'admin123' || dto.password === 'Demo@1234');
+      if (isAcme || isAgentCall) {
+        const devUser = {
+          id: 'cuid-dev-admin-user',
+          name: 'Acme Admin (Dev)',
+          email: email,
+          role: 'company_admin',
+          tenantId: 'cuid-dev-acme-tenant',
+          isActive: true,
+        };
+        const devTenant = {
+          id: 'cuid-dev-acme-tenant',
+          name: 'Acme Corp (Demo)',
+          slug: 'acme-corp-demo',
+          plan: 'growth',
+          isActive: true,
+        };
+        const tokens = await this.generateTokens(devUser);
+        return { ...tokens, user: devUser, tenant: devTenant };
+      }
+      throw new UnauthorizedException('Invalid credentials. (Note: PostgreSQL is offline; use admin@acmecorp.com / Demo@1234 for dev)');
+    }
+
     let user: any = null;
     try {
       user = await this.prisma.user.findUnique({

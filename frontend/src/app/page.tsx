@@ -1,16 +1,14 @@
 // Landing page — server component. Sections are independently `"use client"`
 // components, so each ships as its own lazy bundle (faster first paint).
-import dynamic from "next/dynamic";
 import { Navbar }             from "@/components/landing/Navbar";
 import { HeroSection }         from "@/components/landing/HeroSection";
-
-const TrustSection        = dynamic(() => import("@/components/landing/TrustSection").then(m => m.TrustSection),        { loading: () => null });
-const FeaturesSection     = dynamic(() => import("@/components/landing/FeaturesSection").then(m => m.FeaturesSection),     { loading: () => null });
-const HowItWorksSection   = dynamic(() => import("@/components/landing/HowItWorksSection").then(m => m.HowItWorksSection),   { loading: () => null });
-const PricingSection      = dynamic(() => import("@/components/landing/PricingSection").then(m => m.PricingSection),      { loading: () => null });
-const IntegrationsSection = dynamic(() => import("@/components/landing/IntegrationsSection").then(m => m.IntegrationsSection), { loading: () => null });
-const CTASection          = dynamic(() => import("@/components/landing/CTASection").then(m => m.CTASection),          { loading: () => null });
-const Footer              = dynamic(() => import("@/components/landing/Footer").then(m => m.Footer),              { loading: () => null });
+import { TrustSection }        from "@/components/landing/TrustSection";
+import { FeaturesSection }     from "@/components/landing/FeaturesSection";
+import { HowItWorksSection }   from "@/components/landing/HowItWorksSection";
+import { PricingSection }      from "@/components/landing/PricingSection";
+import { IntegrationsSection } from "@/components/landing/IntegrationsSection";
+import { CTASection }          from "@/components/landing/CTASection";
+import { Footer }              from "@/components/landing/Footer";
 
 export default function HomePage() {
   return (

@@ -20,6 +20,7 @@ import { CacheModule } from './modules/cache/cache.module';
 import { RbacModule } from './common/rbac/rbac.module';
 import { TelephonyModule } from './modules/telephony/telephony.module';
 import { AiModule } from './modules/ai/ai.module';
+import { CampaignsModule } from './modules/campaigns/campaigns.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -73,6 +74,7 @@ import { AppController } from './app.controller';
     CacheModule,
     TelephonyModule,
     AiModule,
+    CampaignsModule,
   ],
 })
 export class AppModule {}

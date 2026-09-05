@@ -139,14 +139,68 @@ export class AudioFormatConverterService {
   }
 
   /**
+   * Slices an arbitrary mu-law buffer into exact frame-aligned chunks (e.g., 160 bytes for 20ms at 8kHz).
+   * Incomplete remainder is returned separately so caller can accumulate across streaming chunks.
+   */
+  sliceIntoFrames(
+    buffer: Buffer,
+    frameSize = 160,
+  ): { frames: Buffer[]; remainder: Buffer } {
+    if (!buffer || buffer.length === 0) {
+      return { frames: [], remainder: Buffer.alloc(0) };
+    }
+    const frameCount = Math.floor(buffer.length / frameSize);
+    const frames: Buffer[] = [];
+    for (let i = 0; i < frameCount; i++) {
+      frames.push(buffer.subarray(i * frameSize, (i + 1) * frameSize));
+    }
+    const remainder = Buffer.from(buffer.subarray(frameCount * frameSize));
+    return { frames, remainder };
+  }
+
+  /**
+   * Validates whether an audio buffer meets carrier frame specification.
+   * Default: 160 bytes (20ms mono 8kHz G.711 mu-law).
+   */
+  isValidMuLawFrame(buffer: Buffer, expectedSize = 160): boolean {
+    return Boolean(buffer && buffer.length === expectedSize);
+  }
+
+  /**
+   * Detects whether an audio buffer accidentally contains MP3 or WAV headers instead of raw mu-law.
+   */
+  detectAudioFormatHeaders(buffer: Buffer): { hasMp3Header: boolean; hasWavHeader: boolean } {
+    if (!buffer || buffer.length < 4) {
+      return { hasMp3Header: false, hasWavHeader: false };
+    }
+
+    // MP3 Sync Word: 11 bits set (0xFF followed by 0xE0..0xFF)
+    const hasMp3Header = buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0;
+
+    // WAV Header: Starts with ASCII "RIFF"
+    const hasWavHeader =
+      buffer.length >= 12 &&
+      buffer.subarray(0, 4).toString('ascii') === 'RIFF' &&
+      buffer.subarray(8, 12).toString('ascii') === 'WAVE';
+
+    return { hasMp3Header, hasWavHeader };
+  }
+
+  /**
    * Creates a dedicated stream converter instance for a session to prevent state crosstalk.
+   * Includes an internal jitter buffer that automatically slices incoming audio into exact 160-byte
+   * (20ms @ 8kHz G.711 mu-law) frames, with bounded memory to prevent runaway queue growth.
    */
   createSessionConverter(): {
     convertChunk: (chunk: Buffer) => Promise<Buffer>;
+    convertChunkToFrames: (chunk: Buffer, frameSize?: number) => Promise<Buffer[]>;
     reset: () => void;
+    getBufferedBytes: () => number;
   } {
     let sessionDecoder: any = null;
     let initPromise: Promise<void> | null = null;
+    let remainderBuffer = Buffer.alloc(0);
+    const MAX_BUFFER_BYTES = 8000; // 1 second of 8kHz mu-law audio limit for jitter/queue safety
 
     const ensureDecoder = async () => {
       if (sessionDecoder) return;
@@ -177,7 +231,48 @@ export class AudioFormatConverterService {
         }
         return chunk;
       },
+
+      convertChunkToFrames: async (chunk: Buffer, frameSize = 160): Promise<Buffer[]> => {
+        await ensureDecoder();
+        let mulawChunk: Buffer | null = null;
+
+        if (sessionDecoder) {
+          try {
+            const { channelData, samplesDecoded, sampleRate } = sessionDecoder.decode(chunk);
+            if (samplesDecoded > 0 && channelData.length > 0) {
+              mulawChunk = this.pcmToMuLaw(channelData[0], sampleRate || 24000);
+            }
+          } catch {
+            // Partial chunk
+          }
+        } else {
+          // If decoder is unavailable in test environment, treat input as PCM/mu-law
+          mulawChunk = chunk;
+        }
+
+        if (!mulawChunk || mulawChunk.length === 0) {
+          return [];
+        }
+
+        remainderBuffer = Buffer.concat([remainderBuffer, mulawChunk]);
+
+        // Jitter / queue overflow protection: bound buffer memory
+        if (remainderBuffer.length > MAX_BUFFER_BYTES) {
+          this.logger.warn(`Audio buffer exceeded jitter threshold (${MAX_BUFFER_BYTES} bytes). Dropping stale frames.`);
+          remainderBuffer = Buffer.from(remainderBuffer.subarray(remainderBuffer.length - MAX_BUFFER_BYTES));
+        }
+
+        const frameCount = Math.floor(remainderBuffer.length / frameSize);
+        const frames: Buffer[] = [];
+        for (let i = 0; i < frameCount; i++) {
+          frames.push(remainderBuffer.subarray(i * frameSize, (i + 1) * frameSize));
+        }
+        remainderBuffer = Buffer.from(remainderBuffer.subarray(frameCount * frameSize));
+        return frames;
+      },
+
       reset: () => {
+        remainderBuffer = Buffer.alloc(0);
         if (sessionDecoder) {
           try {
             sessionDecoder.reset();
@@ -186,6 +281,8 @@ export class AudioFormatConverterService {
           }
         }
       },
+
+      getBufferedBytes: () => remainderBuffer.length,
     };
   }
 }

@@ -109,6 +109,16 @@ enum CampaignStatus {
   cancelled
 }
 
+enum CampaignLeadStatus {
+  pending
+  queued
+  calling
+  completed
+  failed
+  skipped
+  retry_pending
+}
+
 enum IntegrationProvider {
   salesforce
   hubspot
@@ -279,9 +289,10 @@ model Lead {
   assignedTo       User?    @relation("LeadAssignedTo", fields: [assignedToId], references: [id])
 
   // Relations
-  calls       Call[]
-  activities  Activity[]
-  automations AutomationLog[]
+  calls         Call[]
+  activities    Activity[]
+  automations   AutomationLog[]
+  campaignLeads CampaignLead[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -324,8 +335,9 @@ model Call {
   campaign   Campaign? @relation(fields: [campaignId], references: [id])
 
   // Relations
-  transcript  CallTranscript?
-  automations AutomationLog[]
+  transcript    CallTranscript?
+  automations   AutomationLog[]
+  campaignLeads CampaignLead[]
 
   startedAt DateTime  @default(now())
   endedAt   DateTime?
@@ -357,17 +369,19 @@ model CallTranscript {
 // ── Campaign ──────────────────────────────────────────────────
 
 model Campaign {
-  id          String         @id @default(cuid())
-  name        String
-  description String?
-  status      CampaignStatus @default(draft)
-  scheduledAt DateTime?
-  maxCalls    Int?
-  callsPerDay Int?
-  startTime   String?        // "09:00"
-  endTime     String?        // "18:00"
-  daysOfWeek  Int[]          @default([1, 2, 3, 4, 5]) // 0=Sun..6=Sat
-  metadata    Json?          @default("{}")
+  id                 String         @id @default(cuid())
+  name               String
+  description        String?
+  status             CampaignStatus @default(draft)
+  scheduledAt        DateTime?
+  maxCalls           Int?
+  callsPerDay        Int?
+  maxConcurrentCalls Int            @default(5)
+  maxAttempts        Int            @default(3)
+  startTime          String?        // "09:00"
+  endTime            String?        // "18:00"
+  daysOfWeek         Int[]          @default([1, 2, 3, 4, 5]) // 0=Sun..6=Sat
+  metadata           Json?          @default("{}")
 
   tenantId  String
   tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -377,6 +391,7 @@ model Campaign {
 
   // Relations
   calls Call[]
+  leads CampaignLead[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -384,6 +399,33 @@ model Campaign {
   @@index([tenantId])
   @@index([status])
   @@map("Campaign")
+}
+
+// ── Campaign Lead (Join Model) ────────────────────────────────
+
+model CampaignLead {
+  id            String             @id @default(cuid())
+  campaignId    String
+  campaign      Campaign           @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  leadId        String
+  lead          Lead               @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  status        CampaignLeadStatus @default(pending)
+  attemptCount  Int                @default(0)
+  lastAttemptAt DateTime?
+  nextAttemptAt DateTime?
+  lastCallId    String?
+  lastCall      Call?              @relation(fields: [lastCallId], references: [id])
+  outcome       String?
+  errorMessage  String?
+  metadata      Json?              @default("{}")
+
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@unique([campaignId, leadId])
+  @@index([campaignId, status])
+  @@index([leadId])
+  @@map("CampaignLead")
 }
 
 // ── Activity (CRM timeline) ───────────────────────────────────
