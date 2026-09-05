@@ -107,8 +107,8 @@ export default function VoicesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Voice Studio & Accents</h1>
-          <p className="text-sm text-white/50 mt-1">Ultra-realistic ElevenLabs neural voices tuned for Indian languages, accents, and tones.</p>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Voice Studio & Accents</h1>
+          <p className="text-sm text-slate-500 dark:text-white/50 mt-1">Ultra-realistic ElevenLabs neural voices tuned for Indian languages, accents, and tones.</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 flex items-center gap-1.5">
@@ -123,10 +123,10 @@ export default function VoicesPage() {
 
         {/* Voices List */}
         <div className="lg:col-span-2 space-y-3">
-          <h2 className="text-base font-bold text-white uppercase tracking-wider mb-2">Available Voice Personas</h2>
+          <h2 className="text-base font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-2">Available Voice Personas</h2>
 
           {loading && (
-            <div className="flex flex-col items-center justify-center py-16 text-white/50">
+            <div className="flex flex-col items-center justify-center py-16 text-slate-500 dark:text-white/50">
               <Loader2 className="w-6 h-6 animate-spin mb-3" />
               <p className="text-sm">Loading voice personas&hellip;</p>
             </div>
@@ -135,14 +135,14 @@ export default function VoicesPage() {
           {!loading && error && (
             <div className="text-center py-16">
               <p className="text-sm text-brand-600 dark:text-brand-400 font-semibold mb-2">{error}</p>
-              <p className="text-xs text-white/50">No voices were loaded.</p>
+              <p className="text-xs text-slate-500 dark:text-white/50">No voices were loaded.</p>
             </div>
           )}
 
           {!loading && !error && voices.length === 0 && (
             <div className="text-center py-16">
-              <Radio className="w-8 h-8 text-white/40 mx-auto mb-3" />
-              <p className="text-sm text-white/50">No voice personas available.</p>
+              <Radio className="w-8 h-8 text-slate-500 dark:text-white/40 mx-auto mb-3" />
+              <p className="text-sm text-slate-500 dark:text-white/50">No voice personas available.</p>
             </div>
           )}
 
@@ -156,8 +156,8 @@ export default function VoicesPage() {
                 onClick={() => setSelectedVoice(v)}
                 className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl ${
                   isSelected
-                    ? "bg-white/[0.07] border-brand-500/50 shadow-brand-950/40"
-                    : "bg-white/[0.03] border-white/[0.08] hover:border-white/15 dark:hover:border-white/20"
+                    ? "bg-slate-100 dark:bg-white/[0.07] border-brand-500/50 shadow-brand-950/40"
+                    : "bg-slate-50 dark:bg-white/[0.03] border-slate-200 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20"
                 }`}
               >
                 <div className="flex items-start gap-4">
@@ -166,18 +166,18 @@ export default function VoicesPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-bold text-white">{v.name}</h3>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-white/[0.06] text-white/60">
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white">{v.name}</h3>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/60">
                         {v.gender}
                       </span>
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-brand-500/15 text-brand-600 dark:text-brand-300 border border-brand-500/30">
                         {v.accent}
                       </span>
                     </div>
-                    <p className="text-xs text-white/50 mt-1">{v.tone}</p>
+                    <p className="text-xs text-slate-500 dark:text-white/50 mt-1">{v.tone}</p>
                     <div className="flex items-center gap-2 mt-2">
                       {v.languages.map((l) => (
-                        <span key={l} className="text-[10px] text-white/40 font-mono">
+                        <span key={l} className="text-[10px] text-slate-500 dark:text-white/40 font-mono">
                           • {l}
                         </span>
                       ))}
@@ -195,7 +195,7 @@ export default function VoicesPage() {
                     className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
                       isPlaying
                         ? "bg-brand-500 text-white shadow-lg shadow-brand-500/40"
-                        : "bg-white/[0.08] hover:bg-white/[0.08] dark:hover:bg-white/[0.15] text-white border border-white/10"
+                        : "bg-slate-100 dark:bg-white/[0.08] hover:bg-slate-100 dark:hover:bg-white/[0.15] text-slate-900 dark:text-white border border-slate-200 dark:border-white/10"
                     }`}
                   >
                     {isPlaying ? <Pause className="w-4 h-4 fill-white" /> : <Play className="w-4 h-4 fill-white" />}
@@ -207,22 +207,22 @@ export default function VoicesPage() {
         </div>
 
         {/* Voice Customizer Sidebar */}
-        <div className="rounded-2xl p-6 bg-white/[0.03] border border-white/[0.08] shadow-2xl h-fit space-y-6">
-          <div className="flex items-center gap-3 pb-4 border-b border-white/[0.06]">
+        <div className="rounded-2xl p-6 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] shadow-2xl h-fit space-y-6">
+          <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-white/[0.06]">
             <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${selectedVoice?.avatarColor ?? "from-brand-600 to-purple-600"} flex items-center justify-center text-white font-bold`}>
               {selectedVoice?.name[0] ?? "V"}
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">{selectedVoice?.name ?? "Voice"} (Customizer)</h3>
-              <p className="text-xs text-white/40">{selectedVoice?.accent ?? ""}</p>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">{selectedVoice?.name ?? "Voice"} (Customizer)</h3>
+              <p className="text-xs text-slate-500 dark:text-white/40">{selectedVoice?.accent ?? ""}</p>
             </div>
           </div>
 
           <div className="space-y-4">
             <div>
-              <div className="flex justify-between text-xs text-white/60 mb-2">
+              <div className="flex justify-between text-xs text-slate-500 dark:text-white/60 mb-2">
                 <span>Speaking Rate (Speed)</span>
-                <span className="font-mono text-white">{speed}x</span>
+                <span className="font-mono text-slate-900 dark:text-white">{speed}x</span>
               </div>
               <input
                 type="range"
@@ -231,14 +231,14 @@ export default function VoicesPage() {
                 step="0.05"
                 value={speed}
                 onChange={(e) => setSpeed(parseFloat(e.target.value))}
-                className="w-full accent-[#D42027]"
+                className="w-full accent-brand-500"
               />
             </div>
 
             <div>
-              <div className="flex justify-between text-xs text-white/60 mb-2">
+              <div className="flex justify-between text-xs text-slate-500 dark:text-white/60 mb-2">
                 <span>Vocal Pitch</span>
-                <span className="font-mono text-white">{pitch}x</span>
+                <span className="font-mono text-slate-900 dark:text-white">{pitch}x</span>
               </div>
               <input
                 type="range"
@@ -247,13 +247,13 @@ export default function VoicesPage() {
                 step="0.05"
                 value={pitch}
                 onChange={(e) => setPitch(parseFloat(e.target.value))}
-                className="w-full accent-[#D42027]"
+                className="w-full accent-brand-500"
               />
             </div>
 
-            <div className="pt-4 border-t border-white/[0.06]">
-              <label className="text-xs font-semibold text-white/70 block mb-2">Sample Sentence</label>
-              <div className="p-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-white/80 leading-relaxed font-mono">
+            <div className="pt-4 border-t border-slate-200 dark:border-white/[0.06]">
+              <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-2">Sample Sentence</label>
+              <div className="p-3 rounded-xl bg-slate-100/70 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 text-xs text-slate-700 dark:text-white/80 leading-relaxed font-mono">
                 &ldquo;{selectedVoice?.sampleAudio ?? ""}&rdquo;
               </div>
             </div>

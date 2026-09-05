@@ -7,7 +7,7 @@ const R = "#D42027";
 
 export function CTASection() {
   return (
-    <section className="py-16 sm:py-24 relative overflow-hidden bg-white dark:bg-[#0c0102]">
+    <section className="py-16 sm:py-24 relative overflow-hidden bg-page">
       <div className="absolute inset-0 pointer-events-none"
         style={{ background:"radial-gradient(ellipse 80% 60% at 50% 50%,rgba(212,32,39,0.05),transparent 65%)" }}/>
 

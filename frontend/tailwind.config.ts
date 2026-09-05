@@ -31,6 +31,10 @@ const config: Config = {
           hover: "var(--bg-hover)",
           active: "var(--bg-active)",
         },
+        page: "var(--bg-page)",
+        dropdown: "var(--bg-dropdown)",
+        input: "var(--bg-input)",
+        modal: "var(--bg-modal)",
         content: {
           DEFAULT: "var(--text-primary)",
           secondary: "var(--text-secondary)",

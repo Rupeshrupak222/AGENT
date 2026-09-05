@@ -82,13 +82,13 @@ export function AvatarGroup({ names, srcs = [], max = 3, size = "sm", className 
           name={name}
           src={srcs[i]}
           size={size}
-          className="ring-2 ring-surface-card dark:ring-[#150305]"
+          className="ring-2 ring-surface-card"
         />
       ))}
       {remaining > 0 && (
         <div
           className={cn(
-            "inline-flex items-center justify-center rounded-full font-semibold bg-surface-muted text-content-secondary dark:bg-white/[0.08] dark:text-white/50 ring-2 ring-surface-card dark:ring-[#150305]",
+            "inline-flex items-center justify-center rounded-full font-semibold bg-surface-muted text-content-secondary dark:bg-white/[0.08] dark:text-white/50 ring-2 ring-surface-card",
             sizeClasses[size]
           )}
         >

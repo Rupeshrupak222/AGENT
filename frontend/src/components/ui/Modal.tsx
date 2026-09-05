@@ -64,7 +64,7 @@ export function Modal({
         className={cn(
           "relative w-full animate-scale-in",
           "bg-surface-card border border-line rounded-xl shadow-xl",
-          "dark:bg-[#150305] dark:border-white/[0.08] dark:shadow-glass",
+          "dark:shadow-glass",
           sizeClasses[size]
         )}
       >

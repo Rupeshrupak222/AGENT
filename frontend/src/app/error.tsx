@@ -16,7 +16,7 @@ export default function GlobalError({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-[#0c0102] text-white antialiased">
+      <body className="min-h-screen bg-page text-slate-900 dark:text-white antialiased">
         <div className="flex min-h-screen items-center justify-center p-6">
           <ErrorState
             title="Something went wrong"

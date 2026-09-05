@@ -28,7 +28,7 @@ const agents = [
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="py-16 sm:py-24 bg-white dark:bg-[#0c0102]">
+    <section id="features" className="py-16 sm:py-24 bg-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header */}

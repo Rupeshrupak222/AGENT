@@ -14,7 +14,7 @@ const steps = [
 
 export function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="py-16 sm:py-24 relative overflow-hidden bg-gray-50 dark:bg-[#0a0102]">
+    <section id="how-it-works" className="py-16 sm:py-24 relative overflow-hidden bg-surface">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full pointer-events-none"
         style={{ background:"radial-gradient(ellipse,rgba(212,32,39,0.04),transparent 70%)" }}/>
 
@@ -47,7 +47,7 @@ export function HowItWorksSection() {
                 <div className="flex justify-center mb-5">
                   <div className="relative w-20 h-20 rounded-2xl flex items-center justify-center text-white transition-transform duration-300 group-hover:scale-110 bg-gradient-to-br from-brand-500 to-brand-700 shadow-md shadow-brand-500/25">
                     {s.icon}
-                    <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-white dark:bg-[#120204] text-brand-500 dark:text-brand-400 border border-brand-500/30">
+                    <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-page text-brand-500 dark:text-brand-400 border border-brand-500/30">
                       {s.n}
                     </span>
                   </div>

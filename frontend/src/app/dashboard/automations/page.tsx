@@ -113,8 +113,8 @@ export default function AutomationsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Post-Call Automations</h1>
-          <p className="text-sm text-white/50 mt-1">Configure event-driven triggers that execute automatically when calls conclude.</p>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Post-Call Automations</h1>
+          <p className="text-sm text-slate-500 dark:text-white/50 mt-1">Configure event-driven triggers that execute automatically when calls conclude.</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -139,19 +139,19 @@ export default function AutomationsPage() {
           { label: "Delivery Success Rate", value: "99.4%", color: "text-cyan-600 dark:text-cyan-400" },
           { label: "Average Latency", value: "1.2s", color: "text-purple-600 dark:text-purple-400" },
         ].map((s) => (
-          <div key={s.label} className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] shadow-sm">
+          <div key={s.label} className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] shadow-sm">
             <p className={`text-2xl font-mono font-black ${s.color}`}>{s.value}</p>
-            <p className="text-xs text-white/40 mt-1">{s.label}</p>
+            <p className="text-xs text-slate-500 dark:text-white/40 mt-1">{s.label}</p>
           </div>
         ))}
       </div>
 
       {/* Workflows List */}
       <div className="space-y-4">
-        <h2 className="text-base font-bold text-white uppercase tracking-wider">Configured Rules</h2>
+        <h2 className="text-base font-bold text-slate-900 dark:text-white uppercase tracking-wider">Configured Rules</h2>
 
         {loading && (
-          <div className="flex flex-col items-center justify-center py-16 text-white/50">
+          <div className="flex flex-col items-center justify-center py-16 text-slate-500 dark:text-white/50">
             <Loader2 className="w-6 h-6 animate-spin mb-3" />
             <p className="text-sm">Loading automation rules&hellip;</p>
           </div>
@@ -159,8 +159,8 @@ export default function AutomationsPage() {
 
         {!loading && !error && rules.length === 0 && (
           <div className="text-center py-16">
-            <Zap className="w-8 h-8 text-white/40 mx-auto mb-3" />
-            <p className="text-sm text-white/50">No automation rules yet.</p>
+            <Zap className="w-8 h-8 text-slate-500 dark:text-white/40 mx-auto mb-3" />
+            <p className="text-sm text-slate-500 dark:text-white/50">No automation rules yet.</p>
             <button onClick={() => setShowModal(true)} className="mt-3 text-xs font-semibold text-brand-600 dark:text-brand-400 underline">
               Create your first rule
             </button>
@@ -169,14 +169,14 @@ export default function AutomationsPage() {
 
         <div className="space-y-3">
           {!loading && rules.map((rule) => {
-            const triggerInfo = TRIGGER_LABELS[rule.trigger] || { label: rule.trigger, color: "bg-white/10 text-white" };
-            const actionInfo = ACTION_ICONS[rule.action] || { icon: Zap, label: rule.action, color: "text-white" };
+            const triggerInfo = TRIGGER_LABELS[rule.trigger] || { label: rule.trigger, color: "bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white" };
+            const actionInfo = ACTION_ICONS[rule.action] || { icon: Zap, label: rule.action, color: "text-slate-900 dark:text-white" };
             const ActionIcon = actionInfo.icon;
 
             return (
               <div
                 key={rule.id}
-                className="rounded-2xl p-5 bg-white/[0.03] border border-white/[0.08] hover:border-brand-500/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm"
+                className="rounded-2xl p-5 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] hover:border-brand-500/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm"
               >
                 <div className="flex items-start gap-4">
                   <div className={`p-3 rounded-2xl ${actionInfo.color} flex-shrink-0 mt-0.5`}>
@@ -184,40 +184,40 @@ export default function AutomationsPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-sm font-bold text-white">{rule.name}</h3>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">{rule.name}</h3>
                       <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${triggerInfo.color}`}>
                         IF: {triggerInfo.label}
                       </span>
-                      <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-white/[0.05] text-white/70 border border-white/10">
+                      <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-100/80 dark:bg-white/[0.05] text-slate-700 dark:text-white/70 border border-slate-200 dark:border-white/10">
                         THEN: {actionInfo.label}
                       </span>
                     </div>
-                    <p className="text-xs text-white/50 mt-1.5 line-clamp-1 max-w-xl font-mono">
+                    <p className="text-xs text-slate-500 dark:text-white/50 mt-1.5 line-clamp-1 max-w-xl font-mono">
                       {rule.template || "No template set"}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 self-end md:self-auto flex-shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-white/[0.05] w-full md:w-auto justify-between md:justify-end">
+                <div className="flex items-center gap-4 self-end md:self-auto flex-shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-200 dark:border-white/[0.05] w-full md:w-auto justify-between md:justify-end">
                   <div className="text-right">
-                    <p className="text-xs font-mono font-bold text-white">{rule.executions.toLocaleString()} sent</p>
-                    <p className="text-[10px] text-white/40">{fmtLastRun(rule.lastRunAt)}</p>
+                    <p className="text-xs font-mono font-bold text-slate-900 dark:text-white">{rule.executions.toLocaleString()} sent</p>
+                    <p className="text-[10px] text-slate-500 dark:text-white/40">{fmtLastRun(rule.lastRunAt)}</p>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => toggleStatus(rule)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                        rule.status === "active"
-                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
-                          : "bg-white/[0.06] text-white/40 border border-white/10"
+rule.status === "active"
+                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                            : "bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/40 border border-slate-200 dark:border-white/10"
                       }`}
                     >
                       {rule.status === "active" ? "Active" : "Paused"}
                     </button>
                     <button
                       onClick={() => deleteRule(rule.id)}
-                      className="p-1.5 rounded-xl hover:bg-white/[0.06] text-white/30 hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
+                      className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/[0.06] text-slate-400 dark:text-white/30 hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -244,33 +244,33 @@ export default function AutomationsPage() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg bg-[#140204] border border-white/15 rounded-3xl p-6 shadow-2xl z-10 space-y-5"
+              className="relative w-full max-w-lg bg-modal border border-slate-200 dark:border-white/15 rounded-3xl p-6 shadow-2xl z-10 space-y-5"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
-                <h3 className="text-base font-bold text-white">Create New Automation</h3>
-                <button onClick={() => setShowModal(false)} className="text-white/40 hover:text-white text-lg">×</button>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/[0.08]">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Create New Automation</h3>
+                <button onClick={() => setShowModal(false)} className="text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white text-lg">×</button>
               </div>
 
               <form onSubmit={handleCreate} className="space-y-4">
                 <div>
-                  <label className="text-xs font-semibold text-white/70 block mb-1.5">Rule Name</label>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">Rule Name</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Send WhatsApp Catalog on High Intent"
                     value={newRule.name}
                     onChange={e => setNewRule({ ...newRule, name: e.target.value })}
-                    className="w-full h-10 rounded-xl px-3 text-sm bg-white/[0.04] border border-white/15 text-white outline-none focus:border-brand-500"
+                    className="w-full h-10 rounded-xl px-3 text-sm bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-semibold text-white/70 block mb-1.5">When (Trigger)</label>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">When (Trigger)</label>
                     <select
                       value={newRule.trigger}
                       onChange={e => setNewRule({ ...newRule, trigger: e.target.value as any })}
-                      className="w-full h-10 rounded-xl px-3 text-xs bg-white/[0.04] dark:bg-[#1a0406] border border-white/15 text-white outline-none"
+                      className="w-full h-10 rounded-xl px-3 text-xs bg-input border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
                     >
                       <option value="lead_qualified">Lead Qualified</option>
                       <option value="call_completed">Call Completed</option>
@@ -280,11 +280,11 @@ export default function AutomationsPage() {
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-white/70 block mb-1.5">Then (Action)</label>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">Then (Action)</label>
                     <select
                       value={newRule.action}
                       onChange={e => setNewRule({ ...newRule, action: e.target.value as any })}
-                      className="w-full h-10 rounded-xl px-3 text-xs bg-white/[0.04] dark:bg-[#1a0406] border border-white/15 text-white outline-none"
+                      className="w-full h-10 rounded-xl px-3 text-xs bg-input border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
                     >
                       <option value="whatsapp">Send WhatsApp</option>
                       <option value="sms">Send SMS Text</option>
@@ -296,22 +296,22 @@ export default function AutomationsPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-white/70 block mb-1.5">Message / Payload Template</label>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">Message / Payload Template</label>
                   <textarea
                     rows={3}
                     placeholder="Hi {{lead_name}}, your appointment with {{agent_name}} has been confirmed for..."
                     value={newRule.template}
                     onChange={e => setNewRule({ ...newRule, template: e.target.value })}
-                    className="w-full rounded-xl p-3 text-xs bg-white/[0.04] border border-white/15 text-white outline-none focus:border-brand-500 font-mono"
+                    className="w-full rounded-xl p-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500 font-mono"
                   />
-                  <span className="text-[10px] text-white/40 block mt-1">Available variables: {"{{lead_name}}"}, {"{{agent_name}}"}, {"{{call_duration}}"}</span>
+                  <span className="text-[10px] text-slate-500 dark:text-white/40 block mt-1">Available variables: {"{{lead_name}}"}, {"{{agent_name}}"}, {"{{call_duration}}"}</span>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-3 border-t border-white/[0.08]">
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-white/[0.08]">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/[0.05] text-white/60 hover:text-white"
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100/80 dark:bg-white/[0.05] text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white"
                   >
                     Cancel
                   </button>

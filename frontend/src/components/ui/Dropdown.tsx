@@ -43,7 +43,7 @@ export function Dropdown({ trigger, items, onSelect, align = "left", className }
           className={cn(
             "absolute z-50 mt-1.5 min-w-[12rem] py-1.5 rounded-xl border animate-scale-in",
             "bg-surface-card border-line shadow-lg",
-            "dark:bg-[#1a0608] dark:border-white/[0.08] dark:shadow-glass",
+            "dark:shadow-glass",
             align === "right" ? "right-0" : "left-0"
           )}
         >

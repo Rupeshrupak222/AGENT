@@ -21,7 +21,7 @@ const plans = [
 
 export function PricingSection() {
   return (
-    <section id="pricing" className="py-16 sm:py-24 relative bg-white dark:bg-[#0c0102]">
+    <section id="pricing" className="py-16 sm:py-24 relative bg-page">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[250px] rounded-full pointer-events-none"
         style={{ background:"radial-gradient(ellipse,rgba(212,32,39,0.05),transparent 70%)" }}/>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">

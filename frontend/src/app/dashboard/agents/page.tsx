@@ -179,22 +179,22 @@ function AgentBuilderModal({
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#150305] border border-white/15 shadow-2xl p-6 text-white"
+        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-surface-card border-slate-200 dark:border-white/15 shadow-2xl p-6 text-slate-900 dark:text-white"
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/[0.06] dark:border-white/10">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/[0.06] dark:border-white/10">
           <div>
             <h2 className="text-lg font-bold flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-brand-500" />
               Build Autonomous AI Agent
             </h2>
-            <p className="text-xs text-white/40">
+            <p className="text-xs text-slate-500 dark:text-white/40">
               Configure persona, conversational goals, and voice telemetry
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-white/40 hover:text-white/40 dark:hover:text-white hover:bg-white/[0.04] dark:hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-xl text-slate-500 dark:text-white/40 hover:text-slate-500 dark:hover:text-white/40 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.04] dark:hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -211,18 +211,18 @@ function AgentBuilderModal({
                       ? "bg-emerald-500 text-white"
                       : i === step
                       ? "bg-brand-600 text-white"
-                      : "bg-white/[0.08] dark:bg-white/10 text-white/40"
+                      : "bg-slate-100 dark:bg-white/[0.08] dark:bg-white/10 text-slate-400 dark:text-white/40"
                   }`}
                 >
                   {i < step ? <CheckCircle2 className="w-3.5 h-3.5" /> : i + 1}
                 </div>
-                <span className="hidden sm:inline text-[11px] font-medium text-white/60 truncate">
+                <span className="hidden sm:inline text-[11px] font-medium text-slate-500 dark:text-white/60 truncate">
                   {s}
                 </span>
                 {i < WIZARD_STEPS.length - 1 && (
                   <div
                     className={`flex-1 h-0.5 rounded-full ${
-                      i < step ? "bg-emerald-500" : "bg-white/[0.08] dark:bg-white/10"
+                      i < step ? "bg-emerald-500" : "bg-slate-100 dark:bg-white/[0.08] dark:bg-white/10"
                     }`}
                   />
                 )}
@@ -244,19 +244,19 @@ function AgentBuilderModal({
           {step === 0 && (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-white/80 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-white/80 mb-1">
                   Agent Name *
                 </label>
                 <input
                   value={form.name}
                   onChange={(e) => setField("name", e.target.value)}
                   placeholder="e.g. Priya - Enterprise Qualification"
-                  className="w-full h-10 px-3 rounded-xl bg-white/[0.04] border border-white/10 text-sm outline-none focus:border-brand-500"
+                  className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/10 text-sm outline-none focus:border-brand-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-white/80 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-white/80 mb-1">
                   Agent Role Taxonomy *
                 </label>
                 <div className="grid sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
@@ -268,13 +268,13 @@ function AgentBuilderModal({
                       className={`p-3 rounded-xl text-left border transition-all ${
                         form.role === r.value
                           ? "border-brand-500 bg-brand-50/50 dark:bg-brand-500/15"
-                          : "border-white/10 hover:border-white/15 dark:hover:border-white/20"
+                          : "border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/15 dark:hover:border-white/20"
                       }`}
                     >
-                      <p className="text-xs font-bold text-white">
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">
                         {r.label}
                       </p>
-                      <p className="text-[11px] text-white/40 mt-0.5">
+                      <p className="text-[11px] text-slate-500 dark:text-white/40 mt-0.5">
                         {r.desc}
                       </p>
                     </button>
@@ -283,7 +283,7 @@ function AgentBuilderModal({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-white/80 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-white/80 mb-1">
                   Core Business Objective / Prompt Goal * (Min 10 chars)
                 </label>
                 <textarea
@@ -291,7 +291,7 @@ function AgentBuilderModal({
                   value={form.businessGoal}
                   onChange={(e) => setField("businessGoal", e.target.value)}
                   placeholder="Describe what this voice employee should accomplish during conversations..."
-                  className="w-full p-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs outline-none focus:border-brand-500 resize-none"
+                  className="w-full p-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/10 text-xs outline-none focus:border-brand-500 resize-none"
                 />
               </div>
             </div>
@@ -300,13 +300,13 @@ function AgentBuilderModal({
           {step === 1 && (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-white/80 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-white/80 mb-1">
                   Primary Dialect / Language
                 </label>
                 <select
                   value={form.language}
                   onChange={(e) => setField("language", e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl bg-white/[0.04] dark:bg-[#1a0405] border border-white/10 text-xs outline-none focus:border-brand-500"
+                  className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] dark:bg-input border-slate-200 dark:border-white/10 text-xs outline-none focus:border-brand-500"
                 >
                   {Object.entries(langLabels).map(([v, l]) => (
                     <option key={v} value={v}>
@@ -317,7 +317,7 @@ function AgentBuilderModal({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-white/80 mb-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-white/80 mb-2">
                   Select Synthetic Voice Profile
                 </label>
                 <div className="grid sm:grid-cols-2 gap-2">
@@ -328,13 +328,13 @@ function AgentBuilderModal({
                       className={`p-3 rounded-xl border cursor-pointer transition-all ${
                         form.voiceId === v.id
                           ? "border-brand-500 bg-brand-50/50 dark:bg-brand-500/15"
-                          : "border-white/10 hover:border-white/15 dark:hover:border-white/20"
+                          : "border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/15 dark:hover:border-white/20"
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <p className="text-xs font-bold text-white">
-                          {v.name} ({v.gender})
-                        </p>
+<p className="text-xs font-bold text-slate-900 dark:text-white">
+                        {v.name} ({v.gender})
+                      </p>
                         <Badge variant="gray" className="text-[10px]">
                           {v.lang}
                         </Badge>
@@ -349,19 +349,19 @@ function AgentBuilderModal({
           {step === 2 && (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-white/80 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-white/80 mb-1">
                   Opening Hook Script (Optional)
                 </label>
                 <input
                   value={form.openingScript}
                   onChange={(e) => setField("openingScript", e.target.value)}
                   placeholder="e.g. Hello! This is Priya from Acme Corp calling regarding your inquiry..."
-                  className="w-full h-10 px-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs outline-none focus:border-brand-500"
+                  className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/10 text-xs outline-none focus:border-brand-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-white/80 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-white/80 mb-1">
                   Lead Qualification Rules (Optional)
                 </label>
                 <textarea
@@ -369,12 +369,12 @@ function AgentBuilderModal({
                   value={form.qualificationRules}
                   onChange={(e) => setField("qualificationRules", e.target.value)}
                   placeholder="Budget > $10,000, Timeline < 30 days, B2B company"
-                  className="w-full p-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs outline-none focus:border-brand-500 resize-none"
+                  className="w-full p-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/10 text-xs outline-none focus:border-brand-500 resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-white/80 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-white/80 mb-1">
                   Company Knowledge Context / FAQs (Optional)
                 </label>
                 <textarea
@@ -382,43 +382,43 @@ function AgentBuilderModal({
                   value={form.knowledgeBase}
                   onChange={(e) => setField("knowledgeBase", e.target.value)}
                   placeholder="Add pricing details, service offerings, and objection handling guidelines..."
-                  className="w-full p-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs outline-none focus:border-brand-500 resize-none"
+                  className="w-full p-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/10 text-xs outline-none focus:border-brand-500 resize-none"
                 />
               </div>
             </div>
           )}
 
           {step === 3 && (
-            <div className="space-y-3 p-4 rounded-2xl bg-white/[0.03] border border-white/10 text-xs">
-              <h4 className="font-bold text-sm text-white mb-2">
+            <div className="space-y-3 p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border-slate-200 dark:border-white/10 text-xs">
+              <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-2">
                 Verify Agent Parameters
               </h4>
-              <div className="flex justify-between py-1 border-b border-white/5">
-                <span className="text-white/40">Name:</span>
-                <span className="font-semibold text-white">{form.name}</span>
+              <div className="flex justify-between py-1 border-b border-slate-200 dark:border-white/5">
+                <span className="text-slate-500 dark:text-white/40">Name:</span>
+                <span className="font-semibold text-slate-900 dark:text-white">{form.name}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-white/5">
-                <span className="text-white/40">Role:</span>
-                <span className="font-semibold capitalize text-white">{roleLabels[form.role] || form.role}</span>
+              <div className="flex justify-between py-1 border-b border-slate-200 dark:border-white/5">
+                <span className="text-slate-500 dark:text-white/40">Role:</span>
+                <span className="font-semibold capitalize text-slate-900 dark:text-white">{roleLabels[form.role] || form.role}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-white/5">
-                <span className="text-white/40">Language:</span>
-                <span className="font-semibold capitalize text-white">{langLabels[form.language] || form.language}</span>
+              <div className="flex justify-between py-1 border-b border-slate-200 dark:border-white/5">
+                <span className="text-slate-500 dark:text-white/40">Language:</span>
+                <span className="font-semibold capitalize text-slate-900 dark:text-white">{langLabels[form.language] || form.language}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-white/5">
-                <span className="text-white/40">Voice Profile:</span>
-                <span className="font-semibold text-white">{form.voiceId}</span>
+              <div className="flex justify-between py-1 border-b border-slate-200 dark:border-white/5">
+                <span className="text-slate-500 dark:text-white/40">Voice Profile:</span>
+                <span className="font-semibold text-slate-900 dark:text-white">{form.voiceId}</span>
               </div>
               <div className="py-1">
-                <span className="text-white/40 block mb-1">Objective:</span>
-                <p className="text-white/80 italic">{form.businessGoal}</p>
+                <span className="text-slate-500 dark:text-white/40 block mb-1">Objective:</span>
+                <p className="text-slate-700 dark:text-white/80 italic">{form.businessGoal}</p>
               </div>
             </div>
           )}
         </div>
 
         {/* Modal Footer Controls */}
-        <div className="pt-4 border-t border-white/[0.06] dark:border-white/10 flex items-center justify-between">
+        <div className="pt-4 border-t border-slate-200 dark:border-white/[0.06] dark:border-white/10 flex items-center justify-between">
           <Button
             variant="secondary"
             size="sm"
@@ -512,7 +512,7 @@ function AgentCardItem({
   };
 
   return (
-    <Card hover className="p-5 relative bg-[#150305]/90 bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+    <Card hover className="p-5 relative panel-card">
       <div>
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
@@ -521,7 +521,7 @@ function AgentCardItem({
               {agent.name[0]}
             </div>
             <div>
-              <p className="font-bold text-white truncate max-w-[140px]">
+              <p className="font-bold text-slate-900 dark:text-white truncate max-w-[140px]">
                 {agent.name}
               </p>
               <Badge variant={roleColors[agent.role] || "gray"} className="mt-0.5 text-[10px]">
@@ -548,15 +548,15 @@ function AgentCardItem({
             <div className="relative">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="w-7 h-7 rounded-lg hover:bg-white/[0.04] dark:hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white transition-all"
+                className="w-7 h-7 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.04] dark:hover:bg-white/10 flex items-center justify-center text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white transition-all"
               >
                 <MoreHorizontal className="w-4 h-4" />
               </button>
               {menuOpen && (
-                <div className="absolute right-0 top-8 w-36 rounded-xl bg-[#180406] border border-white/10 shadow-xl z-20 overflow-hidden text-xs">
+                <div className="absolute right-0 top-8 w-36 rounded-xl bg-dropdown border-slate-200 dark:border-white/10 shadow-xl z-20 overflow-hidden text-xs">
                   <button
                     onClick={handleDuplicate}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-white/70 hover:bg-white/[0.02] dark:hover:bg-white/5 transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/[0.02] dark:hover:bg-white/5 transition-colors"
                   >
                     <Copy className="w-3.5 h-3.5" /> Duplicate
                   </button>
@@ -576,18 +576,18 @@ function AgentCardItem({
         </div>
 
         {/* Call count metric */}
-        <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 mb-4 text-center">
+        <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border-slate-200 dark:border-white/5 mb-4 text-center">
           <div className="flex items-center justify-center gap-1.5 text-brand-600 dark:text-brand-400 mb-1">
             <Phone className="w-3.5 h-3.5" />
             <span className="text-[11px] font-semibold">Total Handled Calls</span>
           </div>
-          <p className="text-xl font-black text-white font-mono">
+          <p className="text-xl font-black text-slate-900 dark:text-white font-mono">
             {(agent._count?.calls ?? 0).toLocaleString()}
           </p>
         </div>
 
         {/* Language & Voice */}
-        <div className="flex items-center justify-between text-xs text-white/40 mb-4">
+        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-white/40 mb-4">
           <div className="flex items-center gap-1.5">
             <Globe2 className="w-3.5 h-3.5" />
             <span>{langLabels[agent.language] || agent.language}</span>
@@ -676,17 +676,17 @@ export default function AgentsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 pb-0">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
             AI Agent Studio
           </h1>
-          <p className="text-sm text-white/50 mt-1">
+          <p className="text-sm text-slate-500 dark:text-white/50 mt-1">
             Build, train and deploy autonomous voice employees for your company
           </p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={fetchAgents}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white/80 transition-all shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-100 dark:hover:bg-white/[0.12] border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/80 transition-all shadow-sm"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-brand-500" : ""}`} />
             Refresh
@@ -720,29 +720,29 @@ export default function AgentsPage() {
 
         {/* Real Summary Metrics */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <Card className="p-4 bg-[#150305]/90 bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
-            <p className="text-2xl font-black text-white font-mono">
+          <Card className="p-4 panel-card">
+            <p className="text-2xl font-black text-slate-900 dark:text-white font-mono">
               {loading ? "—" : agents.length}
             </p>
-            <p className="text-xs text-white/40 mt-1">Configured Agents</p>
+            <p className="text-xs text-slate-500 dark:text-white/40 mt-1">Configured Agents</p>
           </Card>
-          <Card className="p-4 bg-[#150305]/90 bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+          <Card className="p-4 panel-card">
             <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
               {loading ? "—" : activeCount}
             </p>
-            <p className="text-xs text-white/40 mt-1">Active in Production</p>
+            <p className="text-xs text-slate-500 dark:text-white/40 mt-1">Active in Production</p>
           </Card>
-          <Card className="p-4 bg-[#150305]/90 bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+          <Card className="p-4 panel-card">
             <p className="text-2xl font-black text-brand-600 dark:text-brand-400 font-mono">
               {loading ? "—" : totalCalls.toLocaleString()}
             </p>
-            <p className="text-xs text-white/40 mt-1">Total Handled Calls</p>
+            <p className="text-xs text-slate-500 dark:text-white/40 mt-1">Total Handled Calls</p>
           </Card>
         </div>
 
         {/* Filters & Search Toolbar */}
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-1 bg-white/[0.08]/70 dark:bg-white/5 rounded-xl p-1">
+          <div className="flex items-center gap-1 bg-slate-100/70 dark:bg-white/[0.08]/70 dark:bg-white/5 rounded-xl p-1">
             {["all", "active", "paused", "draft", "archived"].map((f) => (
               <button
                 key={f}
@@ -750,7 +750,7 @@ export default function AgentsPage() {
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
                   filter === f
                     ? "bg-brand-600 text-white shadow-sm"
-                    : "text-white/50 hover:text-white"
+                    : "text-slate-500 dark:text-white/50 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 {f}
@@ -759,12 +759,12 @@ export default function AgentsPage() {
           </div>
 
           <div className="flex-1 min-w-[200px] max-w-xs relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by agent name or role..."
-              className="w-full h-9 pl-9 pr-3 rounded-xl text-xs bg-white/[0.04] border border-white/10 text-white placeholder:text-white/40 dark:placeholder:text-white/30 outline-none focus:border-brand-500"
+              className="w-full h-9 pl-9 pr-3 rounded-xl text-xs bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/30 outline-none focus:border-brand-500"
             />
           </div>
         </div>
@@ -775,17 +775,17 @@ export default function AgentsPage() {
             {Array.from({ length: 3 }).map((_, idx) => (
               <div
                 key={idx}
-                className="h-64 rounded-2xl bg-white/[0.02] border border-white/5 animate-pulse"
+                className="h-64 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/5 animate-pulse"
               />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="p-12 text-center bg-[#150305]/90 bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
-            <Bot className="w-10 h-10 mx-auto mb-3 text-white/20" />
-            <h3 className="text-base font-bold text-white">
+          <div className="p-12 text-center panel-card">
+            <Bot className="w-10 h-10 mx-auto mb-3 text-slate-400 dark:text-white/20" />
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">
               No AI Agents Configured
             </h3>
-            <p className="text-xs text-white/40 max-w-md mx-auto mt-1 mb-4">
+            <p className="text-xs text-slate-500 dark:text-white/40 max-w-md mx-auto mt-1 mb-4">
               Deploy your first autonomous conversational agent to start qualifying prospects and handling live phone calls.
             </p>
             <button
@@ -808,16 +808,16 @@ export default function AgentsPage() {
             {/* Create New Agent Tile */}
             <button
               onClick={() => setShowBuilder(true)}
-              className="rounded-2xl p-5 border-2 border-dashed border-white/15 hover:border-brand-500/50 hover:bg-brand-50/30 dark:hover:bg-brand-500/5 transition-all group flex flex-col items-center justify-center gap-3 min-h-[220px]"
+              className="rounded-2xl p-5 border-2 border-dashed border-slate-200 dark:border-white/15 hover:border-brand-500/50 hover:bg-brand-50/30 dark:hover:bg-brand-500/5 transition-all group flex flex-col items-center justify-center gap-3 min-h-[220px]"
             >
-              <div className="w-12 h-12 rounded-2xl bg-white/5 group-hover:bg-brand-100 dark:group-hover:bg-brand-500/20 border border-white/10 flex items-center justify-center transition-all">
-                <Plus className="w-6 h-6 text-white/40 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-all" />
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/5 group-hover:bg-brand-100 dark:group-hover:bg-brand-500/20 border-slate-200 dark:border-white/10 flex items-center justify-center transition-all">
+                <Plus className="w-6 h-6 text-slate-500 dark:text-white/40 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-all" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-bold text-white/70 group-hover:text-brand-600 dark:group-hover:text-white transition-colors">
+                <p className="text-sm font-bold text-slate-700 dark:text-white/70 group-hover:text-brand-600 dark:group-hover:text-white transition-colors">
                   Create New Agent
                 </p>
-                <p className="text-xs text-white/30 mt-0.5">
+                <p className="text-xs text-slate-400 dark:text-white/30 mt-0.5">
                   Autonomous conversational voice builder
                 </p>
               </div>

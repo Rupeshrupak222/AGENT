@@ -81,7 +81,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             className={cn(
               "pointer-events-auto flex items-start gap-3 w-80 px-4 py-3 rounded-xl border border-l-4 shadow-lg animate-slide-up",
               "bg-surface-card border-line",
-              "dark:bg-[#1a0608] dark:border-white/[0.08] dark:shadow-glass",
+              "dark:shadow-glass",
               borderColors[t.type]
             )}
           >

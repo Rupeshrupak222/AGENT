@@ -14,7 +14,7 @@ const Footer              = dynamic(() => import("@/components/landing/Footer").
 
 export default function HomePage() {
   return (
-    <main className="relative bg-white dark:bg-[#0c0102] text-gray-900 dark:text-white min-h-screen overflow-x-hidden transition-colors duration-200">
+    <main className="relative bg-page text-gray-900 dark:text-white min-h-screen overflow-x-hidden transition-colors duration-200">
       <Navbar />
       <HeroSection />
       <TrustSection />

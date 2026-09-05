@@ -36,7 +36,7 @@ export function Navbar() {
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         scrolled || mobileOpen
-          ? "bg-white/90 dark:bg-[#0c0102]/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-brand-500/15 shadow-sm dark:shadow-2xl"
+          ? "bg-page/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-brand-500/15 shadow-sm dark:shadow-2xl"
           : "bg-transparent border-b border-transparent"
       )}
     >
@@ -91,7 +91,7 @@ export function Navbar() {
 
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div className="bg-white/98 dark:bg-[#120204] backdrop-blur-xl border-b border-slate-200 dark:border-brand-500/15">
+        <div className="bg-page backdrop-blur-xl border-b border-slate-200 dark:border-brand-500/15">
           <div className="px-4 py-4 space-y-1">
             {navLinks.map(l=>(
               <a key={l.label} href={l.href} onClick={e=>anchor(e,l.href)}

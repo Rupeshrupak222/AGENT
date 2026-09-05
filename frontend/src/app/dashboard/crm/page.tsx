@@ -122,37 +122,37 @@ function LeadDetailPanel({
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: 50 }}
-        className="h-full w-full sm:w-[440px] bg-[#120204] border-l border-white/10 shadow-2xl flex flex-col justify-between"
+        className="h-full w-full sm:w-[440px] bg-modal border-l border-slate-200 dark:border-white/10 shadow-2xl flex flex-col justify-between"
       >
         {/* Header */}
-        <div className="p-5 border-b border-white/10 flex items-center justify-between">
+        <div className="p-5 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-600 to-purple-600 flex items-center justify-center text-white font-bold text-base shadow-sm">
               {lead?.name?.[0] || "L"}
             </div>
             <div>
-              <h3 className="font-bold text-white truncate max-w-[220px]">
+              <h3 className="font-bold text-slate-900 dark:text-white truncate max-w-[220px]">
                 {lead?.name || "Lead Details"}
               </h3>
-              <p className="text-xs text-white/40">
+              <p className="text-xs text-slate-500 dark:text-white/40">
                 {lead?.company || "Individual Contact"}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-white/40 hover:text-white/40 dark:hover:text-white hover:bg-white/[0.04] dark:hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-lg text-slate-500 dark:text-white/40 hover:text-slate-500 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5 text-white">
+        <div className="flex-1 overflow-y-auto p-5 space-y-5 text-slate-900 dark:text-white">
           {loading ? (
             <div className="py-12 flex flex-col items-center justify-center gap-2">
               <RefreshCw className="w-6 h-6 text-brand-500 animate-spin" />
-              <p className="text-xs text-white/40">Loading contact history...</p>
+              <p className="text-xs text-slate-500 dark:text-white/40">Loading contact history...</p>
             </div>
           ) : error ? (
             <div className="p-4 rounded-xl bg-rose-500/10 text-rose-600 text-xs">{error}</div>
@@ -160,7 +160,7 @@ function LeadDetailPanel({
             <>
               {/* Status Badge */}
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-white/40">
+                <span className="text-xs font-semibold text-slate-500 dark:text-white/40">
                   Current Pipeline Stage:
                 </span>
                 <Badge variant={statusVariant[lead.status]} dot className="text-xs capitalize">
@@ -169,12 +169,12 @@ function LeadDetailPanel({
               </div>
 
               {/* Contact Info Card */}
-              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-3 text-xs">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 space-y-3 text-xs">
                 <div className="flex items-center gap-3">
                   <Phone className="w-4 h-4 text-brand-500 flex-shrink-0" />
                   <div>
-                    <p className="text-[10px] text-white/40">Phone</p>
-                    <p className="font-mono font-semibold text-white">
+                    <p className="text-[10px] text-slate-500 dark:text-white/40">Phone</p>
+                    <p className="font-mono font-semibold text-slate-900 dark:text-white">
                       {lead.phone}
                     </p>
                   </div>
@@ -183,8 +183,8 @@ function LeadDetailPanel({
                 <div className="flex items-center gap-3">
                   <Mail className="w-4 h-4 text-brand-500 flex-shrink-0" />
                   <div>
-                    <p className="text-[10px] text-white/40">Email</p>
-                    <p className="font-semibold text-white">
+                    <p className="text-[10px] text-slate-500 dark:text-white/40">Email</p>
+                    <p className="font-semibold text-slate-900 dark:text-white">
                       {lead.email || "—"}
                     </p>
                   </div>
@@ -193,8 +193,8 @@ function LeadDetailPanel({
                 <div className="flex items-center gap-3">
                   <Building2 className="w-4 h-4 text-brand-500 flex-shrink-0" />
                   <div>
-                    <p className="text-[10px] text-white/40">Company</p>
-                    <p className="font-semibold text-white">
+                    <p className="text-[10px] text-slate-500 dark:text-white/40">Company</p>
+                    <p className="font-semibold text-slate-900 dark:text-white">
                       {lead.company || "—"}
                     </p>
                   </div>
@@ -203,8 +203,8 @@ function LeadDetailPanel({
                 <div className="flex items-center gap-3">
                   <User className="w-4 h-4 text-brand-500 flex-shrink-0" />
                   <div>
-                    <p className="text-[10px] text-white/40">Assigned Agent</p>
-                    <p className="font-semibold text-white">
+                    <p className="text-[10px] text-slate-500 dark:text-white/40">Assigned Agent</p>
+                    <p className="font-semibold text-slate-900 dark:text-white">
                       {lead.assignedAgent?.name || "Unassigned"}
                     </p>
                   </div>
@@ -213,7 +213,7 @@ function LeadDetailPanel({
 
               {/* Stage Transition Buttons */}
               <div>
-                <p className="text-xs font-bold text-white/70 uppercase tracking-wider mb-2">
+                <p className="text-xs font-bold text-slate-700 dark:text-white/70 uppercase tracking-wider mb-2">
                   Update Stage
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -225,7 +225,7 @@ function LeadDetailPanel({
                       className={`px-2.5 py-1 rounded-lg border text-xs font-semibold transition-all ${
                         lead.status === s.id
                           ? "bg-brand-600 text-white border-brand-600 shadow-xs"
-                          : "border-white/10 text-white/50 hover:border-white/15 dark:hover:border-white/25"
+                          : "border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/50 hover:border-slate-300 dark:hover:border-white/25"
                       }`}
                     >
                       {s.label}
@@ -236,7 +236,7 @@ function LeadDetailPanel({
 
               {/* Call History / Activity Timeline */}
               <div>
-                <p className="text-xs font-bold text-white/70 uppercase tracking-wider mb-2">
+                <p className="text-xs font-bold text-slate-700 dark:text-white/70 uppercase tracking-wider mb-2">
                   Call Session History ({lead.calls?.length || 0})
                 </p>
                 {lead.calls && lead.calls.length > 0 ? (
@@ -244,13 +244,13 @@ function LeadDetailPanel({
                     {lead.calls.map((call) => (
                       <div
                         key={call.id}
-                        className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 text-xs flex items-center justify-between"
+                        className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 text-xs flex items-center justify-between"
                       >
                         <div>
-                          <p className="font-semibold text-white capitalize">
+                          <p className="font-semibold text-slate-900 dark:text-white capitalize">
                             {call.direction} · {call.status.replace("_", " ")}
                           </p>
-                          <p className="text-[10px] text-white/40">
+                          <p className="text-[10px] text-slate-500 dark:text-white/40">
                             {new Date(call.startedAt).toLocaleDateString("en-IN", {
                               month: "short",
                               day: "numeric",
@@ -259,14 +259,14 @@ function LeadDetailPanel({
                             })}
                           </p>
                         </div>
-                        <span className="font-mono text-[11px] text-white/60">
+                        <span className="font-mono text-[11px] text-slate-500 dark:text-white/60">
                           {call.duration ? `${call.duration}s` : "—"}
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-center text-xs text-white/40">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 text-center text-xs text-slate-500 dark:text-white/40">
                     No calls logged with this contact yet
                   </div>
                 )}
@@ -276,7 +276,7 @@ function LeadDetailPanel({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-white/10">
+        <div className="p-4 border-t border-slate-200 dark:border-white/10">
           <Button variant="secondary" size="sm" onClick={onClose} className="w-full text-xs">
             Close Panel
           </Button>
@@ -343,13 +343,13 @@ function CreateLeadModal({
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="w-full max-w-md rounded-2xl bg-[#150305] border border-white/10 shadow-2xl p-6 text-white"
+        className="w-full max-w-md rounded-2xl bg-surface-card border border-slate-200 dark:border-white/10 shadow-2xl p-6 text-slate-900 dark:text-white"
       >
-        <div className="flex items-center justify-between pb-3 border-b border-white/10">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
           <h3 className="font-bold text-base">Add New CRM Lead</h3>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-white/40 hover:text-white/70 dark:hover:text-white"
+            className="p-1 rounded-lg text-slate-500 dark:text-white/40 hover:text-slate-700 dark:hover:text-white"
           >
             <X className="w-5 h-5" />
           </button>
@@ -364,7 +364,7 @@ function CreateLeadModal({
 
         <form onSubmit={handleSubmit} className="space-y-3.5 mt-4 text-xs">
           <div>
-            <label className="block font-semibold text-white/80 mb-1">
+            <label className="block font-semibold text-slate-700 dark:text-white/80 mb-1">
               Contact Name *
             </label>
             <input
@@ -372,12 +372,12 @@ function CreateLeadModal({
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="Full Name"
-              className="w-full h-9 px-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs outline-none focus:border-brand-500"
+              className="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 text-xs outline-none focus:border-brand-500"
             />
           </div>
 
           <div>
-            <label className="block font-semibold text-white/80 mb-1">
+            <label className="block font-semibold text-slate-700 dark:text-white/80 mb-1">
               Phone Number *
             </label>
             <input
@@ -385,12 +385,12 @@ function CreateLeadModal({
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               placeholder="+919876543210"
-              className="w-full h-9 px-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs outline-none focus:border-brand-500 font-mono"
+              className="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 text-xs outline-none focus:border-brand-500 font-mono"
             />
           </div>
 
           <div>
-            <label className="block font-semibold text-white/80 mb-1">
+            <label className="block font-semibold text-slate-700 dark:text-white/80 mb-1">
               Email Address
             </label>
             <input
@@ -398,30 +398,30 @@ function CreateLeadModal({
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               placeholder="contact@company.com"
-              className="w-full h-9 px-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs outline-none focus:border-brand-500"
+              className="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 text-xs outline-none focus:border-brand-500"
             />
           </div>
 
           <div>
-            <label className="block font-semibold text-white/80 mb-1">
+            <label className="block font-semibold text-slate-700 dark:text-white/80 mb-1">
               Company
             </label>
             <input
               value={form.company}
               onChange={(e) => setForm({ ...form, company: e.target.value })}
               placeholder="Enterprise Corp"
-              className="w-full h-9 px-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs outline-none focus:border-brand-500"
+              className="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 text-xs outline-none focus:border-brand-500"
             />
           </div>
 
           <div>
-            <label className="block font-semibold text-white/80 mb-1">
+            <label className="block font-semibold text-slate-700 dark:text-white/80 mb-1">
               Pipeline Stage
             </label>
             <select
               value={form.status}
               onChange={(e) => setForm({ ...form, status: e.target.value as any })}
-              className="w-full h-9 px-3 rounded-xl bg-white/[0.04] dark:bg-[#1a0405] border border-white/10 text-xs outline-none focus:border-brand-500"
+              className="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-input border border-slate-200 dark:border-white/10 text-xs outline-none focus:border-brand-500"
             >
               {PIPELINE_STAGES.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -431,7 +431,7 @@ function CreateLeadModal({
             </select>
           </div>
 
-          <div className="pt-3 border-t border-white/10 flex items-center justify-end gap-2">
+          <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex items-center justify-end gap-2">
             <Button variant="secondary" size="sm" type="button" onClick={onClose} disabled={submitting}>
               Cancel
             </Button>
@@ -516,17 +516,17 @@ export default function CRMPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 pb-0">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
             CRM / Leads Pipeline
           </h1>
-          <p className="text-sm text-white/50 mt-1">
+          <p className="text-sm text-slate-500 dark:text-white/50 mt-1">
             Manage prospects, stage dispositions, and qualification records
           </p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={fetchLeadsData}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white/80 transition-all shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-100 dark:hover:bg-white/[0.12] border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/80 transition-all shadow-sm"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-brand-500" : ""}`} />
             Refresh
@@ -560,59 +560,59 @@ export default function CRMPage() {
 
         {/* Real Summary KPI Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Card className="p-4 bg-[#150305]/90 bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+          <Card className="p-4 panel-card">
             <div className="p-2.5 rounded-xl bg-brand-50 text-brand-600 border border-brand-200 dark:bg-brand-500/15 dark:border-brand-500/20 dark:text-brand-400">
               <Users className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xl font-bold text-white font-mono">
+              <p className="text-xl font-bold text-slate-900 dark:text-white font-mono">
                 {total.toLocaleString()}
               </p>
-              <p className="text-xs text-white/40">Total Leads</p>
+              <p className="text-xs text-slate-500 dark:text-white/40">Total Leads</p>
             </div>
           </Card>
 
-          <Card className="p-4 bg-[#150305]/90 bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+          <Card className="p-4 panel-card">
             <div className="p-2.5 rounded-xl bg-purple-50 text-purple-600 border border-purple-200 dark:bg-purple-500/15 dark:border-purple-500/20 dark:text-purple-400">
               <Target className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xl font-bold text-white font-mono">
+              <p className="text-xl font-bold text-slate-900 dark:text-white font-mono">
                 {qualifiedCount.toLocaleString()}
               </p>
-              <p className="text-xs text-white/40">Qualified Stage</p>
+              <p className="text-xs text-slate-500 dark:text-white/40">Qualified Stage</p>
             </div>
           </Card>
 
-          <Card className="p-4 bg-[#150305]/90 bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+          <Card className="p-4 panel-card">
             <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/15 dark:border-emerald-500/20 dark:text-emerald-400">
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xl font-bold text-white font-mono">
+              <p className="text-xl font-bold text-slate-900 dark:text-white font-mono">
                 {wonCount.toLocaleString()}
               </p>
-              <p className="text-xs text-white/40">Closed Won</p>
+              <p className="text-xs text-slate-500 dark:text-white/40">Closed Won</p>
             </div>
           </Card>
 
-          <Card className="p-4 bg-[#150305]/90 bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+          <Card className="p-4 panel-card">
             <div className="p-2.5 rounded-xl bg-cyan-50 text-cyan-600 border border-cyan-200 dark:bg-cyan-500/15 dark:border-cyan-500/20 dark:text-cyan-400">
               <Activity className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xl font-bold text-white font-mono">
+              <p className="text-xl font-bold text-slate-900 dark:text-white font-mono">
                 {total > 0 ? `${((qualifiedCount / total) * 100).toFixed(1)}%` : "0%"}
               </p>
-              <p className="text-xs text-white/40">Qualification Ratio</p>
+              <p className="text-xs text-slate-500 dark:text-white/40">Qualification Ratio</p>
             </div>
           </Card>
         </div>
 
         {/* Real Pipeline Stage Counters */}
-        <Card className="p-5 bg-[#150305]/90 bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+        <Card className="p-5 panel-card">
           <CardHeader className="mb-3">
-            <CardTitle className="text-white text-sm uppercase tracking-wider">
+            <CardTitle className="text-slate-900 dark:text-white text-sm uppercase tracking-wider">
               Pipeline Stage Overview
             </CardTitle>
           </CardHeader>
@@ -640,7 +640,7 @@ export default function CRMPage() {
         {/* Toolbar */}
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex-1 min-w-[200px] max-w-sm relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30" />
             <input
               value={search}
               onChange={(e) => {
@@ -648,11 +648,11 @@ export default function CRMPage() {
                 setPage(1);
               }}
               placeholder="Search leads by name, phone, company..."
-              className="w-full h-9 pl-9 pr-3 rounded-xl text-xs bg-white/[0.04] border border-white/10 text-white placeholder:text-white/40 dark:placeholder:text-white/30 outline-none focus:border-brand-500"
+              className="w-full h-9 pl-9 pr-3 rounded-xl text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/30 outline-none focus:border-brand-500"
             />
           </div>
 
-          <div className="flex items-center gap-1 bg-white/[0.08]/70 dark:bg-white/5 rounded-xl p-1">
+          <div className="flex items-center gap-1 bg-slate-100/70 dark:bg-white/5 rounded-xl p-1">
             {(["all", "new", "qualified", "appointment", "closed_won"] as const).map((f) => (
               <button
                 key={f}
@@ -663,7 +663,7 @@ export default function CRMPage() {
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
                   filter === f
                     ? "bg-brand-600 text-white shadow-sm"
-                    : "text-white/50 hover:text-white"
+                    : "text-slate-500 dark:text-white/50 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 {f === "all" ? "All Stages" : f.replace("_", " ")}
@@ -671,7 +671,7 @@ export default function CRMPage() {
             ))}
           </div>
 
-          <div className="ml-auto flex items-center gap-1 bg-white/[0.08]/70 dark:bg-white/5 rounded-xl p-1">
+          <div className="ml-auto flex items-center gap-1 bg-slate-100/70 dark:bg-white/5 rounded-xl p-1">
             {(["list", "kanban"] as const).map((v) => (
               <button
                 key={v}
@@ -679,7 +679,7 @@ export default function CRMPage() {
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
                   view === v
                     ? "bg-brand-600 text-white shadow-sm"
-                    : "text-white/50 hover:text-white"
+                    : "text-slate-500 dark:text-white/50 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 {v}
@@ -690,10 +690,10 @@ export default function CRMPage() {
 
         {/* View Mode: List or Kanban */}
         {view === "list" ? (
-          <Card padding="none" className="overflow-hidden bg-[#150305]/90 bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+          <Card padding="none" className="overflow-hidden panel-card">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-white/[0.04] border-b border-white/10 text-white/40 uppercase font-semibold">
+                <thead className="bg-slate-100/70 dark:bg-white/[0.04] border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/40 uppercase font-semibold">
                   <tr>
                     <th className="px-4 py-3">Lead Contact</th>
                     <th className="px-4 py-3">Company</th>
@@ -707,15 +707,15 @@ export default function CRMPage() {
                     Array.from({ length: 5 }).map((_, i) => (
                       <tr key={i} className="animate-pulse">
                         <td colSpan={5} className="px-4 py-3.5">
-                          <div className="h-4 bg-white/[0.08] dark:bg-white/10 rounded w-full" />
+                          <div className="h-4 bg-slate-200/70 dark:bg-white/10 rounded w-full" />
                         </td>
                       </tr>
                     ))
                   ) : leads.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-12 text-center text-white/40">
+                      <td colSpan={5} className="px-4 py-12 text-center text-slate-500 dark:text-white/40">
                         <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                        <p className="font-semibold text-sm text-white/70">
+                        <p className="font-semibold text-sm text-slate-700 dark:text-white/70">
                           No leads found in pipeline
                         </p>
                         <p className="text-xs mt-1">
@@ -728,7 +728,7 @@ export default function CRMPage() {
                       <tr
                         key={lead.id}
                         onClick={() => setSelectedLeadId(lead.id)}
-                        className="hover:bg-white/[0.02] dark:hover:bg-white/[0.02] cursor-pointer transition-colors"
+                        className="hover:bg-slate-50 dark:hover:bg-white/[0.02] cursor-pointer transition-colors"
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2.5">
@@ -736,16 +736,16 @@ export default function CRMPage() {
                               {lead.name[0]}
                             </div>
                             <div>
-                              <p className="font-semibold text-white">
+                              <p className="font-semibold text-slate-900 dark:text-white">
                                 {lead.name}
                               </p>
-                              <p className="text-[11px] text-white/40 font-mono">
+                              <p className="text-[11px] text-slate-500 dark:text-white/40 font-mono">
                                 {lead.phone}
                               </p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-white/70">
+                        <td className="px-4 py-3 text-slate-700 dark:text-white/70">
                           {lead.company || "—"}
                         </td>
                         <td className="px-4 py-3">
@@ -757,10 +757,10 @@ export default function CRMPage() {
                             {lead.status.replace("_", " ")}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-white/60">
+                        <td className="px-4 py-3 text-slate-500 dark:text-white/60">
                           {lead.assignedAgent?.name || "Unassigned"}
                         </td>
-                        <td className="px-4 py-3 text-white/40">
+                        <td className="px-4 py-3 text-slate-500 dark:text-white/40">
                           {new Date(lead.createdAt).toLocaleDateString("en-IN", {
                             day: "numeric",
                             month: "short",
@@ -775,7 +775,7 @@ export default function CRMPage() {
             </div>
 
             {/* Pagination Controls */}
-            <div className="px-4 py-3 border-t border-white/10 flex items-center justify-between text-xs text-white/50">
+            <div className="px-4 py-3 border-t border-slate-200 dark:border-white/10 flex items-center justify-between text-xs text-slate-500 dark:text-white/50">
               <span>
                 Showing {leads.length} of {total} leads (Page {page} of {totalPages})
               </span>
@@ -783,14 +783,14 @@ export default function CRMPage() {
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1 || loading}
-                  className="px-2.5 py-1 rounded-lg border border-white/10 hover:bg-white/[0.04] dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+                  className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" /> Previous
                 </button>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages || loading}
-                  className="px-2.5 py-1 rounded-lg border border-white/10 hover:bg-white/[0.04] dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+                  className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
                 >
                   Next <ChevronRight className="w-3.5 h-3.5" />
                 </button>
@@ -811,20 +811,20 @@ export default function CRMPage() {
                     </Badge>
                   </div>
 
-                  <div className="space-y-2.5 min-h-[280px] p-1.5 rounded-2xl bg-white/[0.04]/70 dark:bg-white/[0.02] border border-white/[0.08]/70 dark:border-white/5">
+                  <div className="space-y-2.5 min-h-[280px] p-1.5 rounded-2xl bg-slate-100/70 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5">
                     {stageLeads.map((lead) => (
                       <div
                         key={lead.id}
                         onClick={() => setSelectedLeadId(lead.id)}
-                        className="p-3.5 rounded-xl bg-[#180406] border border-white/10 hover:border-brand-500/40 cursor-pointer shadow-xs hover:shadow-md transition-all"
+                        className="p-3.5 rounded-xl bg-dropdown border border-slate-200 dark:border-white/10 hover:border-brand-500/40 cursor-pointer shadow-xs hover:shadow-md transition-all"
                       >
-                        <p className="text-xs font-bold text-white truncate">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
                           {lead.name}
                         </p>
-                        <p className="text-[11px] text-white/40 mt-0.5 truncate">
+                        <p className="text-[11px] text-slate-500 dark:text-white/40 mt-0.5 truncate">
                           {lead.company || lead.phone}
                         </p>
-                        <div className="mt-2.5 pt-2 border-t border-white/[0.06] dark:border-white/5 flex items-center justify-between text-[10px] text-white/30">
+                        <div className="mt-2.5 pt-2 border-t border-slate-200 dark:border-white/5 flex items-center justify-between text-[10px] text-slate-400 dark:text-white/30">
                           <span>{lead.assignedAgent?.name || "Unassigned"}</span>
                           <span>
                             {new Date(lead.createdAt).toLocaleDateString("en-US", {
@@ -836,7 +836,7 @@ export default function CRMPage() {
                       </div>
                     ))}
                     {stageLeads.length === 0 && (
-                      <div className="py-8 text-center text-white/30 text-[11px]">
+                      <div className="py-8 text-center text-slate-400 dark:text-white/30 text-[11px]">
                         No leads in {stage.label}
                       </div>
                     )}

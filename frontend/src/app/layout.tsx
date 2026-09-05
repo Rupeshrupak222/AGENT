@@ -44,8 +44,8 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark" style={{ colorScheme: "dark" }} suppressHydrationWarning>
-      <body className={`${inter.variable} ${mono.variable} min-h-screen bg-[#0c0102] text-white antialiased transition-colors duration-200`}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} forcedTheme="dark">
+      <body className={`${inter.variable} ${mono.variable} min-h-screen bg-page text-slate-900 dark:text-white antialiased transition-colors duration-200`}>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <AppProviders>{children}</AppProviders>
         </ThemeProvider>
       </body>

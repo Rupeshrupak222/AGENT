@@ -68,14 +68,12 @@ export default function SignupPage() {
     }
   }
 
-  const inputCls = "w-full h-11 rounded-xl px-4 text-sm text-white placeholder:text-white/20 outline-none transition-all";
-  const inputStyle = { background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)" };
+  const inputCls = "w-full h-11 rounded-xl px-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/20 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 outline-none transition-all";
   const focusIn  = (e:any) => (e.target.style.borderColor="rgba(212,32,39,0.65)");
-  const focusOut = (e:any) => (e.target.style.borderColor="rgba(255,255,255,0.1)");
+  const focusOut = (e:any) => (e.target.style.borderColor="");
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8"
-      style={{ background:"#0c0102" }}>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 bg-page">
 
       {/* Logo */}
       <Link href="/" className="flex items-center gap-2.5 mb-8">
@@ -83,7 +81,7 @@ export default function SignupPage() {
           style={{ background:`linear-gradient(135deg,${R},#9b1219)`, boxShadow:`0 0 20px rgba(212,32,39,0.4)` }}>
           <Zap className="w-4.5 h-4.5 text-white fill-white"/>
         </div>
-        <span className="text-xl font-extrabold text-white">AgentCall <span className="gradient-text">AI</span></span>
+        <span className="text-xl font-extrabold text-slate-900 dark:text-white">AgentCall <span className="gradient-text">AI</span></span>
       </Link>
 
       <motion.div initial={{ opacity:0,y:24 }} animate={{ opacity:1,y:0 }} className="w-full max-w-lg">
@@ -92,29 +90,27 @@ export default function SignupPage() {
         <div className="flex items-center gap-2 mb-8">
           {STEPS.map((s,i)=>(
             <div key={s} className="flex items-center gap-2 flex-1 last:flex-none">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all flex-shrink-0"
-                style={{
-                  background: i<step?"#16a34a" : i===step?R : "rgba(255,255,255,0.08)",
-                  color:"#fff",
-                  boxShadow: i===step?`0 0 14px rgba(212,32,39,0.45)`:"none",
-                }}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all flex-shrink-0 ${
+                i<step ? "bg-emerald-600 text-white" : i===step ? "bg-brand-500 text-white" : "bg-slate-100 dark:bg-white/[0.08] text-slate-900 dark:text-white"
+              }`}
+                style={{ boxShadow: i===step?`0 0 14px rgba(212,32,39,0.45)`:"none" }}>
                 {i<step ? <Check className="w-4 h-4"/> : i+1}
               </div>
-              <span className="text-xs font-medium hidden sm:block"
-                style={{ color: i===step?"#fff":"rgba(255,255,255,0.28)" }}>{s}</span>
+              <span className={`text-xs font-medium hidden sm:block ${
+                i===step ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-white/[0.28]"
+              }`}>{s}</span>
               {i<STEPS.length-1 && (
-                <div className="flex-1 h-0.5 rounded-full transition-all"
-                  style={{ background: i<step?"#16a34a":"rgba(255,255,255,0.08)" }}/>
+                <div className={`flex-1 h-0.5 rounded-full transition-all ${
+                  i<step ? "bg-emerald-600" : "bg-slate-100 dark:bg-white/[0.08]"
+                }`}/>
               )}
             </div>
           ))}
         </div>
 
         {/* Card */}
-        <div className="rounded-3xl p-7 sm:p-9"
+        <div className="rounded-3xl p-7 sm:p-9 bg-white bg-gradient-to-br from-slate-50 to-slate-100/50 dark:bg-gradient-to-br dark:from-white/[0.045] dark:to-brand-500/[0.02] border border-brand-500/20"
           style={{
-            background:"linear-gradient(135deg,rgba(255,255,255,0.045) 0%,rgba(212,32,39,0.022) 100%)",
-            border:"1px solid rgba(212,32,39,0.2)",
             backdropFilter:"blur(18px)",
             boxShadow:"0 0 60px rgba(212,32,39,0.12), 0 24px 48px rgba(0,0,0,0.55)",
           }}>
@@ -125,19 +121,19 @@ export default function SignupPage() {
             {step===0 && (
               <motion.div key="s0" initial={{ opacity:0,x:30 }} animate={{ opacity:1,x:0 }} exit={{ opacity:0,x:-30 }} className="space-y-5">
                 <div>
-                  <h2 className="text-2xl font-extrabold text-white mb-1">Create your account</h2>
-                  <p className="text-sm" style={{ color:"rgba(255,255,255,0.42)" }}>14-day free trial — no credit card needed</p>
+                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-1">Create your account</h2>
+                  <p className="text-sm text-slate-500 dark:text-white/40">14-day free trial — no credit card needed</p>
                 </div>
                 {[
                   { k:"name",    label:"Full Name",        type:"text",     icon:<User className="w-4 h-4"/>,   ph:"John Doe" },
                   { k:"email",   label:"Work Email",       type:"email",    icon:<Mail className="w-4 h-4"/>,   ph:"you@company.com" },
                 ].map(f=>(
                   <div key={f.k} className="space-y-1.5">
-                    <label className="block text-sm font-medium" style={{ color:"rgba(255,255,255,0.65)" }}>{f.label}</label>
+                    <label className="block text-sm font-medium text-slate-600 dark:text-white/65">{f.label}</label>
                     <div className="relative">
-                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color:"rgba(255,255,255,0.28)" }}>{f.icon}</span>
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30">{f.icon}</span>
                       <input type={f.type} value={(form as any)[f.k]} onChange={e=>set(f.k,e.target.value)} placeholder={f.ph}
-                        className={inputCls+" pl-10"} style={{ ...inputStyle, borderColor: errors[f.k]?"rgba(212,32,39,0.75)":undefined }}
+                        className={inputCls+" pl-10"} style={{ borderColor: errors[f.k]?"rgba(212,32,39,0.75)":undefined }}
                         onFocus={focusIn} onBlur={focusOut}/>
                     </div>
                     {errors[f.k] && <p className="text-xs" style={{ color:"#ff8080" }}>{errors[f.k]}</p>}
@@ -145,24 +141,24 @@ export default function SignupPage() {
                 ))}
                 {/* Password */}
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium" style={{ color:"rgba(255,255,255,0.65)" }}>Password</label>
+                  <label className="block text-sm font-medium text-slate-600 dark:text-white/65">Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color:"rgba(255,255,255,0.28)" }}/>
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-slate-400 dark:text-white/30"/>
                     <input type={showPwd?"text":"password"} value={form.password} onChange={e=>set("password",e.target.value)} placeholder="Min 8 characters"
-                      className={inputCls+" pl-10 pr-12"} style={{ ...inputStyle, borderColor: errors.password?"rgba(212,32,39,0.75)":undefined }}
+                      className={inputCls+" pl-10 pr-12"} style={{ borderColor: errors.password?"rgba(212,32,39,0.75)":undefined }}
                       onFocus={focusIn} onBlur={focusOut}/>
-                    <button type="button" onClick={()=>setShowPwd(!showPwd)} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color:"rgba(255,255,255,0.3)" }}>
+                    <button type="button" onClick={()=>setShowPwd(!showPwd)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30">
                       {showPwd?<EyeOff className="w-4 h-4"/>:<Eye className="w-4 h-4"/>}
                     </button>
                   </div>
                   {errors.password && <p className="text-xs" style={{ color:"#ff8080" }}>{errors.password}</p>}
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium" style={{ color:"rgba(255,255,255,0.65)" }}>Confirm Password</label>
+                  <label className="block text-sm font-medium text-slate-600 dark:text-white/65">Confirm Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color:"rgba(255,255,255,0.28)" }}/>
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-slate-400 dark:text-white/30"/>
                     <input type="password" value={form.confirm} onChange={e=>set("confirm",e.target.value)} placeholder="Repeat password"
-                      className={inputCls+" pl-10"} style={{ ...inputStyle, borderColor: errors.confirm?"rgba(212,32,39,0.75)":undefined }}
+                      className={inputCls+" pl-10"} style={{ borderColor: errors.confirm?"rgba(212,32,39,0.75)":undefined }}
                       onFocus={focusIn} onBlur={focusOut}/>
                   </div>
                   {errors.confirm && <p className="text-xs" style={{ color:"#ff8080" }}>{errors.confirm}</p>}
@@ -174,8 +170,8 @@ export default function SignupPage() {
             {step===1 && (
               <motion.div key="s1" initial={{ opacity:0,x:30 }} animate={{ opacity:1,x:0 }} exit={{ opacity:0,x:-30 }} className="space-y-5">
                 <div>
-                  <h2 className="text-2xl font-extrabold text-white mb-1">About your company</h2>
-                  <p className="text-sm" style={{ color:"rgba(255,255,255,0.42)" }}>We&apos;ll customise AgentCall AI for your business</p>
+                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-1">About your company</h2>
+                  <p className="text-sm text-slate-500 dark:text-white/40">We&apos;ll customise AgentCall AI for your business</p>
                 </div>
                 {[
                   { k:"company", label:"Company Name",        type:"text", icon:<Building2 className="w-4 h-4"/>, ph:"Acme Corp" },
@@ -183,22 +179,21 @@ export default function SignupPage() {
                   { k:"website", label:"Website (optional)",   type:"url",  icon:<Globe className="w-4 h-4"/>,    ph:"https://acmecorp.com" },
                 ].map(f=>(
                   <div key={f.k} className="space-y-1.5">
-                    <label className="block text-sm font-medium" style={{ color:"rgba(255,255,255,0.65)" }}>{f.label}</label>
+                    <label className="block text-sm font-medium text-slate-600 dark:text-white/65">{f.label}</label>
                     <div className="relative">
-                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color:"rgba(255,255,255,0.28)" }}>{f.icon}</span>
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30">{f.icon}</span>
                       <input type={f.type} value={(form as any)[f.k]} onChange={e=>set(f.k,e.target.value)} placeholder={f.ph}
-                        className={inputCls+" pl-10"} style={{ ...inputStyle, borderColor: errors[f.k]?"rgba(212,32,39,0.75)":undefined }}
+                        className={inputCls+" pl-10"} style={{ borderColor: errors[f.k]?"rgba(212,32,39,0.75)":undefined }}
                         onFocus={focusIn} onBlur={focusOut}/>
                     </div>
                     {errors[f.k] && <p className="text-xs" style={{ color:"#ff8080" }}>{errors[f.k]}</p>}
                   </div>
                 ))}
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium" style={{ color:"rgba(255,255,255,0.65)" }}>Industry</label>
+                  <label className="block text-sm font-medium text-slate-600 dark:text-white/65">Industry</label>
                   <select value={form.industry} onChange={e=>set("industry",e.target.value)}
-                    className="w-full h-11 rounded-xl px-4 text-sm text-white outline-none cursor-pointer"
-                    style={{ background:"#1a0405", border:"1px solid rgba(255,255,255,0.1)" }}>
-                    {INDUSTRIES.map(i=><option key={i} value={i} style={{ background:"#1a0405" }}>{i}</option>)}
+                    className="w-full h-11 rounded-xl px-4 text-sm text-slate-900 dark:text-white bg-input border border-slate-200 dark:border-white/10 outline-none cursor-pointer">
+                    {INDUSTRIES.map(i=><option key={i} value={i} className="bg-input text-slate-900 dark:text-white">{i}</option>)}
                   </select>
                 </div>
               </motion.div>
@@ -208,34 +203,34 @@ export default function SignupPage() {
             {step===2 && (
               <motion.div key="s2" initial={{ opacity:0,x:30 }} animate={{ opacity:1,x:0 }} exit={{ opacity:0,x:-30 }} className="space-y-5">
                 <div>
-                  <h2 className="text-2xl font-extrabold text-white mb-1">Choose your plan</h2>
-                  <p className="text-sm" style={{ color:"rgba(255,255,255,0.42)" }}>All plans include a 14-day free trial</p>
+                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-1">Choose your plan</h2>
+                  <p className="text-sm text-slate-500 dark:text-white/40">All plans include a 14-day free trial</p>
                 </div>
                 <div className="space-y-3">
                   {PLANS.map(p=>(
                     <button key={p.id} type="button" onClick={()=>set("plan",p.id)}
-                      className="w-full p-4 rounded-2xl text-left transition-all relative"
-                      style={{
-                        background: form.plan===p.id ? "rgba(212,32,39,0.15)" : "rgba(255,255,255,0.03)",
-                        border: form.plan===p.id ? `1px solid rgba(212,32,39,0.5)` : "1px solid rgba(255,255,255,0.08)",
-                        boxShadow: form.plan===p.id ? "0 0 20px rgba(212,32,39,0.18)":undefined,
-                      }}>
+                      className={`w-full p-4 rounded-2xl text-left transition-all relative ${
+                        form.plan===p.id
+                          ? "bg-brand-500/15 border border-brand-500/50"
+                          : "bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08]"
+                      }`}
+                      style={{ boxShadow: form.plan===p.id ? "0 0 20px rgba(212,32,39,0.18)":undefined }}>
                       {p.popular && (
                         <span className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
                           style={{ background:R }}>POPULAR</span>
                       )}
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-white">{p.name}</span>
-                        <span className="text-lg font-extrabold text-white">{p.price}<span className="text-xs font-normal" style={{ color:"rgba(255,255,255,0.4)" }}>/mo</span></span>
+                        <span className="font-bold text-slate-900 dark:text-white">{p.name}</span>
+                        <span className="text-lg font-extrabold text-slate-900 dark:text-white">{p.price}<span className="text-xs font-normal text-slate-500 dark:text-white/40">/mo</span></span>
                       </div>
-                      <p className="text-xs" style={{ color:"rgba(255,255,255,0.48)" }}>{p.detail}</p>
+                      <p className="text-xs text-slate-500 dark:text-white/50">{p.detail}</p>
                       {form.plan===p.id && (
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full" style={{ background:R }}/>
                       )}
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-center" style={{ color:"rgba(255,255,255,0.28)" }}>Free trial · Cancel anytime · No credit card required</p>
+                <p className="text-xs text-center text-slate-400 dark:text-white/30">Free trial · Cancel anytime · No credit card required</p>
               </motion.div>
             )}
 
@@ -248,8 +243,8 @@ export default function SignupPage() {
                   <Check className="w-10 h-10 text-white"/>
                 </motion.div>
                 <div>
-                  <h2 className="text-2xl font-extrabold text-white mb-2">You&apos;re all set! 🎉</h2>
-                  <p className="text-sm" style={{ color:"rgba(255,255,255,0.5)" }}>Welcome, {form.name}! Redirecting to dashboard...</p>
+                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-2">You&apos;re all set! 🎉</h2>
+                  <p className="text-sm text-slate-500 dark:text-white/50">Welcome, {form.name}! Redirecting to dashboard...</p>
                 </div>
                 <svg className="animate-spin h-6 w-6 mx-auto" style={{ color:R }} fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
@@ -273,8 +268,7 @@ export default function SignupPage() {
             <div className={`flex gap-3 mt-8 ${step===0?"justify-end":"justify-between"}`}>
               {step>0 && (
                 <button type="button" onClick={back}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
-                  style={{ border:"1px solid rgba(255,255,255,0.12)", color:"rgba(255,255,255,0.6)" }}>
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all text-slate-500 dark:text-white/60 border border-slate-200 dark:border-white/[0.12]">
                   <ArrowLeft className="w-4 h-4"/> Back
                 </button>
               )}
@@ -292,7 +286,7 @@ export default function SignupPage() {
           )}
         </div>
 
-        <p className="text-center text-sm mt-6" style={{ color:"rgba(255,255,255,0.38)" }}>
+        <p className="text-center text-sm mt-6 text-slate-500 dark:text-white/40">
           Already have an account?{" "}
           <Link href="/login" className="font-semibold transition-colors" style={{ color:R }}>Sign in</Link>
         </p>

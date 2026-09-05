@@ -23,6 +23,16 @@
   --bg-hover:     #f9fafb;
   --bg-active:    rgba(212,32,39,0.06);
 
+  /* Elevated surfaces */
+  --bg-page:     #ffffff;
+  --bg-dropdown: #ffffff;
+  --bg-input:    #ffffff;
+  --bg-modal:    #ffffff;
+
+  /* Card gradient (panel-card) */
+  --card-top:    #f8fafc;
+  --card-bottom: rgba(241,245,249,0.5);
+
   /* Text */
   --text-primary:   #111827;
   --text-secondary: #6b7280;
@@ -50,11 +60,19 @@
 .dark {
   --bg:           #0a0102;
   --bg-secondary: #110203;
-  --bg-card:      #150305;
+  --bg-card:      rgba(21,3,5,0.7);
   --bg-sidebar:   #0f0102;
   --bg-muted:     #1a0608;
   --bg-hover:     #1e0809;
   --bg-active:    rgba(212,32,39,0.10);
+
+  --bg-page:     #0c0102;
+  --bg-dropdown: #180406;
+  --bg-input:    #1a0405;
+  --bg-modal:    #140204;
+
+  --card-top:    rgba(255,255,255,0.06);
+  --card-bottom: rgba(255,255,255,0.02);
 
   --text-primary:   #f9fafb;
   --text-secondary: #9ca3af;
@@ -102,6 +120,15 @@
     border: 1px solid rgba(255,255,255,0.08);
     box-shadow: 0 8px 32px rgba(0,0,0,0.55);
     backdrop-filter: blur(16px);
+  }
+
+  /* ── Panel card ─────────────────────────────────────── */
+  .panel-card {
+    background-color: var(--bg-card);
+    background-image: linear-gradient(to bottom, var(--card-top), var(--card-bottom));
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
 
   /* ── Gradient text ─────────────────────────────────────── */

@@ -92,15 +92,15 @@ const AUDIT_TRAIL_ACTIVITIES = [
 function CustomChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white/95 dark:bg-[#180406]/95 border border-white/10 backdrop-blur-xl rounded-xl p-3 text-xs shadow-2xl shadow-black/10 dark:shadow-black/80">
-      <p className="font-semibold text-white/90 mb-2">{label}</p>
+    <div className="bg-dropdown border border-slate-200 dark:border-white/10 backdrop-blur-xl rounded-xl p-3 text-xs shadow-2xl shadow-black/10 dark:shadow-black/80">
+      <p className="font-semibold text-slate-800 dark:text-white/90 mb-2">{label}</p>
       {payload.map((p: any) => (
         <div key={p.name} className="flex items-center justify-between gap-4 py-0.5">
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
-            <span className="text-white/60 capitalize">{p.name}:</span>
+            <span className="text-slate-500 dark:text-white/60 capitalize">{p.name}:</span>
           </div>
-          <span className="text-white font-mono font-bold">
+          <span className="text-slate-900 dark:text-white font-mono font-bold">
             {typeof p.value === "number" ? p.value.toLocaleString() : p.value}
           </span>
         </div>
@@ -327,7 +327,7 @@ export default function OverviewPage() {
           <div className="flex items-center gap-3">
             <AlertTriangle className="w-5 h-5 text-rose-500 dark:text-rose-400 flex-shrink-0" />
             <div>
-              <p className="font-semibold text-white">Connection Warning</p>
+              <p className="font-semibold text-slate-900 dark:text-white">Connection Warning</p>
               <p className="text-xs text-rose-600 dark:text-rose-200/80 mt-0.5">{errorMessage}</p>
             </div>
           </div>
@@ -365,7 +365,7 @@ export default function OverviewPage() {
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                   Welcome back, {user?.name || "Team Acme"}!
                 </h2>
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
@@ -373,7 +373,7 @@ export default function OverviewPage() {
                   Live Telephony Connected
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-white/60 mt-1.5 max-w-2xl leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-white/60 mt-1.5 max-w-2xl leading-relaxed">
                 Your AI voice agents are autonomously handling calls, qualifying prospects, and
                 setting appointments in real-time across your workspace.
               </p>
@@ -385,7 +385,7 @@ export default function OverviewPage() {
             <button
               onClick={() => fetchDashboardData(true)}
               disabled={isRefreshing}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white/80 hover:text-white transition-all duration-200 shadow-sm disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-100 dark:hover:bg-white/[0.12] border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/80 hover:text-slate-900 dark:hover:text-white transition-all duration-200 shadow-sm disabled:opacity-50"
             >
               <RefreshCw
                 className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-brand-500" : ""}`}
@@ -407,14 +407,14 @@ export default function OverviewPage() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
               Operational Metrics
             </h3>
-            <span className="text-[11px] text-white/40">· Live Telephony & CRM Sync</span>
+            <span className="text-[11px] text-slate-500 dark:text-white/40">· Live Telephony & CRM Sync</span>
           </div>
 
           {/* Period Toggle */}
-          <div className="flex items-center bg-white/[0.04] border border-white/10 rounded-xl p-1">
+          <div className="flex items-center bg-slate-100/70 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 rounded-xl p-1">
             {(["today", "week", "month"] as const).map((p) => (
               <button
                 key={p}
@@ -422,7 +422,7 @@ export default function OverviewPage() {
                 className={`px-3 py-1 rounded-lg text-xs font-semibold capitalize transition-all ${
                   period === p
                     ? "bg-gradient-to-r from-brand-600 to-brand-700 text-white shadow-md shadow-brand-900/40"
-                    : "text-white/50 hover:text-white"
+                    : "text-slate-500 dark:text-white/50 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 {p}
@@ -438,26 +438,26 @@ export default function OverviewPage() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.02 }}
-              className="relative group overflow-hidden rounded-2xl p-4 sm:p-5 bg-[#150305]/90 bg-gradient-to-b from-white/[0.06] to-white/[0.02] border border-white/[0.08] hover:border-brand-500/40 transition-all duration-300 shadow-sm dark:shadow-xl"
+              className="relative group overflow-hidden rounded-2xl p-4 sm:p-5 panel-card border border-slate-200 dark:border-white/[0.08] hover:border-brand-500/40 transition-all duration-300 shadow-sm dark:shadow-xl"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className={`p-2.5 rounded-xl border ${k.color}`}>
                   {k.icon}
                 </div>
                 {k.subtext && (
-                  <span className="text-[11px] font-medium text-white/40 font-mono">
+                  <span className="text-[11px] font-medium text-slate-500 dark:text-white/40 font-mono">
                     {k.subtext}
                   </span>
                 )}
               </div>
               {isLoading ? (
-                <div className="h-8 w-24 bg-white/[0.08] dark:bg-white/10 rounded-lg animate-pulse my-1" />
+                <div className="h-8 w-24 bg-slate-200/70 dark:bg-white/10 rounded-lg animate-pulse my-1" />
               ) : (
-                <p className="text-2xl sm:text-3xl font-black text-white tracking-tight font-mono">
+                <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
                   {k.value}
                 </p>
               )}
-              <p className="text-xs text-white/50 mt-1 font-medium">{k.title}</p>
+              <p className="text-xs text-slate-500 dark:text-white/50 mt-1 font-medium">{k.title}</p>
             </motion.div>
           ))}
         </div>
@@ -466,40 +466,40 @@ export default function OverviewPage() {
       {/* ── Charts Section ──────────────────────────────────── */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Volume & Conversion Chart */}
-        <div className="lg:col-span-2 rounded-2xl p-5 sm:p-6 bg-[#150305]/90 bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+        <div className="lg:col-span-2 rounded-2xl p-5 sm:p-6 panel-card">
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
               <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <BarChart3 className="w-4 h-4 text-brand-500 dark:text-brand-400" />
                   Call Volume & Connected Activity
                 </h3>
-                <p className="text-xs text-white/40 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-white/40 mt-0.5">
                   Actual dialed calls vs completed connections recorded in database
                 </p>
               </div>
               <div className="flex items-center gap-4 text-xs">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                  <span className="text-white/60 font-medium">Total Calls</span>
+                  <span className="text-slate-500 dark:text-white/60 font-medium">Total Calls</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 dark:bg-emerald-400" />
-                  <span className="text-white/60 font-medium">Connected Calls</span>
+                  <span className="text-slate-500 dark:text-white/60 font-medium">Connected Calls</span>
                 </div>
               </div>
             </div>
 
             <div className="h-64 sm:h-72 w-full">
               {isLoading ? (
-                <div className="h-full w-full bg-white/[0.03] rounded-xl flex items-center justify-center animate-pulse">
-                  <span className="text-xs text-white/40">Loading trend telemetry...</span>
+                <div className="h-full w-full bg-slate-50 dark:bg-white/[0.03] rounded-xl flex items-center justify-center animate-pulse">
+                  <span className="text-xs text-slate-500 dark:text-white/40">Loading trend telemetry...</span>
                 </div>
               ) : chartData.length === 0 ? (
-                <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 bg-white/[0.02] dark:bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 bg-slate-50 dark:bg-white/[0.02] rounded-xl border border-slate-200 dark:border-white/[0.04]">
                   <Phone className="w-8 h-8 text-slate-300 dark:text-white/20 mb-2" />
-                  <p className="text-sm font-semibold text-white/70">No Call Trends Recorded Yet</p>
-                  <p className="text-xs text-white/40 max-w-sm mt-1">
+                  <p className="text-sm font-semibold text-slate-700 dark:text-white/70">No Call Trends Recorded Yet</p>
+                  <p className="text-xs text-slate-500 dark:text-white/40 max-w-sm mt-1">
                     Once AI agents execute inbound or outbound calls, historical trend distribution
                     will chart here automatically.
                   </p>
@@ -557,14 +557,14 @@ export default function OverviewPage() {
         </div>
 
         {/* Lead Disposition Funnel */}
-        <div className="rounded-2xl p-5 sm:p-6 bg-[#150305]/90 bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+        <div className="rounded-2xl p-5 sm:p-6 panel-card">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Target className="w-4 h-4 text-purple-500 dark:text-purple-400" />
                 Pipeline Disposition
               </h3>
-              <span className="text-[11px] text-white/40 font-mono">
+              <span className="text-[11px] text-slate-500 dark:text-white/40 font-mono">
                 {funnelTotal} Leads Tracked
               </span>
             </div>
@@ -572,13 +572,13 @@ export default function OverviewPage() {
             <div className="h-44 w-full relative">
               {isLoading ? (
                 <div className="h-full w-full flex items-center justify-center animate-pulse">
-                  <div className="w-28 h-28 rounded-full border-4 border-white/10 border-t-brand-500 animate-spin" />
+                  <div className="w-28 h-28 rounded-full border-4 border-slate-200 dark:border-white/10 border-t-brand-500 animate-spin" />
                 </div>
               ) : funnelTotal === 0 ? (
-                <div className="h-full w-full flex flex-col items-center justify-center text-center p-4 bg-white/[0.02] dark:bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                <div className="h-full w-full flex flex-col items-center justify-center text-center p-4 bg-slate-50 dark:bg-white/[0.02] rounded-xl border border-slate-200 dark:border-white/[0.04]">
                   <Target className="w-6 h-6 text-slate-300 dark:text-white/20 mb-1.5" />
-                  <p className="text-xs font-semibold text-white/70">No Leads in Pipeline</p>
-                  <p className="text-[11px] text-white/40 mt-0.5">
+                  <p className="text-xs font-semibold text-slate-700 dark:text-white/70">No Leads in Pipeline</p>
+                  <p className="text-[11px] text-slate-500 dark:text-white/40 mt-0.5">
                     Import leads or trigger calling campaigns to populate CRM stages.
                   </p>
                 </div>
@@ -602,7 +602,7 @@ export default function OverviewPage() {
                       <Tooltip
                         content={({ active, payload }) =>
                           active && payload?.length ? (
-                            <div className="bg-white/95 dark:bg-[#180406]/95 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white shadow-lg">
+                            <div className="bg-dropdown border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white shadow-lg">
                               <span className="font-semibold">
                                 {payload[0].name}: {payload[0].value} (
                                 {(payload[0].payload as any).pct}%)
@@ -614,7 +614,7 @@ export default function OverviewPage() {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-[11px] text-white/40 font-medium">Qualified</span>
+                    <span className="text-[11px] text-slate-500 dark:text-white/40 font-medium">Qualified</span>
                     <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono">
                       {qualifiedLeadsCount}
                     </span>
@@ -624,19 +624,19 @@ export default function OverviewPage() {
             </div>
           </div>
 
-          <div className="space-y-2 pt-4 border-t border-white/[0.06] max-h-40 overflow-y-auto">
+          <div className="space-y-2 pt-4 border-t border-slate-200 dark:border-white/[0.06] max-h-40 overflow-y-auto">
             {formattedFunnel.length > 0 ? (
               formattedFunnel.map((d) => (
                 <div key={d.name} className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full" style={{ background: d.color }} />
-                    <span className="text-white/60 text-[11px]">{d.name}</span>
+                    <span className="text-slate-500 dark:text-white/60 text-[11px]">{d.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-white font-mono font-semibold text-[11px]">
+                    <span className="text-slate-900 dark:text-white font-mono font-semibold text-[11px]">
                       {d.value} ({d.pct}%)
                     </span>
-                    <div className="w-12 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                    <div className="w-12 h-1.5 rounded-full bg-slate-100 dark:bg-white/[0.06] overflow-hidden">
                       <div
                         className="h-full rounded-full"
                         style={{ width: `${Math.min(100, d.pct)}%`, background: d.color }}
@@ -646,7 +646,7 @@ export default function OverviewPage() {
                 </div>
               ))
             ) : (
-              <p className="text-center text-[11px] text-white/30 py-2">
+              <p className="text-center text-[11px] text-slate-400 dark:text-white/30 py-2">
                 Awaiting CRM lead activity
               </p>
             )}
@@ -657,12 +657,12 @@ export default function OverviewPage() {
       {/* ── Lower Operational Row ────────────────────────────── */}
       <div className="grid md:grid-cols-3 gap-6">
         {/* Live Calls Feed */}
-        <div className="rounded-2xl p-5 bg-[#150305]/90 bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+        <div className="rounded-2xl p-5 panel-card">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                   Recent Call Sessions
                 </h3>
               </div>
@@ -676,17 +676,17 @@ export default function OverviewPage() {
                 Array.from({ length: 3 }).map((_, idx) => (
                   <div
                     key={idx}
-                    className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.04] animate-pulse space-y-2"
+                    className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04] animate-pulse space-y-2"
                   >
-                    <div className="h-4 w-1/3 bg-white/[0.08] dark:bg-white/10 rounded" />
-                    <div className="h-3 w-2/3 bg-white/5 rounded" />
+                    <div className="h-4 w-1/3 bg-slate-200/70 dark:bg-white/10 rounded" />
+                    <div className="h-3 w-2/3 bg-slate-100 dark:bg-white/5 rounded" />
                   </div>
                 ))
               ) : recentCalls.length === 0 ? (
-                <div className="text-center py-8 px-4 bg-white/[0.02] dark:bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                <div className="text-center py-8 px-4 bg-slate-50 dark:bg-white/[0.02] rounded-xl border border-slate-200 dark:border-white/[0.04]">
                   <PhoneCall className="w-8 h-8 text-slate-300 dark:text-white/20 mx-auto mb-2" />
-                  <p className="text-xs font-semibold text-white/70">No Recent Calls</p>
-                  <p className="text-[11px] text-white/40 mt-1">
+                  <p className="text-xs font-semibold text-slate-700 dark:text-white/70">No Recent Calls</p>
+                  <p className="text-[11px] text-slate-500 dark:text-white/40 mt-1">
                     Live call sessions will automatically appear here once initiated.
                   </p>
                 </div>
@@ -694,7 +694,7 @@ export default function OverviewPage() {
                 recentCalls.map((call) => (
                   <div
                     key={call.id}
-                    className="p-3.5 rounded-xl bg-white/[0.02] dark:bg-white/[0.03] border border-white/[0.06] hover:border-brand-500/30 transition-all group"
+                    className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06] hover:border-brand-500/30 transition-all group"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
@@ -702,10 +702,10 @@ export default function OverviewPage() {
                           <Radio className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-white group-hover:text-brand-600 dark:group-hover:text-brand-300 transition-colors">
+                          <p className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-300 transition-colors">
                             {call.lead?.name || "Unknown Contact"}
                           </p>
-                          <p className="text-xs text-white/40 flex items-center gap-1.5">
+                          <p className="text-xs text-slate-500 dark:text-white/40 flex items-center gap-1.5">
                             <span>{call.agent?.name || "Autonomous Agent"}</span>
                             <span>·</span>
                             <span className="font-mono text-[11px]">{call.phone}</span>
@@ -716,16 +716,16 @@ export default function OverviewPage() {
                         {call.status === "in_progress" || call.status === "ringing" ? (
                           <WaveAnimation active size="sm" bars={4} color="bg-emerald-500" />
                         ) : null}
-                        <span className="text-[10px] font-mono text-white/50 mt-1">
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-white/50 mt-1">
                           {formatDuration(call.duration || 0)}
                         </span>
                       </div>
                     </div>
 
-                    <div className="mt-2.5 pt-2 border-t border-white/[0.08]/60 dark:border-white/[0.04] flex items-center justify-between text-[11px]">
-                      <span className="text-white/40">
+                    <div className="mt-2.5 pt-2 border-t border-slate-200 dark:border-white/[0.04] flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 dark:text-white/40">
                         Status:{" "}
-                        <span className="text-white/80 font-medium capitalize">
+                        <span className="text-slate-700 dark:text-white/80 font-medium capitalize">
                           {call.status.replace("_", " ")}
                         </span>
                       </span>
@@ -735,7 +735,7 @@ export default function OverviewPage() {
                             ? "text-emerald-600 dark:text-emerald-400"
                             : call.sentimentScore != null && call.sentimentScore >= 2.5
                             ? "text-amber-600 dark:text-amber-400"
-                            : "text-white/40"
+                            : "text-slate-500 dark:text-white/40"
                         }`}
                       >
                         {call.direction.toUpperCase()}
@@ -749,17 +749,17 @@ export default function OverviewPage() {
 
           <Link
             href="/dashboard/calls"
-            className="mt-4 block text-center text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.04]"
+            className="mt-4 block text-center text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors py-2 rounded-xl bg-slate-50 dark:bg-white/[0.02] hover:bg-slate-100 dark:hover:bg-white/[0.06] border border-slate-200 dark:border-white/[0.04]"
           >
             Open Call Center Console →
           </Link>
         </div>
 
         {/* AI Agent Leaderboard */}
-        <div className="rounded-2xl p-5 bg-[#150305]/90 bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+        <div className="rounded-2xl p-5 panel-card">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                 Active AI Agents
               </h3>
               <Link
@@ -775,20 +775,20 @@ export default function OverviewPage() {
                 Array.from({ length: 4 }).map((_, idx) => (
                   <div
                     key={idx}
-                    className="p-2.5 rounded-xl bg-white/[0.02] animate-pulse flex items-center gap-3"
+                    className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] animate-pulse flex items-center gap-3"
                   >
-                    <div className="w-8 h-8 rounded-xl bg-white/[0.08] dark:bg-white/10" />
+                    <div className="w-8 h-8 rounded-xl bg-slate-200/70 dark:bg-white/10" />
                     <div className="flex-1 space-y-1">
-                      <div className="h-3.5 w-1/2 bg-white/[0.08] dark:bg-white/10 rounded" />
-                      <div className="h-2.5 w-1/3 bg-white/5 rounded" />
+                      <div className="h-3.5 w-1/2 bg-slate-200/70 dark:bg-white/10 rounded" />
+                      <div className="h-2.5 w-1/3 bg-slate-100 dark:bg-white/5 rounded" />
                     </div>
                   </div>
                 ))
               ) : agentPerfList.length === 0 && allAgents.length === 0 ? (
-                <div className="text-center py-8 px-4 bg-white/[0.02] dark:bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                <div className="text-center py-8 px-4 bg-slate-50 dark:bg-white/[0.02] rounded-xl border border-slate-200 dark:border-white/[0.04]">
                   <Bot className="w-8 h-8 text-slate-300 dark:text-white/20 mx-auto mb-2" />
-                  <p className="text-xs font-semibold text-white/70">No Agents Configured</p>
-                  <p className="text-[11px] text-white/40 mt-1">
+                  <p className="text-xs font-semibold text-slate-700 dark:text-white/70">No Agents Configured</p>
+                  <p className="text-[11px] text-slate-500 dark:text-white/40 mt-1">
                     Deploy your first conversational voice agent to start handling calls.
                   </p>
                   <Link
@@ -809,17 +809,17 @@ export default function OverviewPage() {
                     return (
                       <div
                         key={agent.id || agentName}
-                        className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/[0.03] transition-colors"
+                        className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/[0.03] transition-colors"
                       >
-                        <span className="text-xs font-mono font-bold text-white/30 w-4">
+                        <span className="text-xs font-mono font-bold text-slate-400 dark:text-white/30 w-4">
                           {i + 1}
                         </span>
                         <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-600 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-md flex-shrink-0">
                           {agentName[0]}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-white truncate">{agentName}</p>
-                          <p className="text-xs text-white/40 truncate capitalize">{role}</p>
+                          <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{agentName}</p>
+                          <p className="text-xs text-slate-500 dark:text-white/40 truncate capitalize">{role}</p>
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400">
@@ -827,7 +827,7 @@ export default function OverviewPage() {
                               ? `${Math.round((completedCalls / totalCalls) * 100)}%`
                               : "Ready"}
                           </p>
-                          <p className="text-[10px] text-white/40">{totalCalls} calls</p>
+                          <p className="text-[10px] text-slate-500 dark:text-white/40">{totalCalls} calls</p>
                         </div>
                       </div>
                     );
@@ -839,33 +839,33 @@ export default function OverviewPage() {
 
           <Link
             href="/dashboard/agents"
-            className="mt-4 block text-center text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.04]"
+            className="mt-4 block text-center text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors py-2 rounded-xl bg-slate-50 dark:bg-white/[0.02] hover:bg-slate-100 dark:hover:bg-white/[0.06] border border-slate-200 dark:border-white/[0.04]"
           >
             Deploy AI Agent Fleet →
           </Link>
         </div>
 
         {/* Real-time Activity Stream */}
-        <div className="rounded-2xl p-5 bg-[#150305]/90 bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+        <div className="rounded-2xl p-5 panel-card">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                 System Audit Stream
               </h3>
-              <span className="text-[11px] text-white/40">Real-time Feed</span>
+              <span className="text-[11px] text-slate-500 dark:text-white/40">Real-time Feed</span>
             </div>
 
             <div className="space-y-3.5">
               {AUDIT_TRAIL_ACTIVITIES.map((act, i) => (
                 <div key={i} className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="w-7 h-7 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                     {act.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-white/80 leading-relaxed">{act.text}</p>
+                    <p className="text-xs text-slate-700 dark:text-white/80 leading-relaxed">{act.text}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] font-mono text-white/40">{act.time}</span>
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-white/[0.06] text-white/60 font-medium">
+                      <span className="text-[10px] font-mono text-slate-500 dark:text-white/40">{act.time}</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/60 font-medium">
                         {act.badge}
                       </span>
                     </div>
@@ -875,7 +875,7 @@ export default function OverviewPage() {
             </div>
           </div>
 
-          <div className="pt-4 border-t border-white/[0.04] flex items-center justify-between text-[11px] text-white/40">
+          <div className="pt-4 border-t border-slate-200 dark:border-white/[0.04] flex items-center justify-between text-[11px] text-slate-500 dark:text-white/40">
             <span className="flex items-center gap-1.5">
               <Award className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               Tenant Scope Verified
@@ -886,8 +886,8 @@ export default function OverviewPage() {
       </div>
 
       {/* ── Fast Navigation Bar ──────────────────────────────── */}
-      <div className="rounded-2xl p-5 bg-[#150305]/90 bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
-        <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3">
+      <div className="rounded-2xl p-5 panel-card">
+        <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">
           Quick Navigation
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -920,16 +920,16 @@ export default function OverviewPage() {
             <Link
               key={action.label}
               href={action.href}
-              className="p-4 rounded-xl bg-white/[0.02] hover:bg-white/[0.03] dark:hover:bg-white/[0.07] border border-white/[0.06] hover:border-brand-500/30 transition-all duration-200 group flex items-start gap-3 shadow-sm"
+              className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] hover:bg-slate-100 dark:hover:bg-white/[0.07] border border-slate-200 dark:border-white/[0.06] hover:border-brand-500/30 transition-all duration-200 group flex items-start gap-3 shadow-sm"
             >
-              <div className="p-2.5 rounded-xl bg-white/[0.05] border border-white/10 group-hover:scale-110 transition-transform shadow-xs">
+              <div className="p-2.5 rounded-xl bg-slate-100/80 dark:bg-white/[0.05] border border-slate-200 dark:border-white/10 group-hover:scale-110 transition-transform shadow-xs">
                 {action.icon}
               </div>
               <div>
-                <p className="text-xs sm:text-sm font-bold text-white group-hover:text-brand-600 dark:group-hover:text-brand-300 transition-colors">
+                <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-300 transition-colors">
                   {action.label}
                 </p>
-                <p className="text-[11px] text-white/40 mt-0.5">{action.desc}</p>
+                <p className="text-[11px] text-slate-500 dark:text-white/40 mt-0.5">{action.desc}</p>
               </div>
             </Link>
           ))}

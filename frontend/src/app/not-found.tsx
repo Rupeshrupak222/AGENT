@@ -7,7 +7,7 @@ import { SearchX } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0c0102] p-6">
+    <div className="flex min-h-screen items-center justify-center bg-page p-6">
       <EmptyState
         icon={<SearchX className="w-10 h-10 text-brand-400" />}
         title="Page not found"

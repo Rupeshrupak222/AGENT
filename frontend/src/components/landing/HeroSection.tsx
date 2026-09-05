@@ -101,7 +101,7 @@ export function HeroSection() {
     document.getElementById(id)?.scrollIntoView({ behavior:"smooth", block:"start" });
   }
   return (
-    <section id="hero" className="relative min-h-screen flex items-center pt-16 overflow-hidden bg-white dark:bg-[#0c0102]"
+    <section id="hero" className="relative min-h-screen flex items-center pt-16 overflow-hidden bg-page"
       style={{
         backgroundImage:`radial-gradient(ellipse 85% 55% at 50% -15%,rgba(212,32,39,0.08),transparent),
                    radial-gradient(ellipse 50% 40% at 85% 65%,rgba(180,20,26,0.04),transparent)`,
@@ -155,7 +155,7 @@ export function HeroSection() {
               className="flex items-center gap-5 justify-center lg:justify-start flex-wrap">
               <div className="flex -space-x-2">
                 {[R,"#e53e3e","#c53030","#9b2c2c","#742a2a"].map((c,i)=>(
-                  <div key={i} className="w-8 h-8 rounded-full border-2 border-white dark:border-[#0c0102]" style={{ background:c }}/>
+                  <div key={i} className="w-8 h-8 rounded-full border-2 border-white dark:border-page" style={{ background:c }}/>
                 ))}
               </div>
               <div>
