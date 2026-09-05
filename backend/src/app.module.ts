@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bull';
 import { PrismaModule } from './modules/prisma/prisma.module';
@@ -25,6 +26,10 @@ import { AppController } from './app.controller';
 
 @Module({
   controllers: [AppController],
+  providers: [
+    // ── Global rate limiting (applied to every HTTP route incl. public auth/webhooks) ──
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
   imports: [
     // ── Config ────────────────────────────────────────────────
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env', '.env.local'] }),

@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { TenantsService } from './tenants.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -6,7 +6,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { TENANT_VIEW, TENANT_UPDATE } from '../../common/rbac/permissions';
+import { TENANT_VIEW, TENANT_UPDATE, PLATFORM_TENANT_MANAGE } from '../../common/rbac/permissions';
 
 @ApiTags('tenants')
 @ApiBearerAuth('JWT')
@@ -14,6 +14,24 @@ import { TENANT_VIEW, TENANT_UPDATE } from '../../common/rbac/permissions';
 @Controller('tenants')
 export class TenantsController {
   constructor(private svc: TenantsService) {}
+
+  @Get()
+  @Permissions(PLATFORM_TENANT_MANAGE)
+  findAll() {
+    return this.svc.findAll();
+  }
+
+  @Post()
+  @Permissions(PLATFORM_TENANT_MANAGE)
+  create(@Body() data: any) {
+    return this.svc.create(data);
+  }
+
+  @Patch(':id/plan')
+  @Permissions(PLATFORM_TENANT_MANAGE)
+  updatePlan(@Param('id') id: string, @Body('plan') plan: string) {
+    return this.svc.updatePlan(id, plan);
+  }
 
   @Get('me')
   @Permissions(TENANT_VIEW)

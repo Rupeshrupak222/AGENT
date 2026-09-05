@@ -102,6 +102,7 @@ describe('RBAC Permission System', () => {
         expect(hasPermission('agent', LEAD_VIEW)).toBe(true);
         expect(hasPermission('agent', LEAD_UPDATE)).toBe(true);
         expect(hasPermission('agent', CALL_VIEW)).toBe(true);
+        expect(hasPermission('agent', CALL_INITIATE)).toBe(true);
         expect(hasPermission('agent', CALL_DISPOSITION)).toBe(true);
         expect(hasPermission('agent', RECORDING_VIEW)).toBe(true);
       });
@@ -110,7 +111,6 @@ describe('RBAC Permission System', () => {
         expect(hasPermission('agent', LEAD_CREATE)).toBe(false);
         expect(hasPermission('agent', AI_AGENT_CREATE)).toBe(false);
         expect(hasPermission('agent', CAMPAIGN_CREATE)).toBe(false);
-        expect(hasPermission('agent', CALL_INITIATE)).toBe(false);
       });
 
       it('should NOT have management permissions', () => {

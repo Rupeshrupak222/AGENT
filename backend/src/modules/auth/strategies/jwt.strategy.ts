@@ -10,8 +10,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest:   ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey:      config.get<string>('JWT_SECRET', 'adyapan-dev-jwt-secret-key-change-in-production-2026'),
+      secretOrKey:      JwtStrategy.resolveSecret(config),
     });
+  }
+
+  private static resolveSecret(config: ConfigService): string {
+    const secret = config.get<string>('JWT_SECRET');
+    if (!secret) {
+      if (config.get<string>('NODE_ENV') === 'production') {
+        throw new Error('JWT_SECRET is required in production');
+      }
+      return 'adyapan-dev-jwt-secret-key-change-in-production-2026';
+    }
+    return secret;
   }
 
   async validate(payload: { sub: string; email: string; tenantId: string; role: string }) {

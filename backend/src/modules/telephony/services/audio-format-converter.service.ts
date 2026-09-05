@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { MPEGDecoder as MPEGDecoderType } from 'mpg123-decoder';
+type MPEGDecoderType = any;
 
 const BIAS = 0x84; // 132
 const CLIP = 32635;

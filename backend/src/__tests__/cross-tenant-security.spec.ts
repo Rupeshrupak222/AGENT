@@ -156,9 +156,9 @@ describe('Role Escalation Prevention', () => {
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
 
-    it('should DENY agent initiating calls', () => {
+    it('should ALLOW agent initiating calls on assigned leads', () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.agentA), ['call:initiate']);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      expect(guard.canActivate(context)).toBe(true);
     });
 
     it('should DENY agent monitoring calls', () => {

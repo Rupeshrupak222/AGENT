@@ -37,6 +37,25 @@ export default function LoginPage() {
     }
   }
 
+  async function quickLogin(userEmail: string, userPwd: string) {
+    setEmail(userEmail);
+    setPassword(userPwd);
+    setError("");
+    setLoading(true);
+    try {
+      const data = await authApi.login({
+        email: userEmail.trim().toLowerCase(),
+        password: userPwd,
+      });
+      login(data.user, data.tenant, data.accessToken, data.refreshToken);
+      window.location.href = "/dashboard/overview";
+    } catch (err: unknown) {
+      setError(normalizeApiError(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen flex bg-page">
 
@@ -114,19 +133,59 @@ export default function LoginPage() {
         <motion.div initial={{ opacity:0,y:24 }} animate={{ opacity:1,y:0 }} transition={{ duration:0.5 }}
           className="w-full max-w-md">
 
-          <div className="mb-8">
+          <div className="mb-6">
             <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">Welcome back</h1>
             <p className="text-sm text-slate-500 dark:text-white/50">Sign in to your AgentCall AI workspace</p>
           </div>
 
-          {/* Demo hint */}
-          {process.env.NODE_ENV !== "production" && (
-            <button onClick={() => { setEmail("admin@acmecorp.com"); setPassword("Demo@1234"); setError(""); }}
-              className="w-full mb-6 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all"
-              style={{ border:`1px solid rgba(212,32,39,0.35)`, background:"rgba(212,32,39,0.1)", color:"#ffaaaa" }}>
-              <Zap className="w-4 h-4"/> Use Demo Credentials
+          {/* 1-Click Role Login Selector */}
+          <div className="mb-6 p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2.5 shadow-xl">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                1-Click Quick Role Sign In
+              </span>
+              <span className="text-[10px] text-white/40">Instant access</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => quickLogin("superadmin@agentcall.ai", "SuperAdmin@1234")}
+                className="p-2.5 rounded-xl text-[11px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-all text-left flex items-center gap-1.5"
+              >
+                👑 Super Admin
+              </button>
+              <button
+                type="button"
+                onClick={() => quickLogin("admin@acmecorp.com", "Demo@1234")}
+                className="p-2.5 rounded-xl text-[11px] font-bold text-rose-300 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 transition-all text-left flex items-center gap-1.5"
+              >
+                🏢 Company Admin
+              </button>
+              <button
+                type="button"
+                onClick={() => quickLogin("manager@acmecorp.com", "Demo@1234")}
+                className="p-2.5 rounded-xl text-[11px] font-bold text-purple-300 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 transition-all text-left flex items-center gap-1.5"
+              >
+                👔 Operations Manager
+              </button>
+              <button
+                type="button"
+                onClick={() => quickLogin("agent@acmecorp.com", "Demo@1234")}
+                className="p-2.5 rounded-xl text-[11px] font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all text-left flex items-center gap-1.5"
+              >
+                🎧 Calling Agent
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => quickLogin("viewer@acmecorp.com", "Demo@1234")}
+              className="w-full py-2 rounded-xl text-[10px] font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 hover:bg-cyan-500/20 transition-all text-center flex items-center justify-center gap-1.5"
+            >
+              👁️ Observer / Auditor (Viewer)
             </button>
-          )}
+          </div>
 
           {/* Error */}
           {error && (

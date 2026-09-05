@@ -38,6 +38,7 @@ export class TelephonyService {
 
   /**
    * Dispatches an outbound call through the chosen or default telephony provider.
+   * The target Call record is verified to belong to the acting tenant.
    */
   async dispatchOutboundCall(
     tenantId: string,
@@ -45,6 +46,16 @@ export class TelephonyService {
     toNumber: string,
     providerName?: string,
   ) {
+    if (!/^\+[1-9]\d{6,14}$/.test(toNumber || '')) {
+      throw new BadRequestException('phoneNumber must be a valid E.164 number (e.g. +919876543210)');
+    }
+
+    const call = await this.prisma.call.findFirst({
+      where: { id: callId, tenantId },
+      select: { id: true },
+    });
+    if (!call) throw new NotFoundException('Call record not found for this tenant');
+
     const provider = providerName
       ? this.registry.get(providerName)
       : this.registry.getDefaultProvider();
@@ -64,7 +75,7 @@ export class TelephonyService {
       mediaStreamUrl,
     });
 
-    // Update Call record with provider details
+    // Update Call record with provider details (ownership already validated above)
     try {
       await this.prisma.call.update({
         where: { id: callId },

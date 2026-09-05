@@ -16,7 +16,7 @@ import { Permission, PERMISSIONS, hasPermission, hasAllPermissions, hasAnyPermis
  */
 export function usePermissions() {
   const user = useAuthStore((s) => s.user);
-  const role = user?.role ?? "";
+  const role = (user?.role ?? "").toLowerCase().trim();
 
   const can = (permission: Permission): boolean => {
     if (!role) return false;

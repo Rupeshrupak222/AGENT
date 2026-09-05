@@ -135,7 +135,7 @@ const ROLE_PERMISSIONS: Record<string, readonly Permission[]> = {
   agent: [
     PERMISSIONS.TEAM_VIEW,
     PERMISSIONS.LEAD_VIEW, PERMISSIONS.LEAD_UPDATE,
-    PERMISSIONS.CALL_VIEW, PERMISSIONS.CALL_DISPOSITION,
+    PERMISSIONS.CALL_VIEW, PERMISSIONS.CALL_INITIATE, PERMISSIONS.CALL_DISPOSITION,
     PERMISSIONS.RECORDING_VIEW,
     PERMISSIONS.AUTOMATION_VIEW,
     PERMISSIONS.WORKSPACE_VIEW,
@@ -157,7 +157,8 @@ const ROLE_PERMISSIONS: Record<string, readonly Permission[]> = {
 };
 
 export function hasPermission(role: string, permission: Permission): boolean {
-  const perms = ROLE_PERMISSIONS[role];
+  const normalized = (role || "").toLowerCase().trim();
+  const perms = ROLE_PERMISSIONS[normalized] ?? ROLE_PERMISSIONS[role];
   if (!perms) return false;
   return perms.includes(permission);
 }
@@ -171,5 +172,6 @@ export function hasAnyPermission(role: string, permissions: Permission[]): boole
 }
 
 export function getRolePermissions(role: string): readonly Permission[] {
-  return ROLE_PERMISSIONS[role] ?? [];
+  const normalized = (role || "").toLowerCase().trim();
+  return ROLE_PERMISSIONS[normalized] ?? ROLE_PERMISSIONS[role] ?? [];
 }

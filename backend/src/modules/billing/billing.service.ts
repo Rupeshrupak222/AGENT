@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, ServiceUnavailableException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -31,8 +31,11 @@ export class BillingService {
     if (!planData || planData.price === -1) throw new BadRequestException('Contact sales for Enterprise plan');
 
     if (!this.razorpay) {
-      // In local dev without live Razorpay keys, return a valid test order stub
-      this.logger.warn('Razorpay keys not configured in .env. Creating simulated local order.');
+      if (this.isProduction()) {
+        throw new ServiceUnavailableException('Payments are not configured. Please contact support.');
+      }
+      // Local dev without live Razorpay keys → explicit simulation, never available in production.
+      this.logger.warn('Razorpay keys not configured. Creating simulated local order (dev only).');
       return {
         id: `order_dev_${Date.now()}`,
         amount: planData.price,
@@ -60,8 +63,18 @@ export class BillingService {
     razorpaySignature: string;
     plan: keyof typeof PLANS;
   }) {
+    const planData = PLANS[data.plan];
+    if (!planData || planData.price === -1) throw new BadRequestException('Invalid plan for purchase');
+
     const isSimulation = data.razorpayOrderId.startsWith('order_dev_');
+    if (isSimulation && this.isProduction()) {
+      throw new BadRequestException('Payment verification failed');
+    }
+
     if (!isSimulation) {
+      if (!this.razorpay) {
+        throw new ServiceUnavailableException('Payments are not configured. Please contact support.');
+      }
       const crypto     = await import('crypto');
       const body       = `${data.razorpayOrderId}|${data.razorpayPaymentId}`;
       const expected   = crypto.createHmac('sha256', this.config.get('RAZORPAY_KEY_SECRET', ''))
@@ -70,18 +83,22 @@ export class BillingService {
       if (expected !== data.razorpaySignature) throw new BadRequestException('Payment verification failed');
     }
 
-    // Upgrade tenant plan
+    // Upgrade tenant plan (simulated orders are only accepted outside production)
     const tenant = await this.prisma.tenant.update({
       where: { id: tenantId },
       data:  {
         plan:            data.plan,
-        subscriptionId:  data.razorpayPaymentId,
+        subscriptionId:  isSimulation ? null : data.razorpayPaymentId,
         planExpiresAt:   new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       },
     });
 
-    this.logger.log(`Tenant ${tenantId} upgraded to ${data.plan}`);
+    this.logger.log(`Tenant ${tenantId} upgraded to ${data.plan}${isSimulation ? ' (dev simulation)' : ''}`);
     return { success: true, plan: tenant.plan };
+  }
+
+  private isProduction(): boolean {
+    return this.config.get<string>('NODE_ENV') === 'production';
   }
 
   async getSubscription(tenantId: string) {
