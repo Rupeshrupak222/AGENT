@@ -9,6 +9,8 @@ import {
   ConversationTurn,
 } from '../../telephony/interfaces/agent-brain.interface';
 
+import { AudioFormatConverterService } from '../../telephony/services/audio-format-converter.service';
+
 export interface ActiveCallStream {
   sessionId: string;
   callId: string;
@@ -20,6 +22,7 @@ export interface ActiveCallStream {
   currentTurnId: number;
   isAISpeaking: boolean;
   agentContext: AgentContext;
+  converter: ReturnType<AudioFormatConverterService['createSessionConverter']>;
   onAudioChunk: (chunk: Buffer) => void;
   onBargeInClear: () => void;
   onTranscriptBroadcast?: (event: TranscriptEvent) => void;
@@ -35,6 +38,7 @@ export class ConversationOrchestrator implements OnModuleDestroy {
     private readonly agentBrain: GroqAgentBrainService,
     private readonly ttsProvider: EdgeTTSProvider,
     private readonly prisma: PrismaService,
+    private readonly audioFormatConverter: AudioFormatConverterService,
   ) {}
 
   onModuleDestroy() {
@@ -78,6 +82,7 @@ export class ConversationOrchestrator implements OnModuleDestroy {
       currentTurnId: 0,
       isAISpeaking: false,
       agentContext: context,
+      converter: this.audioFormatConverter.createSessionConverter(),
       onAudioChunk,
       onBargeInClear,
       onTranscriptBroadcast,
@@ -127,6 +132,7 @@ export class ConversationOrchestrator implements OnModuleDestroy {
       this.logger.log(`Barge-in detected on session [${sessionId}]. Cancelling ongoing AI speech turn.`);
       session.currentTurnId += 1; // Invalidate current turn generation
       session.isAISpeaking = false;
+      session.converter.reset();
       session.onBargeInClear();
     }
 
@@ -201,7 +207,8 @@ export class ConversationOrchestrator implements OnModuleDestroy {
           break;
         }
 
-        session.onAudioChunk(audioChunk);
+        const mulawChunk = await session.converter.convertChunk(audioChunk);
+        session.onAudioChunk(mulawChunk);
       }
     } catch (err: any) {
       this.logger.error(`Error streaming TTS audio chunks for session [${sessionId}]: ${err.message}`);

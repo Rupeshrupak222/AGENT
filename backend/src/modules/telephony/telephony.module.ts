@@ -11,6 +11,8 @@ import { TelephonyMediaGateway } from './gateway/telephony-media.gateway';
 
 import { AiModule } from '../ai/ai.module';
 
+import { AudioFormatConverterService } from './services/audio-format-converter.service';
+
 @Module({
   imports: [PrismaModule, ConfigModule, AiModule],
   controllers: [TelephonyController],
@@ -21,12 +23,14 @@ import { AiModule } from '../ai/ai.module';
     TwilioTelephonyProvider,
     ExotelTelephonyProvider,
     TelephonyMediaGateway,
+    AudioFormatConverterService,
   ],
   exports: [
     TelephonyService,
     AudioSessionService,
     TelephonyProviderRegistry,
     TelephonyMediaGateway,
+    AudioFormatConverterService,
   ],
 })
 export class TelephonyModule {}

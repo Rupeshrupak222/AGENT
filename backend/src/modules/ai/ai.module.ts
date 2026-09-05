@@ -6,6 +6,8 @@ import { GroqAgentBrainService } from './brain/groq-agent-brain.service';
 import { EdgeTTSProvider } from './tts/edge-tts.provider';
 import { ConversationOrchestrator } from './orchestrator/conversation.orchestrator';
 
+import { AudioFormatConverterService } from '../telephony/services/audio-format-converter.service';
+
 @Module({
   imports: [ConfigModule, PrismaModule],
   providers: [
@@ -13,12 +15,14 @@ import { ConversationOrchestrator } from './orchestrator/conversation.orchestrat
     GroqAgentBrainService,
     EdgeTTSProvider,
     ConversationOrchestrator,
+    AudioFormatConverterService,
   ],
   exports: [
     DeepgramSTTProvider,
     GroqAgentBrainService,
     EdgeTTSProvider,
     ConversationOrchestrator,
+    AudioFormatConverterService,
   ],
 })
 export class AiModule {}

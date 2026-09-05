@@ -3,6 +3,7 @@ import { DeepgramSTTProvider } from '../stt/deepgram-stt.provider';
 import { GroqAgentBrainService } from '../brain/groq-agent-brain.service';
 import { EdgeTTSProvider } from '../tts/edge-tts.provider';
 import { TranscriptEvent } from '../../telephony/interfaces/transcript-event.interface';
+import { AudioFormatConverterService } from '../../telephony/services/audio-format-converter.service';
 
 describe('ConversationOrchestrator', () => {
   let orchestrator: ConversationOrchestrator;
@@ -45,11 +46,14 @@ describe('ConversationOrchestrator', () => {
       },
     };
 
+    const mockConverter = new AudioFormatConverterService();
+
     orchestrator = new ConversationOrchestrator(
       mockSTT as DeepgramSTTProvider,
       mockBrain as GroqAgentBrainService,
       mockTTS as EdgeTTSProvider,
       mockPrisma as any,
+      mockConverter,
     );
   });
 

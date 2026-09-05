@@ -29,7 +29,7 @@ export default function LoginPage() {
       });
 
       login(data.user, data.tenant, data.accessToken, data.refreshToken);
-      router.push("/dashboard/overview");
+      window.location.href = "/dashboard/overview";
     } catch (err: unknown) {
       setError(normalizeApiError(err));
     } finally {
