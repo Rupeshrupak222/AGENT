@@ -56,48 +56,16 @@ export class AuthService {
 
   // ── Login ───────────────────────────────────────────────────
   async login(dto: LoginDto) {
-    let user: any = null;
-    try {
-      user = await this.prisma.user.findUnique({
-        where:   { email: dto.email },
-        include: { tenant: true },
-      });
-    } catch (dbErr: any) {
-      const isDbOffline =
-        dbErr?.message?.includes("Can't reach database server") ||
-        dbErr?.code === 'P1001' ||
-        dbErr?.name === 'PrismaClientInitializationError';
-
-      if (isDbOffline && this.config.get('NODE_ENV') !== 'production') {
-        this.logger.warn(`PostgreSQL is offline (localhost:5432). Checking dev credentials for ${dto.email}`);
-        if (dto.email === 'admin@acmecorp.com' && dto.password === 'Demo@1234') {
-          const devUser = {
-            id: 'cuid-dev-admin-user',
-            name: 'Acme Admin (Dev)',
-            email: 'admin@acmecorp.com',
-            role: 'company_admin',
-            tenantId: 'cuid-dev-acme-tenant',
-            isActive: true,
-          };
-          const devTenant = {
-            id: 'cuid-dev-acme-tenant',
-            name: 'Acme Corp (Demo)',
-            slug: 'acme-corp-demo',
-            plan: 'growth',
-            isActive: true,
-          };
-          const tokens = await this.generateTokens(devUser);
-          return { ...tokens, user: devUser, tenant: devTenant };
-        }
-        throw new UnauthorizedException('Invalid credentials. (Note: PostgreSQL is offline; use admin@acmecorp.com / Demo@1234 for dev)');
-      }
-      throw dbErr;
-    }
+    const user = await this.prisma.user.findUnique({
+      where:   { email: dto.email },
+      include: { tenant: true },
+    });
 
     if (!user) throw new UnauthorizedException('Invalid credentials');
     const valid = await bcrypt.compare(dto.password, user.password);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
     if (!user.isActive) throw new UnauthorizedException('Account deactivated');
+    if (!user.tenant?.isActive) throw new UnauthorizedException('Tenant account suspended');
 
     // Update last login
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }).catch(() => null);
@@ -110,21 +78,46 @@ export class AuthService {
   async refresh(dto: RefreshTokenDto) {
     try {
       const payload = this.jwt.verify(dto.refreshToken, {
-        secret: this.config.get('JWT_REFRESH_SECRET', 'adyapan-dev-refresh-secret-key-change-in-production-2026'),
+        secret: this.refreshSecret(),
+      }) as { sub: string };
+
+      const user = await this.prisma.user.findUnique({
+        where:   { id: payload.sub },
+        include: { tenant: { select: { isActive: true } } },
       });
-      let user: any = null;
-      try {
-        user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
-      } catch {
-        if (payload.sub === 'cuid-dev-admin-user') {
-          user = { id: payload.sub, email: payload.email, role: payload.role, tenantId: payload.tenantId, isActive: true };
-        }
-      }
-      if (!user || !user.isActive) throw new Error();
+
+      if (!user || !user.isActive || !user.tenant?.isActive) throw new Error();
       return this.generateTokens(user);
     } catch {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────
+  private accessSecret(): string {
+    const secret = this.config.get<string>('JWT_SECRET');
+    if (!secret) {
+      if (this.isProduction()) {
+        throw new Error('JWT_SECRET is required in production');
+      }
+      return 'adyapan-dev-jwt-secret-key-change-in-production-2026';
+    }
+    return secret;
+  }
+
+  private refreshSecret(): string {
+    const secret = this.config.get<string>('JWT_REFRESH_SECRET');
+    if (!secret) {
+      if (this.isProduction()) {
+        throw new Error('JWT_REFRESH_SECRET is required in production');
+      }
+      return 'adyapan-dev-refresh-secret-key-change-in-production-2026';
+    }
+    return secret;
+  }
+
+  private isProduction(): boolean {
+    return this.config.get<string>('NODE_ENV') === 'production';
   }
 
   // ── Helpers ──────────────────────────────────────────────────
@@ -133,11 +126,11 @@ export class AuthService {
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwt.signAsync(payload, {
-        secret:    this.config.get('JWT_SECRET', 'adyapan-dev-jwt-secret-key-change-in-production-2026'),
+        secret:    this.accessSecret(),
         expiresIn: this.config.get('JWT_EXPIRES_IN', '7d'),
       }),
       this.jwt.signAsync(payload, {
-        secret:    this.config.get('JWT_REFRESH_SECRET', 'adyapan-dev-refresh-secret-key-change-in-production-2026'),
+        secret:    this.refreshSecret(),
         expiresIn: this.config.get('JWT_REFRESH_EXPIRES_IN', '30d'),
       }),
     ]);

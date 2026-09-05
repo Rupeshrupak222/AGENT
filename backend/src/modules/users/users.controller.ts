@@ -31,19 +31,19 @@ export class UsersController {
 
   @Post('invite')
   @Permissions(TEAM_INVITE)
-  invite(@CurrentUser() u: any, @Body() d: any) {
-    return this.svc.invite(u.tenantId, d);
+  invite(@CurrentUser() u: any, @Body() d: { name: string; email: string; role: string }) {
+    return this.svc.invite(u.tenantId, u.role, d);
   }
 
   @Patch(':id/role')
   @Permissions(TEAM_UPDATE_ROLE)
   updateRole(@CurrentUser() u: any, @Param('id') id: string, @Body('role') role: string) {
-    return this.svc.updateRole(u.tenantId, id, role, u.id);
+    return this.svc.updateRole(u.tenantId, id, role, u.id, u.role);
   }
 
   @Delete(':id')
   @Permissions(TEAM_REVOKE)
   deactivate(@CurrentUser() u: any, @Param('id') id: string) {
-    return this.svc.deactivate(u.tenantId, id, u.id);
+    return this.svc.deactivate(u.tenantId, id, u.id, u.role);
   }
 }

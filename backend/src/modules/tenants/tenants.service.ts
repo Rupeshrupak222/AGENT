@@ -29,4 +29,44 @@ export class TenantsService {
     ]);
     return { agentCount, callCount, leadCount, userCount };
   }
+
+  async findAll() {
+    return this.prisma.tenant.findMany({
+      include: {
+        _count: {
+          select: {
+            users: true,
+            agents: true,
+            calls: true,
+            leads: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async create(data: { name: string; plan?: string }) {
+    const slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    return this.prisma.tenant.create({
+      data: {
+        name: data.name,
+        slug: `${slug}-${Date.now()}`,
+        plan: (data.plan as any) || 'starter',
+      },
+      include: {
+        _count: {
+          select: { users: true, agents: true, calls: true, leads: true },
+        },
+      },
+    });
+  }
+
+  async updatePlan(id: string, plan: string) {
+    await this.findOne(id);
+    return this.prisma.tenant.update({
+      where: { id },
+      data: { plan: plan as any },
+    });
+  }
 }

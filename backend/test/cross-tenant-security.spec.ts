@@ -139,32 +139,32 @@ describe('Role Escalation Prevention', () => {
   describe('Viewer cannot perform write operations', () => {
     it('should DENY viewer creating leads (LEAD_CREATE)', () => {
       const request = createRequest(USERS.viewerA);
-      const { context } = createExecutionContext(request, ['lead:create']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['lead:create']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
 
     it('should DENY viewer creating AI agents (AI_AGENT_CREATE)', () => {
       const request = createRequest(USERS.viewerA);
-      const { context } = createExecutionContext(request, ['ai_agent:create']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['ai_agent:create']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
 
     it('should DENY viewer managing billing (BILLING_MANAGE)', () => {
       const request = createRequest(USERS.viewerA);
-      const { context } = createExecutionContext(request, ['billing:manage']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['billing:manage']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
 
     it('should DENY viewer inviting users (TEAM_INVITE)', () => {
       const request = createRequest(USERS.viewerA);
-      const { context } = createExecutionContext(request, ['team:invite']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['team:invite']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
@@ -173,40 +173,40 @@ describe('Role Escalation Prevention', () => {
   describe('Agent cannot escalate to Manager permissions', () => {
     it('should DENY agent creating campaigns (CAMPAIGN_CREATE)', () => {
       const request = createRequest(USERS.agentA);
-      const { context } = createExecutionContext(request, ['campaign:create']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['campaign:create']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
 
     it('should DENY agent importing leads (LEAD_IMPORT)', () => {
       const request = createRequest(USERS.agentA);
-      const { context } = createExecutionContext(request, ['lead:import']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['lead:import']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
 
-    it('should DENY agent initiating calls (CALL_INITIATE)', () => {
+    it('should ALLOW agent initiating calls (CALL_INITIATE)', () => {
       const request = createRequest(USERS.agentA);
-      const { context } = createExecutionContext(request, ['call:initiate']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['call:initiate']);
+      const guard = new PermissionsGuard(reflector as any);
 
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      expect(guard.canActivate(context)).toBe(true);
     });
 
     it('should DENY agent monitoring calls (CALL_MONITOR)', () => {
       const request = createRequest(USERS.agentA);
-      const { context } = createExecutionContext(request, ['call:monitor']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['call:monitor']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
 
     it('should DENY agent managing AI prompts (AI_PROMPT_UPDATE)', () => {
       const request = createRequest(USERS.agentA);
-      const { context } = createExecutionContext(request, ['ai_prompt:update']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['ai_prompt:update']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
@@ -215,48 +215,48 @@ describe('Role Escalation Prevention', () => {
   describe('Manager cannot escalate to Company Admin permissions', () => {
     it('should DENY manager managing billing (BILLING_MANAGE)', () => {
       const request = createRequest(USERS.managerA);
-      const { context } = createExecutionContext(request, ['billing:manage']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['billing:manage']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
 
     it('should DENY manager revoking users (TEAM_REVOKE)', () => {
       const request = createRequest(USERS.managerA);
-      const { context } = createExecutionContext(request, ['team:revoke']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['team:revoke']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
 
     it('should DENY manager changing roles (TEAM_UPDATE_ROLE)', () => {
       const request = createRequest(USERS.managerA);
-      const { context } = createExecutionContext(request, ['team:update_role']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['team:update_role']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
 
     it('should DENY manager managing security settings (SECURITY_MANAGE)', () => {
       const request = createRequest(USERS.managerA);
-      const { context } = createExecutionContext(request, ['security:manage']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['security:manage']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
 
     it('should DENY manager deleting AI agents (AI_AGENT_DELETE)', () => {
       const request = createRequest(USERS.managerA);
-      const { context } = createExecutionContext(request, ['ai_agent:delete']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['ai_agent:delete']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
 
     it('should DENY manager exporting leads (LEAD_EXPORT)', () => {
       const request = createRequest(USERS.managerA);
-      const { context } = createExecutionContext(request, ['lead:export']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['lead:export']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
@@ -265,24 +265,24 @@ describe('Role Escalation Prevention', () => {
   describe('Company Admin cannot access Platform Admin permissions', () => {
     it('should DENY company_admin creating tenants (PLATFORM_TENANT_CREATE)', () => {
       const request = createRequest(USERS.companyAdminA);
-      const { context } = createExecutionContext(request, ['platform:tenant_create']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['platform:tenant_create']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
 
     it('should DENY company_admin managing platform telephony (PLATFORM_TELEPHONY)', () => {
       const request = createRequest(USERS.companyAdminA);
-      const { context } = createExecutionContext(request, ['platform:telephony']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['platform:telephony']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
 
     it('should DENY company_admin managing AI providers (PLATFORM_AI_PROVIDERS)', () => {
       const request = createRequest(USERS.companyAdminA);
-      const { context } = createExecutionContext(request, ['platform:ai_providers']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['platform:ai_providers']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
     });
@@ -291,24 +291,24 @@ describe('Role Escalation Prevention', () => {
   describe('Super Admin should have all permissions', () => {
     it('should ALLOW super_admin platform:tenant_create', () => {
       const request = createRequest(USERS.superAdmin);
-      const { context } = createExecutionContext(request, ['platform:tenant_create']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['platform:tenant_create']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(guard.canActivate(context)).toBe(true);
     });
 
     it('should ALLOW super_admin billing:manage', () => {
       const request = createRequest(USERS.superAdmin);
-      const { context } = createExecutionContext(request, ['billing:manage']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['billing:manage']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(guard.canActivate(context)).toBe(true);
     });
 
     it('should ALLOW super_admin security:manage', () => {
       const request = createRequest(USERS.superAdmin);
-      const { context } = createExecutionContext(request, ['security:manage']);
-      const guard = new PermissionsGuard({} as any);
+      const { context, reflector } = createExecutionContext(request, ['security:manage']);
+      const guard = new PermissionsGuard(reflector as any);
 
       expect(guard.canActivate(context)).toBe(true);
     });
@@ -322,16 +322,16 @@ describe('Role Escalation Prevention', () => {
 describe('Unauthenticated Access Prevention', () => {
   it('should DENY when no user on request', () => {
     const request = createRequest(null);
-    const { context } = createExecutionContext(request, ['lead:view']);
-    const guard = new PermissionsGuard({} as any);
+    const { context, reflector } = createExecutionContext(request, ['lead:view']);
+    const guard = new PermissionsGuard(reflector as any);
 
     expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
   });
 
   it('should DENY when user has no role', () => {
     const request = createRequest({ id: 'user1', tenantId: 't1' });
-    const { context } = createExecutionContext(request, ['lead:view']);
-    const guard = new PermissionsGuard({} as any);
+    const { context, reflector } = createExecutionContext(request, ['lead:view']);
+    const guard = new PermissionsGuard(reflector as any);
 
     expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
   });
@@ -389,31 +389,31 @@ describe('Suspended Tenant Prevention', () => {
 describe('Multi-Permission Requirements', () => {
   it('should DENY manager when missing ANY of multiple required permissions', () => {
     const request = createRequest(USERS.managerA);
-    const { context } = createExecutionContext(request, [
+    const { context, reflector } = createExecutionContext(request, [
       'lead:view',    // manager HAS this
       'lead:export',  // manager does NOT have this
     ]);
-    const guard = new PermissionsGuard({} as any);
+    const guard = new PermissionsGuard(reflector as any);
 
     expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
   });
 
   it('should ALLOW company_admin when having ALL required permissions', () => {
     const request = createRequest(USERS.companyAdminA);
-    const { context } = createExecutionContext(request, [
+    const { context, reflector } = createExecutionContext(request, [
       'lead:view',
       'lead:create',
       'lead:import',
     ]);
-    const guard = new PermissionsGuard({} as any);
+    const guard = new PermissionsGuard(reflector as any);
 
     expect(guard.canActivate(context)).toBe(true);
   });
 
   it('should ALLOW when no permissions required', () => {
     const request = createRequest(USERS.viewerA);
-    const { context } = createExecutionContext(request, undefined);
-    const guard = new PermissionsGuard({} as any);
+    const { context, reflector } = createExecutionContext(request, undefined);
+    const guard = new PermissionsGuard(reflector as any);
 
     expect(guard.canActivate(context)).toBe(true);
   });

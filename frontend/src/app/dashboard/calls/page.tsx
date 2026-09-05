@@ -20,7 +20,13 @@ import {
   X,
   FileText,
   Radio,
+  Zap,
+  Lock,
+  User,
+  Plus,
 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import {
   AreaChart,
   Area,
@@ -35,14 +41,21 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { WaveAnimation } from "@/components/ui/WaveAnimation";
 import { formatDuration } from "@/lib/utils";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PERMISSIONS } from "@/lib/permissions";
+import { useToast } from "@/components/ui/Toast";
 import {
   callsApi,
+  agentsApi,
+  leadsApi,
   analyticsApi,
   normalizeApiError,
   CallItem,
   CallDetail,
   CallMetrics,
   CallTrendItem,
+  AgentItem,
+  LeadItem,
 } from "@/lib/api";
 
 type CallFilterStatus =
@@ -258,8 +271,285 @@ function CallDetailModal({
   );
 }
 
-// ── Main Calls Page ────────────────────────────────────────────
-export default function CallsPage() {
+// ── New Outbound Call Modal ────────────────────────────────────
+interface NewCallModalProps {
+  initialPhone?: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function NewCallModal({ initialPhone = "", onClose, onSuccess }: NewCallModalProps) {
+  const [agents, setAgents] = useState<AgentItem[]>([]);
+  const [leads, setLeads] = useState<LeadItem[]>([]);
+  const [selectedAgentId, setSelectedAgentId] = useState("");
+  const [selectedLeadId, setSelectedLeadId] = useState("");
+  const [customPhone, setCustomPhone] = useState(initialPhone);
+  const [customName, setCustomName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingOptions, setLoadingOptions] = useState(true);
+  const { success, error: toastError } = useToast();
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        setLoadingOptions(true);
+        const [agentsRes, leadsRes] = await Promise.allSettled([
+          agentsApi.list(),
+          leadsApi.list({ limit: 50 }),
+        ]);
+
+        if (active) {
+          if (agentsRes.status === "fulfilled" && agentsRes.value.length > 0) {
+            setAgents(agentsRes.value);
+            const firstActive = agentsRes.value.find((a) => a.status === "active") || agentsRes.value[0];
+            setSelectedAgentId(firstActive.id);
+          }
+
+          if (leadsRes.status === "fulfilled") {
+            setLeads(leadsRes.value.items || []);
+            if (initialPhone) {
+              const matched = leadsRes.value.items?.find(
+                (l) => l.phone.includes(initialPhone) || initialPhone.includes(l.phone)
+              );
+              if (matched) {
+                setSelectedLeadId(matched.id);
+                setCustomName(matched.name);
+              }
+            }
+          }
+        }
+      } finally {
+        if (active) setLoadingOptions(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [initialPhone]);
+
+  const handleInitiate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAgentId) {
+      toastError("Please select an AI Voice Employee.");
+      return;
+    }
+
+    let finalLeadId = selectedLeadId;
+
+    try {
+      setIsSubmitting(true);
+
+      if (!finalLeadId) {
+        if (!customPhone.trim()) {
+          toastError("Please select an existing lead or enter a phone number.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        const newLead = await leadsApi.create({
+          name: customName.trim() || `Customer (${customPhone})`,
+          phone: customPhone.trim(),
+          status: "new",
+          agentId: selectedAgentId,
+        });
+        finalLeadId = newLead.id;
+      }
+
+      await callsApi.initiate({
+        leadId: finalLeadId,
+        agentId: selectedAgentId,
+        direction: "outbound",
+      });
+
+      success(`Outbound call dispatched! Dialing ${customPhone || "customer"} via gateway...`);
+      onSuccess();
+      onClose();
+    } catch (err) {
+      toastError(normalizeApiError(err));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 16 }}
+        className="w-full max-w-lg rounded-2xl bg-surface-sidebar border border-brand-500/25 shadow-2xl p-6 relative overflow-hidden"
+      >
+        <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center border border-brand-500/30 shadow-inner">
+              <PhoneCall className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                Initiate Outbound Call
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-white/50">
+                Dispatch an autonomous AI Voice Employee to dial customer
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {loadingOptions ? (
+          <div className="py-12 flex flex-col items-center justify-center gap-3">
+            <RefreshCw className="w-6 h-6 animate-spin text-brand-500" />
+            <p className="text-xs text-white/50">Loading AI agents & directory...</p>
+          </div>
+        ) : (
+          <form onSubmit={handleInitiate} className="mt-5 space-y-4">
+            {/* AI Agent Picker */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-white/80 flex items-center justify-between">
+                <span>Select AI Voice Agent *</span>
+                <span className="text-[10px] text-brand-400 font-normal">Autonomous Voice</span>
+              </label>
+              <select
+                value={selectedAgentId}
+                onChange={(e) => setSelectedAgentId(e.target.value)}
+                required
+                className="w-full h-11 px-3.5 rounded-xl text-sm bg-input border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white outline-none focus:border-brand-500 transition-all"
+              >
+                {agents.map((ag) => (
+                  <option key={ag.id} value={ag.id} className="bg-neutral-900 text-white">
+                    {ag.name} — {ag.role} ({ag.language})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Select Lead vs New Number */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-white/80">
+                Choose Existing CRM Lead (Optional)
+              </label>
+              <select
+                value={selectedLeadId}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedLeadId(val);
+                  if (val) {
+                    const found = leads.find((l) => l.id === val);
+                    if (found) {
+                      setCustomPhone(found.phone);
+                      setCustomName(found.name);
+                    }
+                  }
+                }}
+                className="w-full h-11 px-3.5 rounded-xl text-sm bg-input border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white outline-none focus:border-brand-500 transition-all"
+              >
+                <option value="" className="bg-neutral-900 text-white/60">
+                  -- Or enter new phone number below --
+                </option>
+                {leads.map((l) => (
+                  <option key={l.id} value={l.id} className="bg-neutral-900 text-white">
+                    {l.name} ({l.phone}) {l.company ? `— ${l.company}` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Customer Phone */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-white/80">
+                Target Phone Number (E.164) *
+              </label>
+              <div className="relative">
+                <Phone className="w-4 h-4 text-slate-400 dark:text-white/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="tel"
+                  required
+                  placeholder="+91 98765 43210"
+                  value={customPhone}
+                  onChange={(e) => {
+                    setCustomPhone(e.target.value);
+                    if (selectedLeadId) setSelectedLeadId("");
+                  }}
+                  className="w-full h-11 pl-10 pr-3.5 rounded-xl text-sm bg-input border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white outline-none focus:border-brand-500 transition-all font-mono"
+                />
+              </div>
+            </div>
+
+            {/* Customer Name */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-white/80">
+                Customer / Prospect Name
+              </label>
+              <div className="relative">
+                <User className="w-4 h-4 text-slate-400 dark:text-white/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="e.g. Ramesh Kumar"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  className="w-full h-11 pl-10 pr-3.5 rounded-xl text-sm bg-input border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white outline-none focus:border-brand-500 transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Telephony Route Notice */}
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between text-[11px] text-white/50">
+              <span className="flex items-center gap-1.5">
+                <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                Outbound Gateway: Twilio / Exotel SIP Trunk
+              </span>
+              <span className="text-emerald-400 font-semibold">Ready</span>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-white/70 hover:bg-white/5 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-brand-500 to-rose-600 hover:opacity-90 active:scale-95 shadow-lg shadow-brand-500/25 transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
+                  <>
+                    <PhoneCall className="w-3.5 h-3.5" />
+                    Start Outbound Call
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+      </motion.div>
+    </div>
+  );
+}
+
+// ── Main Calls Page Content ────────────────────────────────────
+function CallsPageContent() {
+  const searchParams = useSearchParams();
+  const initialLeadPhone = searchParams.get("leadPhone") || "";
+
+  const { can, isViewer } = usePermissions();
+
   const [calls, setCalls] = useState<CallItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -273,6 +563,16 @@ export default function CallsPage() {
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
+  const [isNewCallModalOpen, setIsNewCallModalOpen] = useState(false);
+  const [initialDialPhone, setInitialDialPhone] = useState("");
+
+  // Handle leadPhone query param from Agent Workstation
+  useEffect(() => {
+    if (initialLeadPhone) {
+      setInitialDialPhone(initialLeadPhone);
+      setIsNewCallModalOpen(true);
+    }
+  }, [initialLeadPhone]);
 
   const fetchCallsData = useCallback(async () => {
     try {
@@ -344,20 +644,44 @@ export default function CallsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 pb-0">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-            Calls Console
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              Calls Console
+            </h1>
+            {isViewer && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                <Lock className="w-3.5 h-3.5" />
+                Read-Only Inspection
+              </span>
+            )}
+          </div>
           <p className="text-sm text-slate-500 dark:text-white/50 mt-1">
             Real-time call center monitoring and conversational session telemetry
           </p>
         </div>
-        <button
-          onClick={fetchCallsData}
-          className="self-start sm:self-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-100 dark:hover:bg-white/[0.12] border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/80 transition-all shadow-sm"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-brand-500" : ""}`} />
-          Refresh
-        </button>
+
+        <div className="flex items-center gap-2.5">
+          {can(PERMISSIONS.CALL_INITIATE) && (
+            <button
+              onClick={() => {
+                setInitialDialPhone("");
+                setIsNewCallModalOpen(true);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-brand-500 to-rose-600 hover:from-brand-600 hover:to-rose-700 shadow-lg shadow-brand-500/25 active:scale-95 transition-all"
+            >
+              <Zap className="w-3.5 h-3.5 fill-white" />
+              <span>New Outbound Call</span>
+            </button>
+          )}
+
+          <button
+            onClick={fetchCallsData}
+            className="self-start sm:self-auto inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-100 dark:hover:bg-white/[0.12] border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/80 transition-all shadow-sm"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-brand-500" : ""}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 p-6 space-y-6">
@@ -799,6 +1123,39 @@ export default function CallsPage() {
           />
         )}
       </AnimatePresence>
+
+      {/* New Outbound Call Modal */}
+      <AnimatePresence>
+        {isNewCallModalOpen && (
+          <NewCallModal
+            initialPhone={initialDialPhone}
+            onClose={() => {
+              setIsNewCallModalOpen(false);
+              setInitialDialPhone("");
+            }}
+            onSuccess={() => {
+              fetchCallsData();
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+export default function CallsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-64 items-center justify-center">
+          <div className="flex flex-col items-center gap-2">
+            <RefreshCw className="w-6 h-6 animate-spin text-brand-500" />
+            <p className="text-xs text-slate-500 dark:text-white/40">Loading Calls Console...</p>
+          </div>
+        </div>
+      }
+    >
+      <CallsPageContent />
+    </Suspense>
   );
 }

@@ -399,6 +399,18 @@ export const callsApi = {
     const res = await apiClient.get<ApiResponseWrapper<CallDetail>>(`/calls/${id}`);
     return res.data.data;
   },
+
+  initiate: async (payload: {
+    leadId: string;
+    agentId: string;
+    direction?: "outbound" | "inbound";
+  }): Promise<CallItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<CallItem>>(
+      "/calls",
+      payload
+    );
+    return res.data.data;
+  },
 };
 
 // ── Agents API Contracts ──────────────────────────────────────────
@@ -881,6 +893,41 @@ export const automationsApi = {
 
   deleteRule: async (id: string): Promise<void> => {
     await apiClient.delete(`/automations/rules/${id}`);
+  },
+};
+
+// ── Tenants API ────────────────────────────────────────────────
+export interface TenantItem {
+  id: string;
+  name: string;
+  slug?: string;
+  plan?: string;
+  status?: string;
+  createdAt?: string;
+  _count?: {
+    users: number;
+    agents: number;
+    calls: number;
+    leads: number;
+  };
+}
+
+export const tenantsApi = {
+  list: async (): Promise<TenantItem[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<TenantItem[]>>("/tenants");
+    return res.data.data;
+  },
+  create: async (data: { name: string; plan?: string }): Promise<TenantItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<TenantItem>>("/tenants", data);
+    return res.data.data;
+  },
+  updatePlan: async (id: string, plan: string): Promise<TenantItem> => {
+    const res = await apiClient.patch<ApiResponseWrapper<TenantItem>>(`/tenants/${id}/plan`, { plan });
+    return res.data.data;
+  },
+  me: async (): Promise<TenantItem> => {
+    const res = await apiClient.get<ApiResponseWrapper<TenantItem>>("/tenants/me");
+    return res.data.data;
   },
 };
 

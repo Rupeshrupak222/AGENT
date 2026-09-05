@@ -47,9 +47,17 @@ interface NavItem {
 
 const ALL_GROUPS: { label: string; items: NavItem[] }[] = [
   {
+    label: "Platform Admin",
+    items: [
+      { icon: Building2, label: "Client Tenants", href: "/dashboard/workspace", permission: PERMISSIONS.PLATFORM_TENANT_MANAGE, badge: "Master" },
+      { icon: Mic2, label: "AI Speech Stack", href: "/dashboard/voices", permission: PERMISSIONS.PLATFORM_AI_PROVIDERS },
+      { icon: BarChart3, label: "Global Gateways", href: "/dashboard/analytics", permission: PERMISSIONS.PLATFORM_TELEPHONY },
+    ],
+  },
+  {
     label: "Overview",
     items: [
-      { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard/overview", permission: PERMISSIONS.TENANT_VIEW },
+      { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard/overview", permission: PERMISSIONS.TEAM_VIEW },
     ],
   },
   {
@@ -79,7 +87,7 @@ const ALL_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { icon: Building2, label: "Workspace", href: "/dashboard/workspace", permission: PERMISSIONS.WORKSPACE_VIEW },
       { icon: CreditCard, label: "Billing", href: "/dashboard/billing", permission: PERMISSIONS.BILLING_VIEW },
-      { icon: Settings, label: "Settings", href: "/dashboard/settings", permission: PERMISSIONS.TENANT_VIEW },
+      { icon: Settings, label: "Settings", href: "/dashboard/settings", permission: PERMISSIONS.TEAM_VIEW },
     ],
   },
 ];
@@ -483,9 +491,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
 
             <div className="min-w-0">
-              <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight capitalize truncate">
-                {pageLabel}
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight capitalize truncate">
+                  {pageLabel}
+                </h1>
+                {((user?.role || "").toLowerCase().includes("super") || (user?.role || "").toLowerCase() === "owner") && (
+                  <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/40 shadow-sm shadow-amber-500/20">
+                    <Shield className="w-3 h-3 text-amber-400" />
+                    👑 Super Admin (Platform Owner)
+                  </span>
+                )}
+                {(user?.role || "").toLowerCase().includes("admin") && !(user?.role || "").toLowerCase().includes("super") && (
+                  <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-300 border border-rose-500/40 shadow-sm shadow-rose-500/20">
+                    <Building2 className="w-3 h-3 text-rose-400" />
+                    🏢 Company Admin
+                  </span>
+                )}
+                {((user?.role || "").toLowerCase().includes("manager") || (user?.role || "").toLowerCase().includes("supervisor")) && (
+                  <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/40 shadow-sm shadow-purple-500/20">
+                    <Users className="w-3 h-3 text-purple-400" />
+                    👔 Operations Lead
+                  </span>
+                )}
+                {((user?.role || "").toLowerCase() === "agent" || (user?.role || "").toLowerCase().includes("caller") || (user?.role || "").toLowerCase().includes("sales")) && (
+                  <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 shadow-sm shadow-emerald-500/20">
+                    <Phone className="w-3 h-3 text-emerald-400" />
+                    🎧 Calling Agent
+                  </span>
+                )}
+                {((user?.role || "").toLowerCase() === "viewer" || (user?.role || "").toLowerCase().includes("audit")) && (
+                  <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 shadow-sm shadow-cyan-500/20">
+                    <Shield className="w-3 h-3 text-cyan-400" />
+                    👁️ Viewer (Auditor)
+                  </span>
+                )}
+              </div>
               <p className="text-xs hidden sm:block text-slate-500 dark:text-white/40">
                 {new Date().toLocaleDateString("en-IN", {
                   weekday: "long",

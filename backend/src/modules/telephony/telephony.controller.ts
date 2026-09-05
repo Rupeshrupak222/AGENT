@@ -15,7 +15,11 @@ import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@ne
 import { Request, Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Permissions } from '../../common/decorators/permissions.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { CALL_INITIATE } from '../../common/rbac/permissions';
 import { TelephonyService } from './services/telephony.service';
 import { DispatchOutboundCallDto } from './dto/outbound-call.dto';
 import {
@@ -37,16 +41,17 @@ export class TelephonyController {
   }
 
   @ApiBearerAuth('JWT')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Permissions(CALL_INITIATE)
   @Post('dispatch')
   @ApiOperation({ summary: 'Trigger outbound call dispatch via telephony abstraction' })
   @ApiResponse({ status: 200, description: 'Call dispatched or deferred to provider' })
   async dispatchOutbound(
-    @CurrentUser('tenantId') tenantId: string,
+    @CurrentUser() u: any,
     @Body() dto: DispatchOutboundCallDto,
   ) {
     return this.telephonyService.dispatchOutboundCall(
-      tenantId,
+      u.tenantId,
       dto.callId,
       dto.phoneNumber,
       dto.provider,
