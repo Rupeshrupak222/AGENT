@@ -274,9 +274,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
     let active = true;
     (async () => {
-      const ok = await bootstrapAuth();
-      if (active) setSessionValidated(true);
-      void ok;
+      try {
+        await bootstrapAuth();
+      } catch {
+        // Ignored; bootstrapAuth handles logout on failure
+      } finally {
+        if (active) setSessionValidated(true);
+      }
     })();
     return () => {
       active = false;
@@ -288,6 +292,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     if (mounted && !isAuthenticated && !accessToken) {
       router.replace("/login");
+      const fallbackTimer = setTimeout(() => {
+        if (!useAuthStore.getState().accessToken) {
+          window.location.href = "/login";
+        }
+      }, 400);
+      return () => clearTimeout(fallbackTimer);
     }
   }, [mounted, isAuthenticated, accessToken, router]);
 
@@ -306,7 +316,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   // Guard against unauthenticated layout rendering during hydration
-  if (!mounted || !sessionValidated || (!isAuthenticated && !accessToken)) {
+  if (!mounted || !sessionValidated) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#0c0102]">
         <div className="flex flex-col items-center gap-3">
@@ -316,6 +326,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <p className="text-xs font-medium text-white/40">
             Authenticating session...
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  // If session check has finished and user is not authenticated, render login redirect card
+  if (!isAuthenticated && !accessToken) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-[#0c0102]">
+        <div className="flex flex-col items-center gap-4 text-center p-6 max-w-sm mx-auto">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg shadow-brand-500/20 bg-gradient-to-br from-brand-500 to-brand-700">
+            <Zap className="w-6 h-6 text-white fill-white" />
+          </div>
+          <h2 className="text-base font-bold text-slate-900 dark:text-white">
+            Authentication Required
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-white/50 leading-relaxed">
+            Please log in with your credentials to access the AgentCall AI dashboard.
+          </p>
+          <a
+            href="/login"
+            className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-brand-500 to-brand-700 hover:opacity-90 shadow-md shadow-brand-500/20 transition-all"
+          >
+            Go to Login
+          </a>
         </div>
       </div>
     );

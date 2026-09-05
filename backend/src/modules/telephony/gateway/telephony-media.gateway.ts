@@ -1,6 +1,7 @@
 import {
   WebSocketGateway,
   WebSocketServer,
+  OnGatewayInit,
   OnGatewayConnection,
   OnGatewayDisconnect,
   SubscribeMessage,
@@ -9,33 +10,101 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
+import * as WebSocket from 'ws';
 import { AudioSessionService } from '../services/audio-session.service';
 import { AudioFrame } from '../interfaces/audio-frame.interface';
-
 import { ConversationOrchestrator } from '../../ai/orchestrator/conversation.orchestrator';
 
 @WebSocketGateway({
   cors: { origin: '*' },
   namespace: '/telephony/stream',
 })
-export class TelephonyMediaGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class TelephonyMediaGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
   private readonly logger = new Logger(TelephonyMediaGateway.name);
   private readonly socketToSessionMap = new Map<string, string>();
   private readonly sequenceCounters = new Map<string, number>();
+  private rawWsServer: WebSocket.Server | null = null;
+  private readonly rawWsClients = new Map<string, WebSocket>();
 
   constructor(
     private audioSessionService: AudioSessionService,
     private conversationOrchestrator: ConversationOrchestrator,
   ) {}
 
+  afterInit(server: Server) {
+    // Attach raw WebSocket server to underlying HTTP server for Twilio Media Streams
+    const httpServer = (server as any)?.httpServer || (server as any)?.server;
+    if (!httpServer) {
+      this.logger.warn('Underlying HTTP server not found on Socket.IO server; raw WS support deferred.');
+      return;
+    }
+
+    try {
+      this.rawWsServer = new WebSocket.Server({ noServer: true });
+      this.logger.log('Raw WebSocket server initialized for Twilio Media Streams on /telephony/stream');
+
+      httpServer.on('upgrade', (request: any, socket: any, head: any) => {
+        const urlStr = request.url || '';
+        if (urlStr.startsWith('/telephony/stream')) {
+          this.rawWsServer?.handleUpgrade(request, socket, head, (ws: WebSocket) => {
+            this.handleRawWsConnection(ws, request);
+          });
+        }
+      });
+    } catch (err: any) {
+      this.logger.error(`Failed to bind raw WebSocket upgrade listener: ${err.message}`);
+    }
+  }
+
+  /**
+   * Handles raw WebSocket connection from real telephony carrier (Twilio / Exotel).
+   */
+  private handleRawWsConnection(ws: WebSocket, req: any) {
+    const rawId = `raw-ws-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    this.rawWsClients.set(rawId, ws);
+    this.logger.log(`Raw telephony carrier WebSocket connected: ${rawId}`);
+
+    ws.on('message', (message: WebSocket.Data) => {
+      try {
+        const str = message.toString('utf-8');
+        const data = JSON.parse(str);
+        const event = data.event;
+
+        if (event === 'connected') {
+          this.logger.log(`Twilio protocol handshake connected on [${rawId}]: protocol=${data.protocol}`);
+        } else if (event === 'start') {
+          this.handleStreamStart({ id: rawId } as any, data);
+        } else if (event === 'media') {
+          this.handleMediaChunk({ id: rawId } as any, data);
+        } else if (event === 'stop') {
+          this.handleStreamStop({ id: rawId } as any, data);
+        }
+      } catch (err: any) {
+        this.logger.error(`Error parsing raw telephony frame on [${rawId}]: ${err.message}`);
+      }
+    });
+
+    ws.on('close', () => {
+      this.logger.log(`Raw telephony carrier WebSocket closed: ${rawId}`);
+      this.handleDisconnect({ id: rawId } as any);
+      this.rawWsClients.delete(rawId);
+    });
+
+    ws.on('error', (err) => {
+      this.logger.error(`Raw telephony WebSocket error on [${rawId}]: ${err.message}`);
+    });
+  }
+
   handleConnection(client: Socket) {
     this.logger.log(`Telephony media transport connected: ${client.id}`);
   }
 
-  handleDisconnect(client: Socket) {
+  handleDisconnect(client: Socket | { id: string }) {
     const sessionId = this.socketToSessionMap.get(client.id);
     if (sessionId) {
       this.logger.log(`Media stream disconnected for session [${sessionId}]. Releasing resources.`);
@@ -162,13 +231,20 @@ export class TelephonyMediaGateway implements OnGatewayConnection, OnGatewayDisc
    */
   sendAudioChunkToCaller(socketId: string, streamSid: string, mulawBuffer: Buffer): void {
     const base64Audio = mulawBuffer.toString('base64');
-    this.server.to(socketId).emit('media', {
+    const mediaPayload = {
       event: 'media',
       streamSid,
       media: {
         payload: base64Audio,
       },
-    });
+    };
+
+    const rawWs = this.rawWsClients.get(socketId);
+    if (rawWs && rawWs.readyState === WebSocket.OPEN) {
+      rawWs.send(JSON.stringify(mediaPayload));
+    } else if (this.server) {
+      this.server.to(socketId).emit('media', mediaPayload);
+    }
 
     const sessionId = this.socketToSessionMap.get(socketId);
     if (sessionId) {
@@ -180,10 +256,17 @@ export class TelephonyMediaGateway implements OnGatewayConnection, OnGatewayDisc
    * Sends clear buffer instruction for barge-in / speech interruption.
    */
   sendBargeInClear(socketId: string, streamSid: string): void {
-    this.server.to(socketId).emit('clear', {
+    const clearPayload = {
       event: 'clear',
       streamSid,
-    });
+    };
+
+    const rawWs = this.rawWsClients.get(socketId);
+    if (rawWs && rawWs.readyState === WebSocket.OPEN) {
+      rawWs.send(JSON.stringify(clearPayload));
+    } else if (this.server) {
+      this.server.to(socketId).emit('clear', clearPayload);
+    }
     this.logger.log(`Sent barge-in clear instruction to stream ${streamSid}`);
   }
 }

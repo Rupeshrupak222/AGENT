@@ -94,7 +94,11 @@ export class TwilioTelephonyProvider extends BaseTelephonyProvider {
   }
 
   async handleIncomingCall(req: IncomingCallRequest): Promise<IncomingCallResponse> {
-    const streamUrl = (req.rawPayload.StreamUrl as string) || `wss://${req.headers?.host || 'localhost:3001'}/telephony/stream`;
+    const configuredHost = this.configService.get<string>('PUBLIC_URL') || this.configService.get<string>('API_HOST');
+    const host = configuredHost
+      ? configuredHost.replace(/^https?:\/\//, '').replace(/^wss?:\/\//, '').replace(/\/$/, '')
+      : (req.headers?.host || 'localhost:3001');
+    const streamUrl = (req.rawPayload.StreamUrl as string) || `wss://${host}/telephony/stream`;
     const xml = this.generateMediaStreamResponse({
       streamUrl,
       callId: req.providerCallId,
@@ -220,10 +224,10 @@ export class TwilioTelephonyProvider extends BaseTelephonyProvider {
         .update(Buffer.from(data, 'utf-8'))
         .digest('base64');
 
-      const isValid = crypto.timingSafeEqual(
-        Buffer.from(signature),
-        Buffer.from(expectedSignature),
-      );
+      const sigBuf = Buffer.from(signature);
+      const expBuf = Buffer.from(expectedSignature);
+      const isValid =
+        sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf);
 
       return {
         isValid,
