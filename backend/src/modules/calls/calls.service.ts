@@ -100,7 +100,16 @@ export class CallsService implements OnModuleInit {
       this.logger.warn(`Telephony dispatch deferred or failed for call ${call.id}: ${err.message}`);
     }
 
-    return call;
+    // Re-fetch to reflect the real post-dispatch state (provider may mark the
+    // call failed/unconfigured). Never claim "queued" when dispatch actually failed.
+    const latest = await this.prisma.call.findFirst({
+      where: { id: call.id, tenantId },
+      include: {
+        lead:  { select: { id: true, name: true, phone: true } },
+        agent: { select: { id: true, name: true, role:  true } },
+      },
+    });
+    return latest ?? call;
   }
 
   async findAll(tenantId: string, query: {

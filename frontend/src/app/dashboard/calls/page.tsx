@@ -49,6 +49,7 @@ import {
   agentsApi,
   leadsApi,
   analyticsApi,
+  telephonyApi,
   normalizeApiError,
   CallItem,
   CallDetail,
@@ -288,6 +289,7 @@ function NewCallModal({ initialPhone = "", onClose, onSuccess }: NewCallModalPro
   const [customName, setCustomName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingOptions, setLoadingOptions] = useState(true);
+  const [gatewayReady, setGatewayReady] = useState<boolean | null>(null);
   const { success, error: toastError } = useToast();
 
   useEffect(() => {
@@ -295,12 +297,15 @@ function NewCallModal({ initialPhone = "", onClose, onSuccess }: NewCallModalPro
     (async () => {
       try {
         setLoadingOptions(true);
+        const statusRes = telephonyApi.status().catch(() => null);
         const [agentsRes, leadsRes] = await Promise.allSettled([
           agentsApi.list(),
           leadsApi.list({ limit: 50 }),
         ]);
 
         if (active) {
+          const tele = await statusRes;
+          setGatewayReady(tele?.anyProviderConfigured === true);
           if (agentsRes.status === "fulfilled" && agentsRes.value.length > 0) {
             setAgents(agentsRes.value);
             const firstActive = agentsRes.value.find((a) => a.status === "active") || agentsRes.value[0];
@@ -358,13 +363,27 @@ function NewCallModal({ initialPhone = "", onClose, onSuccess }: NewCallModalPro
         finalLeadId = newLead.id;
       }
 
-      await callsApi.initiate({
+      const call = await callsApi.initiate({
         leadId: finalLeadId,
         agentId: selectedAgentId,
         direction: "outbound",
       });
 
-      success(`Outbound call dispatched! Dialing ${customPhone || "customer"} via gateway...`);
+      const target = customPhone || call.phone || "customer";
+
+      if (call.status === "failed" || call.outcome) {
+        const reason =
+          call.outcome === "PROVIDER_NOT_CONFIGURED"
+            ? "no outbound telephony provider is configured"
+            : call.outcome === "DISPATCH_ERROR"
+            ? "the telephony provider rejected the dispatch"
+            : "the call did not connect";
+        toastError(
+          `Could not dispatch call to ${target}: ${reason}. Configure a Twilio/Exotel provider in Settings.`
+        );
+      } else {
+        success(`Outbound call dispatched to ${target} via gateway...`);
+      }
       onSuccess();
       onClose();
     } catch (err) {
@@ -502,13 +521,30 @@ function NewCallModal({ initialPhone = "", onClose, onSuccess }: NewCallModalPro
             </div>
 
             {/* Telephony Route Notice */}
-            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between text-[11px] text-white/50">
+            <div
+              className={`p-3 rounded-xl border flex items-center justify-between text-[11px] ${
+                gatewayReady === true
+                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"
+                  : "bg-amber-500/10 border-amber-500/30 text-amber-300"
+              }`}
+            >
               <span className="flex items-center gap-1.5">
-                <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                Outbound Gateway: Twilio / Exotel SIP Trunk
+                <Radio className="w-3.5 h-3.5" />
+                Outbound Gateway
               </span>
-              <span className="text-emerald-400 font-semibold">Ready</span>
+              <span className={`font-semibold ${gatewayReady === true ? "text-emerald-300" : "text-amber-300"}`}>
+                {gatewayReady === null
+                  ? "Checking..."
+                  : gatewayReady === true
+                  ? "Twilio / Exotel Ready"
+                  : "No provider configured"}
+              </span>
             </div>
+            {gatewayReady === false && (
+              <p className="text-[11px] text-amber-400/80 -mt-2">
+                No outbound telephony provider is configured — calls will be recorded as failed until a Twilio/Exotel account is linked in Settings.
+              </p>
+            )}
 
             {/* Buttons */}
             <div className="flex items-center justify-end gap-3 pt-2">

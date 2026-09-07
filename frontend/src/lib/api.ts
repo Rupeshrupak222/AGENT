@@ -342,6 +342,9 @@ export interface CallItem {
     | "missed"
     | "failed"
     | "transferred";
+  outcome?: string | null;
+  providerCallId?: string | null;
+  metadata?: Record<string, unknown> | null;
   duration: number | null;
   sentimentScore?: number | null;
   qualityScore?: number | null;
@@ -419,6 +422,29 @@ export const callsApi = {
     const res = await apiClient.post<ApiResponseWrapper<CallItem>>(
       "/calls",
       payload
+    );
+    return res.data.data;
+  },
+};
+
+// ── Telephony API Contracts ──────────────────────────────────────────
+export interface TelephonySystemStatus {
+  status: string;
+  database: string;
+  architecture: string;
+  mediaStreaming: string;
+  providers: Array<{ name: string; configured: boolean }>;
+  anyProviderConfigured: boolean;
+  activeSessions: number;
+  redisQueues: string;
+  speechPipeline: string;
+  speechPipelineDetail: { stt: string; brain: string; tts: string };
+}
+
+export const telephonyApi = {
+  status: async (): Promise<TelephonySystemStatus> => {
+    const res = await apiClient.get<ApiResponseWrapper<TelephonySystemStatus>>(
+      "/telephony/status"
     );
     return res.data.data;
   },

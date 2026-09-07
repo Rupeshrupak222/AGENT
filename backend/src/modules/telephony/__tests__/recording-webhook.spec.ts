@@ -74,6 +74,7 @@ describe('Recording Webhook Architecture & Idempotency', () => {
       configService,
       registry,
       audioSessionService,
+      {} as any, // CallInsightsService (not exercised by recording webhooks)
       mockQueueService as any,
     );
   });
