@@ -113,7 +113,7 @@ export default function VoicesPage() {
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5" />
-            ElevenLabs High-Speed Flash Latency (150ms)
+            Demo Preview · Browser TTS
           </span>
         </div>
       </div>
@@ -133,7 +133,7 @@ export default function VoicesPage() {
           )}
 
           {!loading && error && (
-            <div className="text-center py-16">
+            <div role="alert" className="text-center py-16">
               <p className="text-sm text-brand-600 dark:text-brand-400 font-semibold mb-2">{error}</p>
               <p className="text-xs text-slate-500 dark:text-white/50">No voices were loaded.</p>
             </div>
@@ -192,6 +192,7 @@ export default function VoicesPage() {
                       e.stopPropagation();
                       togglePlay(v.id);
                     }}
+                    aria-label={`${isPlaying ? "Stop" : "Play"} preview for ${v.name}`}
                     className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
                       isPlaying
                         ? "bg-brand-500 text-white shadow-lg shadow-brand-500/40"
@@ -256,6 +257,10 @@ export default function VoicesPage() {
               <div className="p-3 rounded-xl bg-slate-100/70 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 text-xs text-slate-700 dark:text-white/80 leading-relaxed font-mono">
                 &ldquo;{selectedVoice?.sampleAudio ?? ""}&rdquo;
               </div>
+              <p className="text-[10px] text-slate-400 dark:text-white/35 mt-2 leading-relaxed">
+                Demo preview is spoken by the browser&rsquo;s built-in speech synthesizer — provider neural audio is
+                not streamed yet, so the sound will not match the listed voice exactly.
+              </p>
             </div>
 
             <button

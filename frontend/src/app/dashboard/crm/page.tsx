@@ -356,7 +356,7 @@ function CreateLeadModal({
         </div>
 
         {error && (
-          <div className="mt-3 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+          <div role="alert" className="mt-3 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
@@ -544,7 +544,7 @@ export default function CRMPage() {
       <div className="flex-1 p-6 space-y-6">
         {/* Error banner */}
         {error && (
-          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-sm flex items-center justify-between gap-4">
+          <div role="alert" className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-sm flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 flex-shrink-0" />
               <span>{error}</span>
@@ -641,7 +641,9 @@ export default function CRMPage() {
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex-1 min-w-[200px] max-w-sm relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30" />
+            <label htmlFor="lead-search" className="sr-only">Search leads</label>
             <input
+              id="lead-search"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);

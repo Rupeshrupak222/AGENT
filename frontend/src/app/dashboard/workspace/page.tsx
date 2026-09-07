@@ -126,7 +126,7 @@ export default function WorkspacePage() {
             Loading team members…
           </div>
         ) : error ? (
-          <div className="py-10 text-center space-y-3">
+          <div role="alert" className="py-10 text-center space-y-3">
             <p className="text-sm text-slate-500 dark:text-white/50">{error}</p>
             <button onClick={loadMembers} className="btn-red text-xs py-2 px-4 h-9">Retry</button>
           </div>
@@ -169,6 +169,7 @@ export default function WorkspacePage() {
                     <button
                       onClick={() => removeMember(member.id)}
                       disabled={removingId === member.id}
+                      aria-label={`Remove ${member.name} from workspace`}
                       className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 dark:text-white/30 hover:text-rose-500 dark:hover:text-rose-400 transition-colors disabled:opacity-50"
                     >
                       {removingId === member.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}

@@ -15,26 +15,41 @@ export class TelephonySystemStatusDto {
   @ApiProperty({ example: 'ready' })
   status: string;
 
+  @ApiProperty({ example: 'connected' })
+  database: string;
+
   @ApiProperty({ example: 'telephony_foundation_v1' })
   architecture: string;
 
-  @ApiProperty({ example: 'ready_for_provider' })
+  @ApiProperty({ example: 'media_gateway_bound' })
   mediaStreaming: string;
 
   @ApiProperty({
     example: [
-      { name: 'twilio', isConfigured: false },
-      { name: 'exotel', isConfigured: false },
+      { name: 'twilio', configured: false },
+      { name: 'exotel', configured: false },
     ],
   })
-  providers: Array<{ name: string; isConfigured: boolean }>;
+  providers: Array<{ name: string; configured: boolean }>;
+
+  @ApiProperty({ example: false })
+  anyProviderConfigured: boolean;
 
   @ApiProperty({ example: 0 })
   activeSessions: number;
 
-  @ApiProperty({ example: 'deferred_day7' })
+  @ApiProperty({ example: 'configured' })
   redisQueues: string;
 
-  @ApiProperty({ example: 'day8_ready' })
+  @ApiProperty({ example: 'not_fully_configured' })
   speechPipeline: string;
+
+  @ApiProperty({
+    example: {
+      stt: 'configured',
+      brain: 'configured',
+      tts: 'configured',
+    },
+  })
+  speechPipelineDetail: { stt: string; brain: string; tts: string };
 }

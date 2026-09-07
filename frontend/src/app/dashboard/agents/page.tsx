@@ -194,6 +194,7 @@ function AgentBuilderModal({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close agent builder"
             className="p-1.5 rounded-xl text-slate-500 dark:text-white/40 hover:text-slate-500 dark:hover:text-white/40 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.04] dark:hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -548,6 +549,8 @@ function AgentCardItem({
             <div className="relative">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
+                aria-label={`More actions for ${agent.name}`}
+                aria-expanded={menuOpen}
                 className="w-7 h-7 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.04] dark:hover:bg-white/10 flex items-center justify-center text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white transition-all"
               >
                 <MoreHorizontal className="w-4 h-4" />
@@ -704,7 +707,7 @@ export default function AgentsPage() {
       <div className="flex-1 p-6 space-y-6">
         {/* Error banner */}
         {error && (
-          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-sm flex items-center justify-between gap-4">
+          <div role="alert" className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-sm flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 flex-shrink-0" />
               <span>{error}</span>

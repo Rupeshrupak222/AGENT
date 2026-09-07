@@ -309,7 +309,7 @@ export function AgentView({
             )}
 
             {!queueLoading && queueError && (
-              <div className="text-center py-10 space-y-3">
+              <div role="alert" className="text-center py-10 space-y-3">
                 <p className="text-sm text-rose-400">Couldn&apos;t load your assigned leads. {queueError}</p>
                 <button
                   onClick={fetchQueue}
@@ -388,14 +388,18 @@ export function AgentView({
             </h3>
 
             <div className="space-y-3">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={quickPhone}
-                  onChange={(e) => setQuickPhone(e.target.value)}
-                  placeholder="+91 or E.164 Number..."
-                  className="w-full h-10 px-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-mono text-white placeholder:text-white/30 focus:outline-none focus:border-emerald-500/50"
-                />
+              <div>
+                <label htmlFor="quick-dial-phone" className="sr-only">Phone number to dial</label>
+                <div className="relative">
+                  <input
+                    id="quick-dial-phone"
+                    type="text"
+                    value={quickPhone}
+                    onChange={(e) => setQuickPhone(e.target.value)}
+                    placeholder="+91 or E.164 Number..."
+                    className="w-full h-10 px-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-mono text-white placeholder:text-white/30 focus:outline-none focus:border-emerald-500/50"
+                  />
+                </div>
               </div>
               <button
                 onClick={() => {

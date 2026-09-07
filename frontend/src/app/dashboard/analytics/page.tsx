@@ -246,7 +246,7 @@ export default function AnalyticsPage() {
         </div>
 
         {error && (
-          <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 text-sm font-medium flex items-center justify-between gap-4">
+          <div role="alert" className="p-4 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 text-sm font-medium flex items-center justify-between gap-4">
             <span>{error}</span>
             <button onClick={() => load(period)} className="text-xs font-semibold underline">Retry</button>
           </div>
@@ -297,7 +297,7 @@ export default function AnalyticsPage() {
           <Card className="p-6">
             <CardHeader>
               <CardTitle>Sentiment Analysis</CardTitle>
-              <button className="text-slate-400 dark:text-white/30 hover:text-slate-900 dark:hover:text-white transition-colors"><Info className="w-4 h-4"/></button>
+              <button aria-label="Sentiment analysis explanation" className="text-slate-400 dark:text-white/30 hover:text-slate-900 dark:hover:text-white transition-colors"><Info className="w-4 h-4"/></button>
             </CardHeader>
             <div className="space-y-3 mt-2">
               {sentiment.length === 0 ? (

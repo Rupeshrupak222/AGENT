@@ -19,13 +19,14 @@ import {
 } from "lucide-react";
 import { WaveAnimation } from "@/components/ui/WaveAnimation";
 import { useToast } from "@/components/ui/Toast";
-import { DashboardMetrics, CallMetrics, CallItem, AgentItem } from "@/lib/api";
+import { DashboardMetrics, CallMetrics, CallItem, AgentItem, ConversionFunnelItem } from "@/lib/api";
 
 interface ManagerViewProps {
   metrics: DashboardMetrics | null;
   callMetrics: CallMetrics | null;
   recentCalls: CallItem[];
   allAgents: AgentItem[];
+  funnelData: ConversionFunnelItem[];
   isLoading: boolean;
   onRefresh: () => void;
   isRefreshing: boolean;
@@ -47,6 +48,7 @@ export function ManagerView({
   callMetrics,
   recentCalls,
   allAgents,
+  funnelData,
   isLoading,
   onRefresh,
   isRefreshing,
@@ -66,6 +68,19 @@ export function ManagerView({
   const pendingReviews = recentCalls.filter(
     (c) => c.status === "completed" && (c.qualityScore == null || c.sentimentScore == null)
   );
+
+  const totalOutreach = metrics?.totalCalls ?? callMetrics?.total ?? 0;
+  const reachedCount = metrics?.connected ?? callMetrics?.completed ?? 0;
+  const dispositionTotal = funnelData.reduce((acc, curr) => acc + curr.count, 0);
+  const dispositionData = funnelData.map((f) => {
+    const pct = dispositionTotal > 0 ? ((f.count / dispositionTotal) * 100) : 0;
+    return {
+      stage: f.stage.replace(/_/g, " "),
+      count: f.count,
+      pct: `${pct.toFixed(1)}%`,
+      width: `${pct.toFixed(1)}%`,
+    };
+  });
 
   const [queue, setQueue] = useState<CallItem[]>(() => pendingReviews);
 
@@ -182,13 +197,10 @@ export function ManagerView({
             </div>
             <div>
               <p className="text-xs font-bold text-white">
-                Campaign Progress: <span className="text-purple-300 font-mono">540 / 1,000 Dialed (54%)</span>
+                Campaign Progress: <span className="text-purple-300 font-mono">{totalOutreach.toLocaleString()} total outbound dials</span>
               </p>
-              <p className="text-[11px] text-white/40">460 Contacts pending in autonomous dial queue</p>
+              <p className="text-[11px] text-white/40">{reachedCount.toLocaleString()} connected · {dispositionTotal.toLocaleString()} leads across pipeline stages</p>
             </div>
-          </div>
-          <div className="w-full sm:w-64 h-2 rounded-full bg-white/[0.08] overflow-hidden">
-            <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-indigo-400" style={{ width: "54%" }} />
           </div>
         </div>
       </motion.div>
@@ -238,16 +250,16 @@ export function ManagerView({
             color: "from-cyan-500/20 to-cyan-600/10 border-cyan-500/30",
           },
           {
-            title: "Active Callers",
-            value: isLoading ? "—" : `${allAgents.length} AI + 2 Reps`,
-            subtext: "Online on floor",
+            title: "Active AI Agents",
+            value: isLoading ? "—" : `${allAgents.length}`,
+            subtext: "Configured on floor",
             icon: <Users className="w-5 h-5 text-brand-400" />,
             color: "from-brand-500/20 to-brand-600/10 border-brand-500/30",
           },
           {
-            title: "Callbacks Due Today",
-            value: isLoading ? "—" : "5 Pending",
-            subtext: "Action required",
+            title: "Leads In Pipeline",
+            value: isLoading ? "—" : dispositionTotal.toLocaleString(),
+            subtext: "Across funnel stages",
             icon: <Radio className="w-5 h-5 text-rose-400" />,
             color: "from-rose-500/20 to-rose-600/10 border-rose-500/30",
           },
@@ -354,23 +366,21 @@ export function ManagerView({
             </h3>
 
             <div className="space-y-3">
-              {[
-                { stage: "Connected & Pitched", count: 280, pct: "51.8%", color: "bg-emerald-500" },
-                { stage: "Demo Booked / Won", count: 85, pct: "15.7%", color: "bg-purple-500" },
-                { stage: "Callback Requested", count: 64, pct: "11.8%", color: "bg-amber-500" },
-                { stage: "Not Interested", count: 72, pct: "13.3%", color: "bg-rose-500" },
-                { stage: "Voicemail / No Answer", count: 39, pct: "7.2%", color: "bg-slate-500" },
-              ].map((item) => (
-                <div key={item.stage} className="text-xs">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-white/70">{item.stage}</span>
-                    <span className="font-mono text-white font-semibold">{item.count} ({item.pct})</span>
+              {dispositionTotal === 0 ? (
+                <p className="text-xs text-white/40 py-4">No pipeline disposition data yet.</p>
+              ) : (
+                dispositionData.map((item) => (
+                  <div key={item.stage} className="text-xs">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-white/70 capitalize">{item.stage.replace(/\b\w/g, (c) => c.toUpperCase())}</span>
+                      <span className="font-mono text-white font-semibold">{item.count.toLocaleString()} ({item.pct})</span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                      <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-indigo-400" style={{ width: item.width }} />
+                    </div>
                   </div>
-                  <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                    <div className={`h-full rounded-full ${item.color}`} style={{ width: item.pct }} />
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 

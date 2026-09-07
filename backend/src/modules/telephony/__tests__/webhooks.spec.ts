@@ -5,6 +5,7 @@ import { ExotelTelephonyProvider } from '../providers/exotel.provider';
 import { TelephonyService } from '../services/telephony.service';
 import { TelephonyProviderRegistry } from '../providers/provider-registry.service';
 import { AudioSessionService } from '../services/audio-session.service';
+import { CallInsightsService } from '../services/call-insights.service';
 
 describe('Webhook Processing, State Machine & Idempotency', () => {
   let twilioProvider: TwilioTelephonyProvider;
@@ -58,6 +59,7 @@ describe('Webhook Processing, State Machine & Idempotency', () => {
       configService,
       registry,
       audioSessionService,
+      new CallInsightsService(),
     );
   });
 

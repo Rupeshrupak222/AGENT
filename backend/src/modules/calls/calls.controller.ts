@@ -64,18 +64,4 @@ export class CallsController {
     </Connect>
 </Response>`);
   }
-
-  @Public()
-  @Post('twilio/status')
-  @ApiOperation({ summary: 'Twilio status callback' })
-  handleTwilioStatus(@Body() body: any) {
-    return { status: 'acknowledged', callSid: body.CallSid, callStatus: body.CallStatus };
-  }
-
-  @Public()
-  @Post('exotel/callback')
-  @ApiOperation({ summary: 'Exotel callback webhook' })
-  handleExotelCallback(@Body() body: any) {
-    return { status: 'acknowledged', callId: body.CallSid || body.Sid };
-  }
 }

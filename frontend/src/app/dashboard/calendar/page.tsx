@@ -131,14 +131,14 @@ export default function CalendarPage() {
           >
             <Plus className="w-4 h-4" /> New Appointment
           </button>
-          <span className="hidden lg:flex text-xs font-semibold px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Google Calendar &amp; Outlook Synced
+          <span className="hidden lg:flex text-xs font-semibold px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/[0.08] text-slate-500 dark:text-white/50 border border-slate-200 dark:border-white/15 items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5" /> Native Calendar (external sync not configured)
           </span>
         </div>
       </div>
 
       {error && (
-        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-sm flex items-center gap-2">
+        <div role="alert" className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-sm flex items-center gap-2">
           <AlertCircle className="w-4 h-4" /> {error}
         </div>
       )}
@@ -147,52 +147,80 @@ export default function CalendarPage() {
         <div className="rounded-2xl p-5 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] shadow-sm">
           <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4">Schedule New Appointment</h3>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <input
-              value={form.leadName}
-              onChange={(e) => setForm({ ...form, leadName: e.target.value })}
-              placeholder="Lead name *"
-              className={INPUT_CLS}
-            />
-            <input
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              placeholder="Phone *"
-              className={INPUT_CLS}
-            />
-            <input
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="Email"
-              className={INPUT_CLS}
-            />
-            <input
-              value={form.topic}
-              onChange={(e) => setForm({ ...form, topic: e.target.value })}
-              placeholder="Topic (optional)"
-              className={INPUT_CLS}
-            />
-            <input
-              type="date"
-              value={form.date}
-              onChange={(e) => setForm({ ...form, date: e.target.value })}
-              className={INPUT_CLS}
-            />
-            <input
-              type="time"
-              value={form.time}
-              onChange={(e) => setForm({ ...form, time: e.target.value })}
-              className={INPUT_CLS}
-            />
-            <select
-              value={form.duration}
-              onChange={(e) => setForm({ ...form, duration: Number(e.target.value) })}
-              className={INPUT_CLS}
-            >
-              <option value={15}>15 mins</option>
-              <option value={30}>30 mins</option>
-              <option value={45}>45 mins</option>
-              <option value={60}>60 mins</option>
-            </select>
+            <div>
+              <label htmlFor="apt-leadname" className="sr-only">Lead name</label>
+              <input
+                id="apt-leadname"
+                value={form.leadName}
+                onChange={(e) => setForm({ ...form, leadName: e.target.value })}
+                placeholder="Lead name *"
+                className={INPUT_CLS}
+              />
+            </div>
+            <div>
+              <label htmlFor="apt-phone" className="sr-only">Phone</label>
+              <input
+                id="apt-phone"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder="Phone *"
+                className={INPUT_CLS}
+              />
+            </div>
+            <div>
+              <label htmlFor="apt-email" className="sr-only">Email</label>
+              <input
+                id="apt-email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="Email"
+                className={INPUT_CLS}
+              />
+            </div>
+            <div>
+              <label htmlFor="apt-topic" className="sr-only">Topic</label>
+              <input
+                id="apt-topic"
+                value={form.topic}
+                onChange={(e) => setForm({ ...form, topic: e.target.value })}
+                placeholder="Topic (optional)"
+                className={INPUT_CLS}
+              />
+            </div>
+            <div>
+              <label htmlFor="apt-date" className="sr-only">Date</label>
+              <input
+                id="apt-date"
+                type="date"
+                value={form.date}
+                onChange={(e) => setForm({ ...form, date: e.target.value })}
+                className={INPUT_CLS}
+              />
+            </div>
+            <div>
+              <label htmlFor="apt-time" className="sr-only">Time</label>
+              <input
+                id="apt-time"
+                type="time"
+                value={form.time}
+                onChange={(e) => setForm({ ...form, time: e.target.value })}
+                className={INPUT_CLS}
+              />
+            </div>
+            <div>
+              <label htmlFor="apt-duration" className="sr-only">Duration</label>
+              <select
+                id="apt-duration"
+                value={form.duration}
+                onChange={(e) => setForm({ ...form, duration: Number(e.target.value) })}
+                className={INPUT_CLS}
+              >
+                <option value={15}>15 mins</option>
+                <option value={30}>30 mins</option>
+                <option value={45}>45 mins</option>
+                <option value={60}>60 mins</option>
+              </select>
+            </div>
           </div>
           <div className="flex items-center gap-2 mt-4">
             <button
@@ -298,6 +326,7 @@ export default function CalendarPage() {
                     <select
                       value={item.status}
                       onChange={(e) => handleStatus(item.id, e.target.value as AppointmentStatus)}
+                      aria-label={`Status for appointment with ${item.leadName}`}
                       className="h-8 rounded-lg px-2 text-[10px] font-semibold w-28 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500"
                     >
                       {Object.keys(STATUS_STYLES).map((k) => (
@@ -312,6 +341,7 @@ export default function CalendarPage() {
                     </a>
                     <button
                       onClick={() => handleDelete(item.id)}
+                      aria-label={`Delete appointment with ${item.leadName}`}
                       className="px-2.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 flex items-center justify-center transition-colors"
                       title="Delete appointment"
                     >

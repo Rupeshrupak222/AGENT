@@ -7,13 +7,13 @@ import {
   Eye,
   BarChart3,
   Target,
-  ShieldCheck,
   Award,
   Clock,
   Phone,
   PhoneCall,
+  PhoneMissed,
+  Smile,
   DollarSign,
-  Radio,
   Lock,
   Download,
   RefreshCw,
@@ -58,6 +58,8 @@ interface ViewerViewProps {
   allAgents: AgentItem[];
   callTrends: CallTrendItem[];
   funnelData: ConversionFunnelItem[];
+  period: "today" | "week" | "month";
+  setPeriod: (p: "today" | "week" | "month") => void;
   isLoading: boolean;
   onRefresh: () => void;
   isRefreshing: boolean;
@@ -70,20 +72,21 @@ export function ViewerView({
   allAgents,
   callTrends,
   funnelData,
+  period,
+  setPeriod,
   isLoading,
   onRefresh,
   isRefreshing,
 }: ViewerViewProps) {
   const { success } = useToast();
-  const [period, setPeriod] = useState<"today" | "week" | "month">("week");
 
-  // Dynamic multiplier for read-only inspection simulation
-  const multiplier = period === "today" ? 0.35 : period === "week" ? 1 : 4.1;
-  const totalCallsCount = Math.round((metrics?.totalCalls ?? callMetrics?.total ?? 0) * multiplier);
-  const connectedCallsCount = Math.round((metrics?.connected ?? callMetrics?.completed ?? 0) * multiplier);
-  const qualifiedLeadsCount = Math.round((metrics?.qualified ?? 0) * multiplier);
-  const closedWonCount = Math.round((metrics?.closedWon ?? 0) * multiplier);
+  const totalCallsCount = metrics?.totalCalls ?? callMetrics?.total ?? 0;
+  const connectedCallsCount = metrics?.connected ?? callMetrics?.completed ?? 0;
+  const qualifiedLeadsCount = metrics?.qualified ?? 0;
+  const closedWonCount = metrics?.closedWon ?? 0;
   const avgDurationSeconds = metrics?.avgDuration ?? callMetrics?.avgDuration ?? 0;
+  const missedCallsCount = callMetrics?.missed ?? 0;
+  const avgSentimentScore = metrics?.avgSentiment ?? 0;
 
   const handleRefreshClick = () => {
     onRefresh();
@@ -98,13 +101,15 @@ export function ViewerView({
       ["Timeframe Horizon", period],
       [],
       ["AUDIT COMPLIANCE & SLA PERFORMANCE"],
-      ["System SLA Availability", "99.98%"],
-      ["Speech Engine Compliance Score", "99.8%"],
+      ["Platform SLA Availability", "Not exposed via API"],
+      ["Speech Engine Compliance Score", "Not exposed via API"],
       ["Autonomous AI Voice Fleet Count", allAgents.length],
       ["Total Logged Call Records", totalCallsCount],
       ["Connected Call Volume", connectedCallsCount],
+      ["Missed Calls This Period", missedCallsCount],
       ["Qualified Prospects Recorded", qualifiedLeadsCount],
       ["Closed Won Deals", closedWonCount],
+      ["Average Sentiment", avgSentimentScore.toFixed(2)],
       ["Average Handle Duration (sec)", avgDurationSeconds],
       [],
       ["HISTORICAL TELEMETRY TIMELINE"],
@@ -134,15 +139,15 @@ export function ViewerView({
       : d.toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" });
     return {
       time: timeLabel,
-      calls: Math.round(t.total_calls * multiplier),
-      connected: Math.round(t.connected * multiplier),
+      calls: t.total_calls,
+      connected: t.connected,
     };
   });
 
   const funnelTotal = funnelData.reduce((acc, curr) => acc + curr.count, 0);
   const formattedFunnel = funnelData.map((f) => ({
     name: f.stage.replace("_", " ").toUpperCase(),
-    value: Math.round(f.count * multiplier),
+    value: f.count,
     pct: f.pct,
     color: STAGE_COLORS[f.stage] || "#94a3b8",
   }));
@@ -274,7 +279,7 @@ export function ViewerView({
             color: "from-amber-500/20 to-amber-600/10 border-amber-500/30",
           },
           {
-            title: "Average Talk Time",
+            title: "Avg Talk Time",
             value: isLoading
               ? "—"
               : `${Math.floor(avgDurationSeconds / 60)}m ${avgDurationSeconds % 60}s`,
@@ -283,11 +288,11 @@ export function ViewerView({
             color: "from-cyan-500/20 to-cyan-600/10 border-cyan-500/30",
           },
           {
-            title: "Compliance Score",
-            value: "99.8%",
-            subtext: "Policy adherence",
-            icon: <ShieldCheck className="w-5 h-5 text-teal-400" />,
-            color: "from-teal-500/20 to-teal-600/10 border-teal-500/30",
+            title: "Missed Calls",
+            value: isLoading ? "—" : missedCallsCount.toLocaleString(),
+            subtext: "No-answer this period",
+            icon: <PhoneMissed className="w-5 h-5 text-rose-400" />,
+            color: "from-rose-500/20 to-rose-600/10 border-rose-500/30",
           },
           {
             title: "AI Fleet Size",
@@ -297,11 +302,11 @@ export function ViewerView({
             color: "from-indigo-500/20 to-indigo-600/10 border-indigo-500/30",
           },
           {
-            title: "SLA Availability",
-            value: "99.98%",
-            subtext: "System uptime",
-            icon: <Radio className="w-5 h-5 text-emerald-400" />,
-            color: "from-emerald-500/20 to-emerald-600/10 border-emerald-500/30",
+            title: "Avg. Sentiment",
+            value: isLoading ? "—" : `${avgSentimentScore.toFixed(2)} / 5`,
+            subtext: "Caller sentiment score",
+            icon: <Smile className="w-5 h-5 text-teal-400" />,
+            color: "from-teal-500/20 to-teal-600/10 border-teal-500/30",
           },
         ].map((k, idx) => (
           <motion.div

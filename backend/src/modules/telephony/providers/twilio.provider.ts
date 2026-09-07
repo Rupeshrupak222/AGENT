@@ -38,12 +38,16 @@ export class TwilioTelephonyProvider extends BaseTelephonyProvider {
 
   async createOutboundCall(req: CreateOutboundCallRequest): Promise<TelephonyCallResult> {
     if (!this.isConfigured) {
-      this.logger.warn(`Twilio credentials unconfigured. Outbound call ${req.callId} deferred to provider configuration.`);
+      this.logger.warn(`Twilio credentials unconfigured. Outbound call ${req.callId} cannot be placed (no live provider).`);
+      // Honest failure: never fabricate a provider call id or claim a call was queued.
       return {
-        providerCallId: `mock-twilio-${req.callId}`,
+        providerCallId: '',
         provider: this.name,
-        status: 'queued',
-        rawResponse: { deferred: true, reason: 'TWILIO_CREDENTIALS_UNCONFIGURED' },
+        status: 'failed',
+        rawResponse: {
+          disposition: 'NOT_CONFIGURED',
+          reason: 'TWILIO_CREDENTIALS_UNCONFIGURED',
+        },
       };
     }
 
@@ -141,9 +145,10 @@ export class TwilioTelephonyProvider extends BaseTelephonyProvider {
 
   async getCall(providerCallId: string): Promise<TelephonyCallStatus> {
     if (!this.isConfigured) {
+      this.logger.warn(`Twilio getCall ${providerCallId}: provider not configured, cannot query live state.`);
       return {
         providerCallId,
-        status: 'queued',
+        status: 'failed',
       };
     }
 
@@ -168,7 +173,10 @@ export class TwilioTelephonyProvider extends BaseTelephonyProvider {
   }
 
   async endCall(providerCallId: string): Promise<boolean> {
-    if (!this.isConfigured) return true;
+    if (!this.isConfigured) {
+      this.logger.warn(`Twilio endCall skipped: provider is not configured (nothing was placed via Twilio).`);
+      return false;
+    }
 
     const authHeader = Buffer.from(`${this.accountSid}:${this.authToken}`).toString('base64');
     const params = new URLSearchParams({ Status: 'completed' });
@@ -200,9 +208,10 @@ export class TwilioTelephonyProvider extends BaseTelephonyProvider {
 
   validateWebhookSignature(req: WebhookValidationRequest): WebhookValidationResult {
     if (!this.isConfigured) {
-      // In development mode without credentials, log warning and allow for local testing
-      this.logger.warn('Twilio webhook received but TWILIO_AUTH_TOKEN is not configured; permitting dev inspection.');
-      return { isValid: true, reason: 'DEVELOPMENT_UNCONFIGURED_BYPASS' };
+      // No auth token provisioned → signatures cannot be verified. Reject rather than
+      // admitting forged webhooks in the name of "dev inspection".
+      this.logger.warn('Twilio webhook dropped: TWILIO_AUTH_TOKEN is not configured, so signature verification is impossible.');
+      return { isValid: false, reason: 'PROVIDER_NOT_CONFIGURED' };
     }
 
     if (!req.payload || typeof req.payload !== 'object') {

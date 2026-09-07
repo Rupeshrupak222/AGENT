@@ -39,12 +39,16 @@ export class ExotelTelephonyProvider extends BaseTelephonyProvider {
 
   async createOutboundCall(req: CreateOutboundCallRequest): Promise<TelephonyCallResult> {
     if (!this.isConfigured) {
-      this.logger.warn(`Exotel credentials unconfigured. Outbound call ${req.callId} deferred to provider configuration.`);
+      this.logger.warn(`Exotel credentials unconfigured. Outbound call ${req.callId} cannot be placed (no live provider).`);
+      // Honest failure: never fabricate a provider call id or claim a call was queued.
       return {
-        providerCallId: `mock-exotel-${req.callId}`,
+        providerCallId: '',
         provider: this.name,
-        status: 'queued',
-        rawResponse: { deferred: true, reason: 'EXOTEL_CREDENTIALS_UNCONFIGURED' },
+        status: 'failed',
+        rawResponse: {
+          disposition: 'NOT_CONFIGURED',
+          reason: 'EXOTEL_CREDENTIALS_UNCONFIGURED',
+        },
       };
     }
 
@@ -133,7 +137,8 @@ export class ExotelTelephonyProvider extends BaseTelephonyProvider {
 
   async getCall(providerCallId: string): Promise<TelephonyCallStatus> {
     if (!this.isConfigured) {
-      return { providerCallId, status: 'queued' };
+      this.logger.warn(`Exotel getCall ${providerCallId}: provider not configured, cannot query live state.`);
+      return { providerCallId, status: 'failed' };
     }
 
     const authHeader = Buffer.from(`${this.apiKey}:${this.apiToken}`).toString('base64');
@@ -158,8 +163,13 @@ export class ExotelTelephonyProvider extends BaseTelephonyProvider {
   }
 
   async endCall(providerCallId: string): Promise<boolean> {
-    if (!this.isConfigured) return true;
-    return true;
+    if (!this.isConfigured) {
+      this.logger.warn(`Exotel endCall skipped: provider is not configured (nothing was placed via Exotel).`);
+      return false;
+    }
+    // Exotel does not expose a documented post-call termination endpoint for the current API surface.
+    this.logger.warn(`Exotel endCall for ${providerCallId}: no supported termination endpoint; returning false (not ended).`);
+    return false;
   }
 
   generateMediaStreamResponse(config: MediaStreamConfig): string {
@@ -172,8 +182,8 @@ export class ExotelTelephonyProvider extends BaseTelephonyProvider {
 
   validateWebhookSignature(req: WebhookValidationRequest): WebhookValidationResult {
     if (!this.isConfigured) {
-      this.logger.warn('Exotel webhook received but EXOTEL_API_TOKEN is not configured; permitting dev inspection.');
-      return { isValid: true, reason: 'DEVELOPMENT_UNCONFIGURED_BYPASS' };
+      this.logger.warn('Exotel webhook dropped: EXOTEL_API_TOKEN is not configured, so signature verification is impossible.');
+      return { isValid: false, reason: 'PROVIDER_NOT_CONFIGURED' };
     }
 
     // Exotel sends Authorization or basic token

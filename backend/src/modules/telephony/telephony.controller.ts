@@ -37,7 +37,7 @@ export class TelephonyController {
   @Public()
   @ApiOperation({ summary: 'Get telephony engine readiness, active sessions, and provider configuration status' })
   @ApiResponse({ status: 200, type: TelephonySystemStatusDto })
-  getStatus(): TelephonySystemStatusDto {
+  getStatus(): Record<string, unknown> {
     return this.telephonyService.getSystemReadiness();
   }
 

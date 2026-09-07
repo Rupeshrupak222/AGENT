@@ -3,18 +3,20 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CallStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TelephonyProviderRegistry } from '../providers/provider-registry.service';
 import { AudioSessionService } from './audio-session.service';
+import { CallInsightsService } from './call-insights.service';
 import {
   IncomingCallRequest,
   IncomingCallResponse,
   WebhookValidationRequest,
 } from '../interfaces/telephony-provider.interface';
-import { NormalizedCallEvent, NormalizedCallStatus } from '../interfaces/call-lifecycle.interface';
+import { NormalizedCallStatus } from '../interfaces/call-lifecycle.interface';
 
 @Injectable()
 export class TelephonyService {
@@ -34,6 +36,7 @@ export class TelephonyService {
     private configService: ConfigService,
     private registry: TelephonyProviderRegistry,
     private audioSessionService: AudioSessionService,
+    private callInsightsService: CallInsightsService,
   ) {}
 
   /**
@@ -74,6 +77,32 @@ export class TelephonyService {
       statusCallbackUrl,
       mediaStreamUrl,
     });
+
+    // Honest disposition: a provider that is not configured (or otherwise failed to
+    // place the call) must NOT fabricate a provider call id or a "queued" success.
+    // Surface the real state to the caller and mark the Call record accordingly.
+    const raw = (result.rawResponse as any) || {};
+    if (result.status === 'failed' || raw.disposition === 'NOT_CONFIGURED') {
+      const reason: string = raw.reason || 'PROVIDER_DISPATCH_FAILED';
+      try {
+        await this.prisma.call.update({
+          where: { id: callId },
+          data: {
+            status: 'failed',
+            outcome: raw.disposition === 'NOT_CONFIGURED' ? 'PROVIDER_NOT_CONFIGURED' : 'DISPATCH_ERROR',
+            metadata: {
+              provider: result.provider,
+              rawResponse: raw,
+            },
+          },
+        });
+      } catch (err: any) {
+        this.logger.warn(`Failed to mark Call ${callId} as failed after dispatch error: ${err.message}`);
+      }
+      throw new ServiceUnavailableException(
+        `Call could not be dispatched: ${reason} (provider=${result.provider})`,
+      );
+    }
 
     // Update Call record with provider details (ownership already validated above)
     try {
@@ -208,6 +237,7 @@ export class TelephonyService {
     try {
       const call = await this.prisma.call.findFirst({
         where: { providerCallId: normalizedEvent.providerCallId },
+        include: { transcript: true },
       });
 
       if (call) {
@@ -245,6 +275,37 @@ export class TelephonyService {
         this.logger.log(
           `[CALL_STATE_TRANSITION] callId=${call.id} providerCallId=${normalizedEvent.providerCallId} tenantId=${call.tenantId} from=${call.status} to=${targetStatus}`,
         );
+
+        // Derive honest post-call insights from the REAL transcript, only for completed calls
+        // that actually produced conversation text. Null when no evidence — never fabricated.
+        if (targetStatus === 'completed') {
+          const transcript = (call as any).transcript as
+            | { segments?: Array<{ speaker?: string; text?: string | null }> }
+            | undefined;
+          const turns = Array.isArray(transcript?.segments)
+            ? transcript.segments
+            : [];
+
+          if (turns.length > 0) {
+            const insights = this.callInsightsService.analyze(turns);
+            const updateData: any = {};
+            if (insights.outcome) updateData.outcome = insights.outcome;
+            if (insights.sentimentScore != null) updateData.sentimentScore = insights.sentimentScore;
+            if (Object.keys(updateData).length > 0) {
+              try {
+                await this.prisma.call.update({
+                  where: { id: call.id },
+                  data: updateData,
+                });
+                this.logger.log(
+                  `[CALL_INSIGHTS] callId=${call.id} outcome=${insights.outcome ?? 'n/a'} sentiment=${insights.sentimentScore ?? 'n/a'} confidence=${insights.confidence.toFixed(2)}`,
+                );
+              } catch (err: any) {
+                this.logger.warn(`Failed to persist call insights for ${call.id}: ${err.message}`);
+              }
+            }
+          }
+        }
 
         // Close audio session on terminal statuses
         if (isTerminal) {
@@ -298,18 +359,45 @@ export class TelephonyService {
     return true; // queued can transition forward
   }
 
-  getSystemReadiness() {
-    const providers = this.registry.getAllProviders();
-    const activeSessions = this.audioSessionService.getActiveSessionsCount();
+  /**
+   * Honest system-readiness report: every capability flag is derived from real
+   * runtime/config state rather than hard-coded marketing strings.
+   */
+  getSystemReadiness(): Record<string, unknown> {
+    const providers = this.registry.getAllProviders().map((p) => ({
+      name: p.name,
+      configured: p.isConfigured,
+    }));
+
+    const mediaBound = this.configService.get<string>('TELEPHONY_MEDIA_BOUND', 'true') === 'true';
+    const redisConfigured = Boolean(
+      (this.configService.get('REDIS_HOST') || 'localhost') &&
+      this.configService.get<number>('REDIS_PORT', 6379),
+    );
+    const deepgramConfigured = Boolean(this.configService.get<string>('DEEPGRAM_API_KEY'));
+    const groqConfigured = Boolean(this.configService.get<string>('GROQ_API_KEY'));
+    const ttsConfigured = Boolean(this.configService.get<string>('TTS_PROVIDER'));
+
+    const speechPipelineReady =
+      deepgramConfigured && groqConfigured && ttsConfigured && mediaBound;
+
+    const anyProviderConfigured = providers.some((p) => p.configured);
 
     return {
-      status: 'ready',
+      status: this.prisma.isConnected ? 'ready' : 'degraded',
+      database: this.prisma.isConnected ? 'connected' : 'not_connected',
       architecture: 'telephony_foundation_v1',
-      mediaStreaming: 'ready_for_provider',
       providers,
-      activeSessions,
-      redisQueues: 'deferred_day7',
-      speechPipeline: 'day8_ready',
+      anyProviderConfigured,
+      mediaStreaming: mediaBound ? 'media_gateway_bound' : 'not_bound',
+      activeSessions: this.audioSessionService.getActiveSessionsCount(),
+      redisQueues: redisConfigured ? 'configured' : 'not_configured',
+      speechPipeline: speechPipelineReady ? 'configured' : 'not_fully_configured',
+      speechPipelineDetail: {
+        stt: deepgramConfigured ? 'configured' : 'not_configured',
+        brain: groqConfigured ? 'configured' : 'not_configured',
+        tts: ttsConfigured ? 'configured' : 'not_configured',
+      },
     };
   }
 

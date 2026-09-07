@@ -165,7 +165,7 @@ export default function OverviewPage() {
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Error Banner */}
       {errorMessage && (
-        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center justify-between gap-4 shadow-xl">
+        <div role="alert" className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center justify-between gap-4 shadow-xl">
           <div className="flex items-center gap-3">
             <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0" />
             <div>
@@ -206,6 +206,7 @@ export default function OverviewPage() {
           callMetrics={callMetrics}
           recentCalls={recentCalls}
           allAgents={allAgents}
+          funnelData={funnelData}
           isLoading={isLoading}
           onRefresh={() => fetchDashboardData(true)}
           isRefreshing={isRefreshing}
@@ -218,6 +219,8 @@ export default function OverviewPage() {
           allAgents={allAgents}
           callTrends={callTrends}
           funnelData={funnelData}
+          period={period}
+          setPeriod={setPeriod}
           isLoading={isLoading}
           onRefresh={() => fetchDashboardData(true)}
           isRefreshing={isRefreshing}

@@ -45,7 +45,7 @@ describe('Telephony Providers & Abstraction', () => {
       expect(twilioProvider.isConfigured).toBe(false);
     });
 
-    it('should cleanly defer outbound call without crashing or faking success', async () => {
+    it('should honestly fail unconfigured outbound call instead of faking success', async () => {
       const result = await twilioProvider.createOutboundCall({
         tenantId: 'tenant-1',
         callId: 'call-101',
@@ -55,10 +55,11 @@ describe('Telephony Providers & Abstraction', () => {
         mediaStreamUrl: 'wss://localhost/stream',
       });
 
-      expect(result.status).toBe('queued');
+      expect(result.status).toBe('failed');
       expect(result.provider).toBe('twilio');
+      expect(result.providerCallId).toBe('');
       expect(result.rawResponse).toEqual(
-        expect.objectContaining({ deferred: true, reason: 'TWILIO_CREDENTIALS_UNCONFIGURED' }),
+        expect.objectContaining({ disposition: 'NOT_CONFIGURED', reason: 'TWILIO_CREDENTIALS_UNCONFIGURED' }),
       );
     });
 
@@ -79,7 +80,7 @@ describe('Telephony Providers & Abstraction', () => {
       expect(exotelProvider.isConfigured).toBe(false);
     });
 
-    it('should cleanly defer outbound call when unconfigured', async () => {
+    it('should honestly fail outbound call when unconfigured', async () => {
       const result = await exotelProvider.createOutboundCall({
         tenantId: 'tenant-1',
         callId: 'call-102',
@@ -89,10 +90,11 @@ describe('Telephony Providers & Abstraction', () => {
         mediaStreamUrl: 'wss://localhost/stream',
       });
 
-      expect(result.status).toBe('queued');
+      expect(result.status).toBe('failed');
       expect(result.provider).toBe('exotel');
+      expect(result.providerCallId).toBe('');
       expect(result.rawResponse).toEqual(
-        expect.objectContaining({ deferred: true, reason: 'EXOTEL_CREDENTIALS_UNCONFIGURED' }),
+        expect.objectContaining({ disposition: 'NOT_CONFIGURED', reason: 'EXOTEL_CREDENTIALS_UNCONFIGURED' }),
       );
     });
   });

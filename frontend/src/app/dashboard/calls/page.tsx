@@ -160,6 +160,7 @@ function CallDetailModal({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close call session details"
             className="p-1.5 rounded-lg text-slate-500 dark:text-white/40 hover:text-slate-500 dark:hover:text-white/40 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.04] dark:hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -172,7 +173,7 @@ function CallDetailModal({
             <p className="text-xs text-slate-500 dark:text-white/40">Loading call records...</p>
           </div>
         ) : error ? (
-          <div className="py-8 text-center text-rose-500">
+          <div role="alert" className="py-8 text-center text-rose-500">
             <p className="text-sm font-semibold">{error}</p>
           </div>
         ) : detail ? (
@@ -397,6 +398,7 @@ function NewCallModal({ initialPhone = "", onClose, onSuccess }: NewCallModalPro
           </div>
           <button
             onClick={onClose}
+            aria-label="Close new outbound call dialog"
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all"
           >
             <X className="w-4 h-4" />
@@ -687,7 +689,7 @@ function CallsPageContent() {
       <div className="flex-1 p-6 space-y-6">
         {/* Error banner */}
         {error && (
-          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-sm flex items-center justify-between gap-4">
+          <div role="alert" className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-sm flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 flex-shrink-0" />
               <span>{error}</span>
@@ -1075,6 +1077,7 @@ function CallsPageContent() {
                         <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => setSelectedCallId(call.id)}
+                            aria-label={`View session details for ${call.lead?.name || call.phone}`}
                             className="p-1.5 rounded-lg bg-slate-100/70 dark:bg-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.08] dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-white/70 hover:text-brand-600 transition-colors"
                             title="View Session Details"
                           >

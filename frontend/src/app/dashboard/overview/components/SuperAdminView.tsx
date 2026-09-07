@@ -15,22 +15,14 @@ import {
   RefreshCw,
   Phone,
   PhoneCall,
-  ArrowUpRight,
-  CheckCircle2,
-  AlertCircle,
   Zap,
   Radio,
-  Sliders,
-  Sparkles,
   Award,
-  ExternalLink,
-  ChevronRight,
-  Filter,
 } from "lucide-react";
 import { WaveAnimation } from "@/components/ui/WaveAnimation";
 import { TenantItem, tenantsApi, healthApi, normalizeApiError } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
-import { X, Check, Download } from "lucide-react";
+import { X, Download } from "lucide-react";
 
 interface SuperAdminViewProps {
   tenants: TenantItem[];
@@ -111,6 +103,9 @@ export function SuperAdminView({
   const [diagRows, setDiagRows] = useState(DEFAULT_DIAG_ROWS);
   const [showDiagnosticsModal, setShowDiagnosticsModal] = useState(false);
   const [diagnosticTesting, setDiagnosticTesting] = useState(false);
+
+  const probedCount = Object.keys(gatewayLatencies).length;
+  const reachableCount = Object.values(gatewayLatencies).filter(v => v && v !== "unreachable").length;
 
   const { success, error: toastError } = useToast();
 
@@ -218,7 +213,7 @@ export function SuperAdminView({
     });
   }, [tenants, searchTerm, selectedPlan]);
 
-  const activeTenantsCount = tenants.length > 0 ? tenants.length : 3;
+  const activeTenantsCount = tenants.length;
 
   const handleExportTenantsCsv = () => {
     const rows = [
@@ -277,7 +272,7 @@ export function SuperAdminView({
                 </h2>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm shadow-amber-500/15">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  All Gateways Live · 99.98% SLA
+                  {probedCount === 0 ? "Awaiting health probe" : `${reachableCount}/${probedCount} gate probes successful`}
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-white/60 mt-1.5 max-w-3xl leading-relaxed">
@@ -323,66 +318,66 @@ export function SuperAdminView({
             <Activity className="w-4 h-4 text-amber-400" />
             Platform Telemetry & Infrastructure Metrics
           </h3>
-          <span className="text-[11px] text-white/40 font-mono">Live Sync via Prisma & Redis</span>
+          <span className="text-[11px] text-white/40 font-mono">Data sourced from live /health & tenant APIs</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           {[
             {
               title: "Client Tenants",
-              value: isLoading ? "—" : `${activeTenantsCount} Active`,
-              subtext: "Enterprise & Growth",
+              value: isLoading ? "—" : `${tenants.length} Registered`,
+              subtext: "Organizations",
               icon: <Building2 className="w-5 h-5 text-amber-400" />,
               color: "from-amber-500/20 to-amber-600/10 border-amber-500/30",
             },
             {
-              title: "Voice Gateways",
-              value: isLoading ? "—" : "2 / 2 Active",
-              subtext: "Twilio & Exotel 100%",
-              icon: <Globe className="w-5 h-5 text-blue-400" />,
-              color: "from-blue-500/20 to-blue-600/10 border-blue-500/30",
-            },
-            {
-              title: "Speech AI Engines",
-              value: isLoading ? "—" : "3 Stack Ready",
-              subtext: "Deepgram · Groq · Edge",
-              icon: <Cpu className="w-5 h-5 text-purple-400" />,
-              color: "from-purple-500/20 to-purple-600/10 border-purple-500/30",
-            },
-            {
               title: "Platform Total Calls",
-              value: isLoading ? "—" : (totalCalls > 0 ? totalCalls.toLocaleString() : "2,195"),
+              value: isLoading ? "—" : totalCalls.toLocaleString(),
               subtext: "All tenant aggregate",
               icon: <Phone className="w-5 h-5 text-rose-400" />,
               color: "from-rose-500/20 to-rose-600/10 border-rose-500/30",
             },
             {
-              title: "Platform Connect Rate",
-              value: isLoading ? "—" : "68.4%",
-              subtext: "Global connection rate",
-              icon: <PhoneCall className="w-5 h-5 text-emerald-400" />,
+              title: "API Health Probe",
+              value: isLoading ? "—" : apiHealth.latencyMs >= 0 ? `${apiHealth.latencyMs}ms` : "Not probed",
+              subtext: apiHealth.latencyMs >= 0 ? apiHealth.status : "Click Run Health Probe",
+              icon: <Activity className="w-5 h-5 text-emerald-400" />,
               color: "from-emerald-500/20 to-emerald-600/10 border-emerald-500/30",
             },
             {
-              title: "Active Concurrency",
-              value: isLoading ? "—" : "4 Channels",
-              subtext: "Real-time WebSockets",
-              icon: <Activity className="w-5 h-5 text-cyan-400" />,
+              title: "Gateways Probed",
+              value: isLoading ? "—" : `${reachableCount}/${probedCount}`,
+              subtext: "Via API /health endpoint",
+              icon: <Radio className="w-5 h-5 text-cyan-400" />,
               color: "from-cyan-500/20 to-cyan-600/10 border-cyan-500/30",
             },
             {
+              title: "Platform Connect Rate",
+              value: isLoading ? "—" : "Not exposed",
+              subtext: "Per-tenant metric only",
+              icon: <PhoneCall className="w-5 h-5 text-slate-400" />,
+              color: "from-slate-500/20 to-zinc-600/10 border-slate-500/30",
+            },
+            {
+              title: "Speech AI Engines",
+              value: isLoading ? "—" : "Not exposed",
+              subtext: "Provider-level via /health",
+              icon: <Cpu className="w-5 h-5 text-purple-400" />,
+              color: "from-purple-500/20 to-purple-600/10 border-purple-500/30",
+            },
+            {
               title: "Platform SLA Uptime",
-              value: isLoading ? "—" : "99.98%",
-              subtext: "Zero downtime SLA",
+              value: isLoading ? "—" : "Not exposed",
+              subtext: "No uptime contract data",
               icon: <ShieldCheck className="w-5 h-5 text-teal-400" />,
               color: "from-teal-500/20 to-teal-600/10 border-teal-500/30",
             },
             {
               title: "System Node Health",
-              value: isLoading ? "—" : "Healthy",
-              subtext: "PostgreSQL · Redis 7.2",
-              icon: <Server className="w-5 h-5 text-green-400" />,
-              color: "from-green-500/20 to-green-600/10 border-green-500/30",
+              value: isLoading ? "—" : "Not exposed",
+              subtext: "PostgreSQL / Redis via pool",
+              icon: <Server className="w-5 h-5 text-slate-400" />,
+              color: "from-slate-500/20 to-zinc-600/10 border-slate-500/30",
             },
           ].map((k, idx) => (
             <motion.div
@@ -494,10 +489,10 @@ export function SuperAdminView({
                       </span>
                     </td>
                     <td className="py-3.5 px-3 text-center font-mono font-semibold text-white">
-                      {t._count?.agents ?? 3} Agents
+                      {t._count?.agents != null ? `${t._count.agents} Agents` : "—"}
                     </td>
                     <td className="py-3.5 px-3 text-center font-mono font-bold text-emerald-400">
-                      {(t._count?.calls ?? 5).toLocaleString()}
+                      {t._count?.calls != null ? t._count.calls.toLocaleString() : "—"}
                     </td>
                     <td className="py-3.5 px-3 text-white/60">
                       Twilio SIP + Exotel
@@ -548,8 +543,8 @@ export function SuperAdminView({
                 Real-time roundtrip ping, packet loss, and synthesis latency across active provider clusters
               </p>
             </div>
-            <span className="text-[11px] text-emerald-400 font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
-              100% Operational
+            <span className={`text-[11px] text-emerald-400 font-mono font-bold px-2 py-0.5 rounded border ${probedCount === 0 ? "bg-white/[0.05] text-white/40 border-white/10" : reachableCount === probedCount ? "bg-emerald-500/10 border-emerald-500/20" : "bg-amber-500/10 border-amber-500/20 text-amber-400"}`}>
+              {probedCount === 0 ? "Awaiting probe" : reachableCount === probedCount ? "All Probes Operational" : `${reachableCount}/${probedCount} Probed`}
             </span>
           </div>
 
