@@ -172,6 +172,10 @@ export class CampaignsService implements OnModuleInit {
         tenantId,
         maxConcurrentCalls: 5,
         maxAttempts: 3,
+        callsPerDay: 50,
+        startTime: '09:00',
+        endTime: '18:00',
+        daysOfWeek: [1, 2, 3, 4, 5],
         agent: { id: 'agent-dev-1', name: 'Sarah - Inbound Concierge', role: 'telecaller' },
         _count: { leads: 48, calls: 32 },
       };
@@ -294,7 +298,89 @@ export class CampaignsService implements OnModuleInit {
     await this.findOne(tenantId, campaignId);
 
     if (!this.prisma.isConnected) {
-      return { items: [], total: 0, page: 1, limit: 20 };
+      return {
+        items: [
+          {
+            id: 'clead-1',
+            campaignId,
+            leadId: 'lead-1',
+            status: 'completed',
+            attemptCount: 1,
+            lastCallId: 'call-101',
+            outcome: 'appointment',
+            lead: { id: 'lead-1', name: 'Sophia Chen', phone: '+12025550143', email: 'sophia@example.com', company: 'Apex Innovations', status: 'converted' },
+            lastCall: {
+              id: 'call-101',
+              status: 'completed',
+              duration: 215,
+              startedAt: new Date(Date.now() - 3600000).toISOString(),
+              recordingUrl: 'https://r2.agentcall.ai/recordings/call-101.mp3',
+              outcome: 'appointment',
+              analysis: {
+                leadScore: 92,
+                intent: 'appointment',
+                sentiment: 'positive',
+                summary: 'Prospect scheduled product demo for tomorrow afternoon.',
+                processingStatus: 'completed',
+                qualification: { qualified: true, reasons: ['Budget approved', 'Authority confirmed'] },
+                appointmentDetected: true,
+              },
+            },
+          },
+          {
+            id: 'clead-2',
+            campaignId,
+            leadId: 'lead-2',
+            status: 'calling',
+            attemptCount: 1,
+            lastCallId: 'call-102',
+            outcome: null,
+            lead: { id: 'lead-2', name: 'Marcus Vance', phone: '+12025550188', email: 'marcus@example.com', company: 'Vance Dynamics', status: 'in_progress' },
+            lastCall: {
+              id: 'call-102',
+              status: 'in_progress',
+              duration: 45,
+              startedAt: new Date().toISOString(),
+              recordingUrl: null,
+              outcome: null,
+              analysis: null,
+            },
+          },
+          {
+            id: 'clead-3',
+            campaignId,
+            leadId: 'lead-3',
+            status: 'queued',
+            attemptCount: 0,
+            lastCallId: null,
+            outcome: null,
+            lead: { id: 'lead-3', name: 'Elena Rostova', phone: '+12025550199', email: 'elena@example.com', company: 'Global Logistics', status: 'new' },
+            lastCall: null,
+          },
+          {
+            id: 'clead-4',
+            campaignId,
+            leadId: 'lead-4',
+            status: 'failed',
+            attemptCount: 3,
+            lastCallId: 'call-104',
+            outcome: 'no_answer',
+            lead: { id: 'lead-4', name: 'David Miller', phone: '+12025550111', email: 'david@example.com', company: 'Miller Corp', status: 'lost' },
+            lastCall: {
+              id: 'call-104',
+              status: 'failed',
+              duration: 0,
+              startedAt: new Date(Date.now() - 7200000).toISOString(),
+              recordingUrl: null,
+              outcome: 'no_answer',
+              analysis: null,
+            },
+          },
+        ],
+        total: 4,
+        page: 1,
+        limit: 20,
+      };
     }
 
     const page = Math.max(1, Number(query.page) || 1);
@@ -314,7 +400,27 @@ export class CampaignsService implements OnModuleInit {
         orderBy: { createdAt: 'desc' },
         include: {
           lead: { select: { id: true, name: true, phone: true, email: true, company: true, status: true } },
-          lastCall: { select: { id: true, status: true, duration: true, startedAt: true } },
+          lastCall: {
+            select: {
+              id: true,
+              status: true,
+              duration: true,
+              startedAt: true,
+              recordingUrl: true,
+              outcome: true,
+              analysis: {
+                select: {
+                  leadScore: true,
+                  intent: true,
+                  sentiment: true,
+                  summary: true,
+                  processingStatus: true,
+                  qualification: true,
+                  appointmentDetected: true,
+                },
+              },
+            },
+          },
         },
       }),
       this.prisma.campaignLead.count({ where }),
@@ -528,6 +634,253 @@ export class CampaignsService implements OnModuleInit {
       connectRate: totalCalls > 0 ? +((connectedCount / totalCalls) * 100).toFixed(1) : 0,
       conversionRate: connectedCount > 0 ? +((qualifiedCount / connectedCount) * 100).toFixed(1) : 0,
       avgDuration: Math.round(callsAgg._avg.duration || 0),
+    };
+  }
+
+  // ── 12b. Campaign Eligibility Preview ────────────────────────
+  async getEligibilityPreview(tenantId: string, campaignId: string) {
+    const campaign: any = await this.findOne(tenantId, campaignId);
+
+    const callingWindow = this.eligibilityService.isWithinCallingWindow(
+      campaign.startTime,
+      campaign.endTime,
+      campaign.daysOfWeek,
+    );
+
+    const dailyLimit = await this.eligibilityService.checkDailyLimit(
+      tenantId,
+      campaignId,
+      campaign.callsPerDay,
+    );
+
+    if (!this.prisma.isConnected) {
+      return {
+        campaignId,
+        totalEnrolled: 12,
+        eligibleCount: 10,
+        ineligibleCount: 2,
+        callingWindow,
+        dailyLimit,
+        categories: {
+          'Eligible': 10,
+          'Invalid Phone': 1,
+          'Already Completed': 1,
+          'Outside Calling Window': 0,
+          'Lead Not Callable': 0,
+          'Daily Limit': 0,
+          'Maximum Attempts Reached': 0,
+          'Already Active': 0,
+        },
+        leads: [
+          { leadId: 'lead-1', name: 'Sophia Chen', phone: '+12025550143', isEligible: true, reason: 'Eligible' },
+          { leadId: 'lead-2', name: 'Marcus Vance', phone: '+12025550188', isEligible: true, reason: 'Eligible' },
+          { leadId: 'lead-3', name: 'David Miller', phone: 'invalid', isEligible: false, reason: 'Invalid Phone' },
+          { leadId: 'lead-4', name: 'James Wilson', phone: '+12025550119', isEligible: false, reason: 'Already Completed' },
+        ],
+      };
+    }
+
+    const campaignLeads = await this.prisma.campaignLead.findMany({
+      where: { campaignId },
+      include: {
+        lead: true,
+      },
+    });
+
+    const categories: Record<string, number> = {
+      'Eligible': 0,
+      'Already Completed': 0,
+      'Invalid Phone': 0,
+      'Outside Calling Window': 0,
+      'Lead Not Callable': 0,
+      'Daily Limit': 0,
+      'Maximum Attempts Reached': 0,
+      'Already Active': 0,
+      'Other': 0,
+    };
+
+    let eligibleCount = 0;
+    let ineligibleCount = 0;
+
+    const evaluatedLeads = campaignLeads.map((cl) => {
+      if (cl.status === 'completed') {
+        categories['Already Completed']++;
+        ineligibleCount++;
+        return {
+          leadId: cl.leadId,
+          name: cl.lead?.name || 'Unknown',
+          phone: cl.lead?.phone || '',
+          status: cl.status,
+          isEligible: false,
+          reason: 'Already Completed',
+        };
+      }
+
+      if (cl.status === 'calling' || cl.status === 'queued') {
+        categories['Already Active']++;
+        ineligibleCount++;
+        return {
+          leadId: cl.leadId,
+          name: cl.lead?.name || 'Unknown',
+          phone: cl.lead?.phone || '',
+          status: cl.status,
+          isEligible: false,
+          reason: 'Already Active',
+        };
+      }
+
+      if (cl.attemptCount >= campaign.maxAttempts) {
+        categories['Maximum Attempts Reached']++;
+        ineligibleCount++;
+        return {
+          leadId: cl.leadId,
+          name: cl.lead?.name || 'Unknown',
+          phone: cl.lead?.phone || '',
+          status: cl.status,
+          isEligible: false,
+          reason: 'Maximum Attempts Reached',
+        };
+      }
+
+      const phoneCheck = this.eligibilityService.normalizePhoneNumber(cl.lead?.phone || '');
+      if (!phoneCheck.isValid) {
+        categories['Invalid Phone']++;
+        ineligibleCount++;
+        return {
+          leadId: cl.leadId,
+          name: cl.lead?.name || 'Unknown',
+          phone: cl.lead?.phone || '',
+          status: cl.status,
+          isEligible: false,
+          reason: 'Invalid Phone',
+        };
+      }
+
+      if ((cl.lead?.status as any) === 'do_not_call' || (cl.lead?.status as any) === 'unqualified' || cl.lead?.status === 'closed_lost') {
+        categories['Lead Not Callable']++;
+        ineligibleCount++;
+        return {
+          leadId: cl.leadId,
+          name: cl.lead?.name || 'Unknown',
+          phone: cl.lead?.phone || '',
+          status: cl.status,
+          isEligible: false,
+          reason: 'Lead Not Callable',
+        };
+      }
+
+      if (!callingWindow.inWindow) {
+        categories['Outside Calling Window']++;
+      }
+
+      if (!dailyLimit.withinLimit) {
+        categories['Daily Limit']++;
+      }
+
+      categories['Eligible']++;
+      eligibleCount++;
+      return {
+        leadId: cl.leadId,
+        name: cl.lead?.name || 'Unknown',
+        phone: phoneCheck.normalized || cl.lead?.phone || '',
+        status: cl.status,
+        isEligible: true,
+        reason: 'Eligible',
+      };
+    });
+
+    return {
+      campaignId,
+      totalEnrolled: campaignLeads.length,
+      eligibleCount,
+      ineligibleCount,
+      callingWindow,
+      dailyLimit,
+      categories,
+      leads: evaluatedLeads,
+    };
+  }
+
+  // ── 12c. Preview Lead Eligibility (before enrollment) ────────
+  async previewLeadsEligibility(tenantId: string, leadIds: string[], agentId?: string) {
+    if (!leadIds || leadIds.length === 0) {
+      return { total: 0, eligibleCount: 0, ineligibleCount: 0, categories: {}, leads: [] };
+    }
+
+    if (!this.prisma.isConnected) {
+      return {
+        total: leadIds.length,
+        eligibleCount: leadIds.length,
+        ineligibleCount: 0,
+        categories: { 'Eligible': leadIds.length },
+        leads: leadIds.map((id, i) => ({
+          leadId: id,
+          name: `Lead ${i + 1}`,
+          phone: '+12025550100',
+          isEligible: true,
+          reason: 'Eligible',
+        })),
+      };
+    }
+
+    const leads = await this.prisma.lead.findMany({
+      where: { id: { in: leadIds }, tenantId },
+      select: { id: true, name: true, phone: true, status: true },
+    });
+
+    const categories: Record<string, number> = {
+      'Eligible': 0,
+      'Invalid Phone': 0,
+      'Lead Not Callable': 0,
+      'Other': 0,
+    };
+
+    let eligibleCount = 0;
+    let ineligibleCount = 0;
+
+    const evaluated = leads.map((l) => {
+      const phoneCheck = this.eligibilityService.normalizePhoneNumber(l.phone);
+      if (!phoneCheck.isValid) {
+        categories['Invalid Phone'] = (categories['Invalid Phone'] || 0) + 1;
+        ineligibleCount++;
+        return {
+          leadId: l.id,
+          name: l.name,
+          phone: l.phone,
+          isEligible: false,
+          reason: 'Invalid Phone',
+        };
+      }
+
+      if ((l.status as any) === 'do_not_call' || (l.status as any) === 'unqualified' || l.status === 'closed_lost') {
+        categories['Lead Not Callable'] = (categories['Lead Not Callable'] || 0) + 1;
+        ineligibleCount++;
+        return {
+          leadId: l.id,
+          name: l.name,
+          phone: l.phone,
+          isEligible: false,
+          reason: 'Lead Not Callable',
+        };
+      }
+
+      categories['Eligible'] = (categories['Eligible'] || 0) + 1;
+      eligibleCount++;
+      return {
+        leadId: l.id,
+        name: l.name,
+        phone: phoneCheck.normalized || l.phone,
+        isEligible: true,
+        reason: 'Eligible',
+      };
+    });
+
+    return {
+      total: leads.length,
+      eligibleCount,
+      ineligibleCount,
+      categories,
+      leads: evaluated,
     };
   }
 

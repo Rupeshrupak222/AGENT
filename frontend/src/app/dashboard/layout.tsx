@@ -26,6 +26,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { bootstrapAuth, callsApi, CallItem } from "@/lib/api";
@@ -69,6 +70,7 @@ const ALL_GROUPS: { label: string; items: NavItem[] }[] = [
     label: "Operations",
     items: [
       { icon: Phone, label: "Call Center", href: "/dashboard/calls", permission: PERMISSIONS.CALL_VIEW },
+      { icon: Target, label: "Campaigns", href: "/dashboard/campaigns", permission: PERMISSIONS.CAMPAIGN_VIEW, badge: "Hot" },
       { icon: Users, label: "CRM / Leads", href: "/dashboard/crm", permission: PERMISSIONS.LEAD_VIEW },
       { icon: Calendar, label: "Calendar", href: "/dashboard/calendar", permission: PERMISSIONS.CALENDAR_VIEW },
       { icon: MessageSquare, label: "Automations", href: "/dashboard/automations", permission: PERMISSIONS.AUTOMATION_VIEW },
@@ -289,29 +291,43 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Session revalidation on mount: verify persisted token via /auth/me
   useEffect(() => {
     if (!mounted) return;
-    if (!isAuthenticated && !accessToken) {
+
+    // Fast-path: if user is already authenticated with cached session, validate immediately
+    if (isAuthenticated && accessToken && user) {
+      setSessionValidated(true);
+    } else if (!isAuthenticated && !accessToken) {
       setSessionValidated(true);
       return;
     }
-    let active = true;
+
+    // Hard fallback watchdog: NEVER let the UI stall indefinitely on "Authenticating session..."
+    const watchdogTimer = setTimeout(() => {
+      setSessionValidated(true);
+    }, 1000);
+
+    let isSubscribed = true;
     (async () => {
       try {
         await bootstrapAuth();
       } catch {
         // Ignored; bootstrapAuth handles logout on failure
       } finally {
-        if (active) setSessionValidated(true);
+        if (isSubscribed) {
+          setSessionValidated(true);
+          clearTimeout(watchdogTimer);
+        }
       }
     })();
+
     return () => {
-      active = false;
+      isSubscribed = false;
+      clearTimeout(watchdogTimer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted]);
+  }, [mounted, isAuthenticated, accessToken, user]);
 
   // Hydration route guard
   useEffect(() => {
-    if (mounted && !isAuthenticated && !accessToken) {
+    if (mounted && sessionValidated && !isAuthenticated && !accessToken) {
       router.replace("/login");
       const fallbackTimer = setTimeout(() => {
         if (!useAuthStore.getState().accessToken) {
@@ -320,7 +336,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }, 400);
       return () => clearTimeout(fallbackTimer);
     }
-  }, [mounted, isAuthenticated, accessToken, router]);
+  }, [mounted, sessionValidated, isAuthenticated, accessToken, router]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -367,6 +383,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <p className="text-xs font-medium text-slate-500 dark:text-white/40">
             Authenticating session...
           </p>
+          <button
+            onClick={() => {
+              useAuthStore.getState().logout();
+              window.location.href = "/login";
+            }}
+            className="mt-3 text-xs text-brand-600 dark:text-brand-400 hover:underline cursor-pointer"
+          >
+            Taking too long? Return to Login
+          </button>
         </div>
       </div>
     );

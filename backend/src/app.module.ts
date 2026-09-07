@@ -52,7 +52,24 @@ import { AppController } from './app.controller';
           port: cfg.get<number>('REDIS_PORT', 6379),
           password: cfg.get('REDIS_PASSWORD') || undefined,
           lazyConnect: true,
+          maxRetriesPerRequest: null,
+          enableReadyCheck: false,
           retryStrategy: () => null,
+        },
+        createClient: (_type, redisOpts) => {
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          const Redis = require('ioredis');
+          const client = new Redis({
+            ...redisOpts,
+            lazyConnect: true,
+            maxRetriesPerRequest: null,
+            enableReadyCheck: false,
+            retryStrategy: () => null,
+          });
+          client.on('error', () => {
+            // Silently absorb connection errors in dev mode so in-memory queue fallback operates
+          });
+          return client;
         },
       }),
     }),

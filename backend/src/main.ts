@@ -8,6 +8,14 @@ import { HttpExceptionFilter }    from './common/filters/http-exception.filter';
 import { TransformInterceptor }   from './common/interceptors/transform.interceptor';
 import { LoggingInterceptor }     from './common/interceptors/logging.interceptor';
 
+process.on('unhandledRejection', (reason: any) => {
+  if (reason?.code === 'ECONNREFUSED' || reason?.message?.includes('ECONNREFUSED')) {
+    // Expected when Redis or Postgres is offline in local dev mode
+    return;
+  }
+  console.error('Unhandled Rejection at:', reason);
+});
+
 async function bootstrap() {
   const app    = await NestFactory.create(AppModule, { bufferLogs: true });
   const config = app.get(ConfigService);

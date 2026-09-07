@@ -53,6 +53,16 @@ export class CampaignsController {
     return this.campaignsService.findAll(user.tenantId, query);
   }
 
+  @Post('eligibility-preview')
+  @Permissions(CAMPAIGN_VIEW)
+  @ApiOperation({ summary: 'Preview eligibility for a candidate batch of CRM lead IDs' })
+  previewLeadsEligibility(
+    @CurrentUser() user: any,
+    @Body() dto: { leadIds: string[]; agentId?: string },
+  ) {
+    return this.campaignsService.previewLeadsEligibility(user.tenantId, dto.leadIds, dto.agentId);
+  }
+
   @Get(':id')
   @Permissions(CAMPAIGN_VIEW)
   @ApiOperation({ summary: 'Get campaign details by ID' })
@@ -110,6 +120,13 @@ export class CampaignsController {
   @ApiOperation({ summary: 'Get real-time campaign performance metrics' })
   getMetrics(@CurrentUser() user: any, @Param('id') id: string) {
     return this.campaignsService.getCampaignMetrics(user.tenantId, id);
+  }
+
+  @Get(':id/eligibility-preview')
+  @Permissions(CAMPAIGN_VIEW)
+  @ApiOperation({ summary: 'Get campaign lead eligibility breakdown and calling window status' })
+  getEligibilityPreview(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.campaignsService.getEligibilityPreview(user.tenantId, id);
   }
 
   @Post(':id/start')

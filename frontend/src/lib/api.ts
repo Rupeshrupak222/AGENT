@@ -213,9 +213,9 @@ export async function bootstrapAuth(): Promise<boolean> {
   }
 
   try {
-    // 2.5s timeout safeguard so users never get stuck indefinitely on "Authenticating session..."
+    // 1.2s timeout safeguard so users never get stuck indefinitely on "Authenticating session..."
     const timeoutPromise = new Promise<null>((_, reject) =>
-      setTimeout(() => reject(new Error("Auth timeout")), 2500)
+      setTimeout(() => reject(new Error("Auth timeout")), 1200)
     );
     const data = await Promise.race([authApi.me(), timeoutPromise]);
     if (data) {
@@ -425,6 +425,21 @@ export const callsApi = {
     );
     return res.data.data;
   },
+
+  getRecording: async (id: string): Promise<CallRecordingData> => {
+    const res = await apiClient.get<ApiResponseWrapper<CallRecordingData>>(`/calls/${id}/recording`);
+    return res.data.data;
+  },
+
+  getAnalysis: async (id: string): Promise<CallAnalysisData> => {
+    const res = await apiClient.get<ApiResponseWrapper<CallAnalysisData>>(`/calls/${id}/analysis`);
+    return res.data.data;
+  },
+
+  retryAnalysis: async (id: string): Promise<{ enqueued: boolean; callId: string; message: string }> => {
+    const res = await apiClient.post<ApiResponseWrapper<{ enqueued: boolean; callId: string; message: string }>>(`/calls/${id}/analysis/retry`);
+    return res.data.data;
+  },
 };
 
 // ── Telephony API Contracts ──────────────────────────────────────────
@@ -449,6 +464,49 @@ export const telephonyApi = {
     return res.data.data;
   },
 };
+
+export interface CallRecordingData {
+  callId: string;
+  recordingId: string;
+  url?: string;
+  duration?: number | null;
+  mimeType?: string;
+  expiresInSeconds?: number;
+}
+
+export interface CallAnalysisData {
+  id: string;
+  callId: string;
+  tenantId: string;
+  provider: string;
+  model?: string;
+  summary: string;
+  leadScore?: number;
+  intent?: string;
+  sentiment?: "positive" | "neutral" | "negative" | "mixed" | "unknown";
+  qualificationOutcome?: string;
+  qualification?: {
+    qualified: boolean;
+    reasons: string[];
+    metCriteria?: string[];
+    unmetCriteria?: string[];
+  };
+  appointmentDetected: boolean;
+  appointmentDetails?: {
+    topic?: string;
+    date?: string;
+    duration?: number;
+  };
+  entitiesJson?: any;
+  topicsJson?: string[];
+  actionItemsJson?: string[];
+  costUsd?: number;
+  latencyMs?: number;
+  processingStatus: "pending" | "processing" | "completed" | "failed" | "skipped";
+  errorMessage?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 // ── Agents API Contracts ──────────────────────────────────────────
 export interface AgentItem {
@@ -965,6 +1023,230 @@ export const tenantsApi = {
   },
   me: async (): Promise<TenantItem> => {
     const res = await apiClient.get<ApiResponseWrapper<TenantItem>>("/tenants/me");
+    return res.data.data;
+  },
+};
+
+// ── Campaigns API Contracts ───────────────────────────────────────
+export interface CampaignItem {
+  id: string;
+  name: string;
+  description?: string | null;
+  status: "draft" | "scheduled" | "running" | "paused" | "completed" | "cancelled";
+  agentId: string;
+  agent?: { id: string; name: string; role?: string };
+  maxConcurrentCalls: number;
+  maxAttempts: number;
+  callsPerDay?: number | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  daysOfWeek?: number[];
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    leads: number;
+    calls: number;
+  };
+}
+
+export interface CampaignMetrics {
+  totalLeads: number;
+  pending: number;
+  queued: number;
+  calling: number;
+  completed: number;
+  failed: number;
+  skipped: number;
+  retryPending: number;
+  totalCalls: number;
+  connectedCalls: number;
+  connectRate: number;
+  conversionRate: number;
+  avgDuration: number;
+}
+
+export interface CampaignLeadItem {
+  id: string;
+  campaignId: string;
+  leadId: string;
+  status: "pending" | "queued" | "calling" | "completed" | "failed" | "skipped" | "retry_pending";
+  attemptCount: number;
+  lastAttemptAt?: string | null;
+  nextAttemptAt?: string | null;
+  lastCallId?: string | null;
+  outcome?: string | null;
+  errorMessage?: string | null;
+  lead: {
+    id: string;
+    name: string;
+    phone: string;
+    email?: string | null;
+    company?: string | null;
+    status?: string;
+  };
+  lastCall?: {
+    id: string;
+    status: string;
+    duration: number;
+    startedAt: string;
+    recordingUrl?: string | null;
+    outcome?: string | null;
+    analysis?: {
+      leadScore?: number;
+      intent?: string;
+      sentiment?: string;
+      summary?: string;
+      processingStatus?: string;
+      qualification?: any;
+      appointmentDetected?: boolean;
+    } | null;
+  } | null;
+}
+
+export interface EligibilityCategoryBreakdown {
+  [category: string]: number;
+}
+
+export interface EligibilityPreviewResult {
+  campaignId?: string;
+  totalEnrolled?: number;
+  total?: number;
+  eligibleCount: number;
+  ineligibleCount: number;
+  callingWindow?: {
+    inWindow: boolean;
+    reason?: string;
+  };
+  dailyLimit?: {
+    withinLimit: boolean;
+    dispatchedToday: number;
+    limit: number | null;
+  };
+  categories: Record<string, number>;
+  leads: Array<{
+    leadId: string;
+    name: string;
+    phone: string;
+    status?: string;
+    isEligible: boolean;
+    reason?: string;
+  }>;
+}
+
+export interface CreateCampaignInput {
+  name: string;
+  description?: string;
+  agentId: string;
+  scheduledAt?: string;
+  maxCalls?: number;
+  callsPerDay?: number;
+  maxConcurrentCalls?: number;
+  maxAttempts?: number;
+  startTime?: string;
+  endTime?: string;
+  daysOfWeek?: number[];
+  leadIds?: string[];
+}
+
+export const campaignsApi = {
+  list: async (params?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ items: CampaignItem[]; total: number; page: number; limit: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: CampaignItem[]; total: number; page: number; limit: number }>>(
+      "/campaigns",
+      { params }
+    );
+    return res.data.data;
+  },
+
+  get: async (id: string): Promise<CampaignItem> => {
+    const res = await apiClient.get<ApiResponseWrapper<CampaignItem>>(`/campaigns/${id}`);
+    return res.data.data;
+  },
+
+  create: async (dto: CreateCampaignInput): Promise<CampaignItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<CampaignItem>>("/campaigns", dto);
+    return res.data.data;
+  },
+
+  update: async (id: string, dto: Partial<CreateCampaignInput>): Promise<CampaignItem> => {
+    const res = await apiClient.patch<ApiResponseWrapper<CampaignItem>>(`/campaigns/${id}`, dto);
+    return res.data.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/campaigns/${id}`);
+  },
+
+  getMetrics: async (id: string): Promise<CampaignMetrics> => {
+    const res = await apiClient.get<ApiResponseWrapper<CampaignMetrics>>(`/campaigns/${id}/metrics`);
+    return res.data.data;
+  },
+
+  getLeads: async (
+    id: string,
+    params?: { status?: string; page?: number; limit?: number }
+  ): Promise<{ items: CampaignLeadItem[]; total: number; page: number; limit: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: CampaignLeadItem[]; total: number; page: number; limit: number }>>(
+      `/campaigns/${id}/leads`,
+      { params }
+    );
+    return res.data.data;
+  },
+
+  addLeads: async (id: string, leadIds: string[]): Promise<{ added: number; total: number }> => {
+    const res = await apiClient.post<ApiResponseWrapper<{ added: number; total: number }>>(
+      `/campaigns/${id}/leads`,
+      { leadIds }
+    );
+    return res.data.data;
+  },
+
+  getEligibilityPreview: async (id: string): Promise<EligibilityPreviewResult> => {
+    const res = await apiClient.get<ApiResponseWrapper<EligibilityPreviewResult>>(
+      `/campaigns/${id}/eligibility-preview`
+    );
+    return res.data.data;
+  },
+
+  previewLeadsEligibility: async (
+    leadIds: string[],
+    agentId?: string
+  ): Promise<EligibilityPreviewResult> => {
+    const res = await apiClient.post<ApiResponseWrapper<EligibilityPreviewResult>>(
+      "/campaigns/eligibility-preview",
+      { leadIds, agentId }
+    );
+    return res.data.data;
+  },
+
+  start: async (id: string): Promise<{ status: string; enqueued: number }> => {
+    const res = await apiClient.post<ApiResponseWrapper<{ status: string; enqueued: number }>>(
+      `/campaigns/${id}/start`
+    );
+    return res.data.data;
+  },
+
+  pause: async (id: string): Promise<{ status: string }> => {
+    const res = await apiClient.post<ApiResponseWrapper<{ status: string }>>(
+      `/campaigns/${id}/pause`
+    );
+    return res.data.data;
+  },
+
+  resume: async (id: string): Promise<{ status: string; enqueued: number }> => {
+    const res = await apiClient.post<ApiResponseWrapper<{ status: string; enqueued: number }>>(
+      `/campaigns/${id}/resume`
+    );
+    return res.data.data;
+  },
+
+  cancel: async (id: string): Promise<{ status: string }> => {
+    const res = await apiClient.post<ApiResponseWrapper<{ status: string }>>(
+      `/campaigns/${id}/cancel`
+    );
     return res.data.data;
   },
 };

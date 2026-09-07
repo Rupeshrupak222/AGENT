@@ -58,6 +58,7 @@ import {
   AgentItem,
   LeadItem,
 } from "@/lib/api";
+import { UnifiedCallWorkspaceModal } from "@/components/campaigns/UnifiedCallWorkspaceModal";
 
 type CallFilterStatus =
   | "all"
@@ -1156,9 +1157,10 @@ function CallsPageContent() {
       {/* Call Detail Modal */}
       <AnimatePresence>
         {selectedCallId && (
-          <CallDetailModal
+          <UnifiedCallWorkspaceModal
             callId={selectedCallId}
             onClose={() => setSelectedCallId(null)}
+            onAnalysisUpdated={fetchCallsData}
           />
         )}
       </AnimatePresence>
