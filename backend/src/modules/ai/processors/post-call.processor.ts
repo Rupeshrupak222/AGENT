@@ -1,0 +1,273 @@
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Processor, Process } from '@nestjs/bull';
+import { Job } from 'bull';
+import { PrismaService } from '../../prisma/prisma.service';
+import { GeminiPostCallProvider } from '../providers/gemini-post-call.provider';
+import {
+  PostCallAnalysisJobData,
+  PostCallQueueService,
+} from '../services/post-call-queue.service';
+import { PostCallAnalysisInput } from '../interfaces/post-call.interface';
+
+@Injectable()
+@Processor('post-call-analysis')
+export class PostCallProcessor implements OnModuleInit {
+  private readonly logger = new Logger(PostCallProcessor.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly geminiProvider: GeminiPostCallProvider,
+    private readonly queueService: PostCallQueueService,
+  ) {}
+
+  onModuleInit() {
+    this.queueService.setInMemoryProcessor(async (data) => {
+      await this.executeAnalysis(data);
+    });
+  }
+
+  @Process()
+  async handleBullJob(job: Job<PostCallAnalysisJobData>): Promise<void> {
+    this.logger.log(`Processing Bull post-call analysis job ${job.id} for call ${job.data.callId}`);
+    await this.executeAnalysis(job.data);
+  }
+
+  /**
+   * Main idempotent post-call intelligence execution engine.
+   */
+  async executeAnalysis(
+    data: PostCallAnalysisJobData,
+  ): Promise<{ success: boolean; analysisId?: string; reason?: string }> {
+    const { callId, tenantId, triggerSource } = data;
+    this.logger.log(`[POST_CALL_ANALYSIS_STARTED] callId=${callId} tenantId=${tenantId} trigger=${triggerSource}`);
+
+    // Offline dev environment fast-path
+    if (!this.prisma.isConnected) {
+      this.logger.log(`[OFFLINE_DEV_ANALYSIS] Simulated post-call analysis completed for call ${callId}`);
+      return { success: true, analysisId: `dev-analysis-${callId}` };
+    }
+
+    try {
+      // 1. Idempotency Check (Never run duplicate Gemini analysis if already completed)
+      const existingAnalysis = await this.prisma.callAnalysis.findFirst({
+        where: { callId, tenantId },
+      });
+
+      if (
+        existingAnalysis &&
+        existingAnalysis.processingStatus === 'completed' &&
+        triggerSource !== 'manual_retry'
+      ) {
+        this.logger.log(`Analysis for call ${callId} already completed. Skipping duplicate execution.`);
+        return { success: true, analysisId: existingAnalysis.id };
+      }
+
+      // 2. Load Call Context (with Lead, AIAgent, Campaign, and CallTranscript)
+      const call = await this.prisma.call.findFirst({
+        where: { id: callId, tenantId },
+        include: {
+          lead: true,
+          agent: true,
+          campaign: true,
+          transcript: true,
+        },
+      });
+
+      if (!call) {
+        this.logger.warn(`Call ${callId} not found or tenant mismatch. Aborting post-call analysis.`);
+        return { success: false, reason: 'CALL_NOT_FOUND' };
+      }
+
+      // Mark status as processing
+      await this.prisma.callAnalysis.upsert({
+        where: { callId },
+        create: {
+          callId,
+          tenantId,
+          processingStatus: 'processing',
+        },
+        update: {
+          processingStatus: 'processing',
+          errorMessage: null,
+        },
+      });
+
+      // 3. Transcript Requirement Validation
+      const transcriptText = this.buildTranscriptText(call.transcript);
+      if (!transcriptText || transcriptText.trim().length === 0) {
+        this.logger.warn(`Call ${callId} has no usable transcript. Marking analysis as skipped.`);
+        await this.prisma.callAnalysis.update({
+          where: { callId },
+          data: {
+            processingStatus: 'skipped',
+            errorMessage: 'NO_TRANSCRIPT',
+            processedAt: new Date(),
+          },
+        });
+        return { success: false, reason: 'NO_TRANSCRIPT' };
+      }
+
+      // 4. Construct Structured Input with Data Minimization
+      const analysisInput: PostCallAnalysisInput = {
+        callId: call.id,
+        tenantId: call.tenantId,
+        duration: call.duration ?? undefined,
+        transcript: transcriptText,
+        agentContext: {
+          name: call.agent?.name,
+          businessGoal: call.agent?.businessGoal,
+          qualificationRules: call.agent?.qualificationRules ?? undefined,
+          knowledgeBase: call.agent?.knowledgeBase ?? undefined,
+        },
+        leadContext: {
+          name: call.lead?.name,
+          company: call.lead?.company ?? undefined,
+          designation: call.lead?.designation ?? undefined,
+        },
+        campaignContext: call.campaign
+          ? {
+              campaignId: call.campaign.id,
+              campaignName: call.campaign.name,
+            }
+          : undefined,
+      };
+
+      // 5. Invoke Gemini Post-Call Provider
+      const result = await this.geminiProvider.analyze(analysisInput);
+      this.logger.log(
+        `[POST_CALL_ANALYSIS_COMPLETED] callId=${callId} leadScore=${result.leadScore} intent=${result.intent} qualified=${result.qualification.qualified}`,
+      );
+
+      // 6. Persist Structured Analysis
+      const savedAnalysis = await this.prisma.callAnalysis.upsert({
+        where: { callId },
+        create: {
+          callId,
+          tenantId,
+          leadScore: result.leadScore,
+          intent: result.intent,
+          sentiment: result.sentiment,
+          summary: result.summary,
+          qualification: result.qualification as any,
+          outcome: result.outcome,
+          nextAction: result.nextAction,
+          appointmentDetected: result.appointment.detected,
+          appointmentDetails: result.appointment.details as any,
+          model: this.geminiProvider.modelName,
+          promptVersion: 'v1.0',
+          processingStatus: 'completed',
+          processedAt: new Date(),
+        },
+        update: {
+          leadScore: result.leadScore,
+          intent: result.intent,
+          sentiment: result.sentiment,
+          summary: result.summary,
+          qualification: result.qualification as any,
+          outcome: result.outcome,
+          nextAction: result.nextAction,
+          appointmentDetected: result.appointment.detected,
+          appointmentDetails: result.appointment.details as any,
+          model: this.geminiProvider.modelName,
+          processingStatus: 'completed',
+          errorMessage: null,
+          processedAt: new Date(),
+        },
+      });
+
+      // 7. Update Call Metrics
+      const sentimentScoreMap: Record<string, number> = {
+        positive: 4.8,
+        neutral: 3.5,
+        mixed: 3.0,
+        negative: 1.5,
+        unknown: 3.0,
+      };
+
+      await this.prisma.call.update({
+        where: { id: callId },
+        data: {
+          outcome: result.outcome,
+          sentimentScore: sentimentScoreMap[result.sentiment] || 3.0,
+          qualityScore: result.leadScore,
+          intentScore: Number((result.leadScore / 20).toFixed(1)),
+        },
+      });
+
+      // 8. Update Campaign Lead State if call was part of a campaign
+      if (call.campaignId && call.leadId) {
+        await this.prisma.campaignLead.updateMany({
+          where: { campaignId: call.campaignId, leadId: call.leadId },
+          data: {
+            outcome: result.outcome,
+            metadata: {
+              leadScore: result.leadScore,
+              intent: result.intent,
+              qualified: result.qualification.qualified,
+              appointmentDetected: result.appointment.detected,
+            },
+          },
+        });
+      }
+
+      // 9. Update CRM Lead State (Non-destructive progression)
+      if (call.leadId && call.lead) {
+        const leadUpdates: any = {
+          score: Math.max(call.lead.score || 0, result.leadScore),
+        };
+
+        if (result.appointment.detected) {
+          leadUpdates.status = 'appointment';
+        } else if (result.qualification.qualified && call.lead.status !== 'appointment') {
+          leadUpdates.status = 'qualified';
+        }
+
+        await this.prisma.lead.update({
+          where: { id: call.leadId },
+          data: leadUpdates,
+        });
+      }
+
+      return { success: true, analysisId: savedAnalysis.id };
+    } catch (err: any) {
+      this.logger.error(`[POST_CALL_ANALYSIS_FAILED] callId=${callId}: ${err.message}`);
+
+      // Crucial: Call status is NEVER regressed to failed!
+      try {
+        await this.prisma.callAnalysis.upsert({
+          where: { callId },
+          create: {
+            callId,
+            tenantId,
+            processingStatus: 'failed',
+            errorMessage: err.message,
+          },
+          update: {
+            processingStatus: 'failed',
+            errorMessage: err.message,
+          },
+        });
+      } catch (dbErr: any) {
+        this.logger.warn(`Failed to update call analysis error state: ${dbErr.message}`);
+      }
+
+      return { success: false, reason: err.message };
+    }
+  }
+
+  private buildTranscriptText(transcript: any): string {
+    if (!transcript) return '';
+
+    if (Array.isArray(transcript.segments) && transcript.segments.length > 0) {
+      return transcript.segments
+        .map((s: any) => `${s.speaker === 'user' ? 'Caller' : s.speaker === 'agent' ? 'AI Agent' : s.speaker}: ${s.text}`)
+        .join('\n');
+    }
+
+    if (transcript.summary) {
+      return transcript.summary;
+    }
+
+    return '';
+  }
+}

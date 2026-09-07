@@ -126,4 +126,29 @@ export class TelephonyController {
   ) {
     return { status: 'acknowledged', provider };
   }
+
+  @Public()
+  @Post('webhooks/recording/:provider')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Provider recording callback webhook (signature verified and non-blocking async queueing)' })
+  @ApiParam({ name: 'provider', enum: ['twilio', 'exotel'] })
+  async handleRecordingWebhook(
+    @Param('provider') provider: string,
+    @Body() body: any,
+    @Req() req: Request,
+    @Headers() headers: Record<string, string>,
+  ) {
+    const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+
+    return this.telephonyService.handleRecordingWebhook(
+      provider,
+      body,
+      {
+        payload: body,
+        headers,
+        requestUrl: fullUrl,
+        method: req.method,
+      },
+    );
+  }
 }

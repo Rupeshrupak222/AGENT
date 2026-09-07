@@ -10,6 +10,12 @@ generator client {
   output          = "../backend/node_modules/.prisma/client"
 }
 
+generator backendClient {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+  output          = "../backend/node_modules/.prisma/client"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -120,6 +126,23 @@ enum CampaignLeadStatus {
   retry_pending
 }
 
+enum RecordingStatus {
+  pending
+  available
+  uploading
+  uploaded
+  failed
+  deleted
+}
+
+enum AnalysisStatus {
+  pending
+  processing
+  completed
+  failed
+  skipped
+}
+
 enum IntegrationProvider {
   salesforce
   hubspot
@@ -190,6 +213,8 @@ model Tenant {
   apiKeys       ApiKey[]
   webhooks      Webhook[]
   auditLogs     AuditLog[]
+  recordings    CallRecording[]
+  analyses      CallAnalysis[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -337,6 +362,8 @@ model Call {
 
   // Relations
   transcript    CallTranscript?
+  recordings    CallRecording[]
+  analysis      CallAnalysis?
   automations   AutomationLog[]
   campaignLeads CampaignLead[]
 
@@ -365,6 +392,65 @@ model CallTranscript {
   createdAt DateTime @default(now())
 
   @@map("CallTranscript")
+}
+
+// ── Call Recording ─────────────────────────────────────────────
+
+model CallRecording {
+  id                  String          @id @default(cuid())
+  callId              String
+  call                Call            @relation(fields: [callId], references: [id], onDelete: Cascade)
+  tenantId            String
+  tenant              Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  providerRecordingId String          // Twilio Recording SID (RExxxx)
+  storageProvider     String          @default("cloudflare_r2")
+  objectKey           String?
+  storageUrl          String?
+  mimeType            String          @default("audio/mpeg")
+  duration            Int?            // seconds
+  size                Int?            // bytes
+  status              RecordingStatus @default(pending)
+  metadata            Json?           @default("{}")
+
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@unique([tenantId, providerRecordingId])
+  @@index([callId])
+  @@index([tenantId])
+  @@index([status])
+  @@map("CallRecording")
+}
+
+// ── Call Analysis ──────────────────────────────────────────────
+
+model CallAnalysis {
+  id                  String         @id @default(cuid())
+  callId              String         @unique
+  call                Call           @relation(fields: [callId], references: [id], onDelete: Cascade)
+  tenantId            String
+  tenant              Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leadScore           Int?           // 0-100
+  intent              String?        // interested, demo_request, etc.
+  sentiment           String?        // positive, neutral, negative, mixed, unknown
+  summary             String?        @db.Text
+  qualification       Json?          // { qualified: boolean, reasons: string[], metCriteria: string[], unmetCriteria: string[] }
+  outcome             String?
+  nextAction          String?
+  appointmentDetected Boolean        @default(false)
+  appointmentDetails  Json?          // { topic?: string, date?: string, duration?: number }
+  model               String?        // gemini-1.5-flash etc.
+  promptVersion       String         @default("v1.0")
+  processingStatus    AnalysisStatus @default(pending)
+  errorMessage        String?
+  processedAt         DateTime?
+
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  @@index([tenantId])
+  @@index([processingStatus])
+  @@map("CallAnalysis")
 }
 
 // ── Campaign ──────────────────────────────────────────────────

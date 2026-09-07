@@ -22,6 +22,7 @@ import { RbacModule } from './common/rbac/rbac.module';
 import { TelephonyModule } from './modules/telephony/telephony.module';
 import { AiModule } from './modules/ai/ai.module';
 import { CampaignsModule } from './modules/campaigns/campaigns.module';
+import { StorageModule } from './modules/storage/storage.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -80,6 +81,7 @@ import { AppController } from './app.controller';
     TelephonyModule,
     AiModule,
     CampaignsModule,
+    StorageModule,
   ],
 })
 export class AppModule {}

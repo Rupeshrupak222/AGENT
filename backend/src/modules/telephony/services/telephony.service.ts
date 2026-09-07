@@ -4,6 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
   ServiceUnavailableException,
+  Optional,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CallStatus } from '@prisma/client';
@@ -11,6 +12,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { TelephonyProviderRegistry } from '../providers/provider-registry.service';
 import { AudioSessionService } from './audio-session.service';
 import { CallInsightsService } from './call-insights.service';
+import { RecordingQueueService } from './recording-queue.service';
 import {
   IncomingCallRequest,
   IncomingCallResponse,
@@ -37,6 +39,7 @@ export class TelephonyService {
     private registry: TelephonyProviderRegistry,
     private audioSessionService: AudioSessionService,
     private callInsightsService: CallInsightsService,
+    @Optional() private recordingQueueService?: RecordingQueueService,
   ) {}
 
   /**
@@ -203,9 +206,6 @@ export class TelephonyService {
   /**
    * Processes call status callbacks with signature verification, replay protection, and idempotency.
    */
-  /**
-   * Processes call status callbacks with signature verification, replay protection, and idempotency.
-   */
   async handleStatusCallbackWebhook(
     providerName: string,
     payload: Record<string, unknown>,
@@ -334,6 +334,115 @@ export class TelephonyService {
     }
 
     return { status: 'acknowledged', processed: true };
+  }
+
+  /**
+   * Processes recording completion callbacks with signature verification, idempotency, and async queueing.
+   */
+  async handleRecordingWebhook(
+    providerName: string,
+    payload: Record<string, unknown>,
+    validationReq: WebhookValidationRequest,
+  ): Promise<{ status: string; processed: boolean; recordingId?: string; reason?: string }> {
+    const provider = this.registry.get(providerName);
+
+    // 1. Signature Verification
+    const validation = provider.validateWebhookSignature(validationReq);
+    if (!validation.isValid) {
+      this.logger.warn(`Rejected recording webhook from [${providerName}]: ${validation.reason}`);
+      throw new BadRequestException(`Webhook signature validation failed: ${validation.reason}`);
+    }
+
+    const providerCallId = (payload.CallSid as string) || '';
+    const providerRecordingId = (payload.RecordingSid as string) || '';
+    const recordingUrl = (payload.RecordingUrl as string) || '';
+    const recordingDurationStr = payload.RecordingDuration as string;
+    const duration = recordingDurationStr ? parseInt(recordingDurationStr, 10) : undefined;
+    const recordingStatus = (payload.RecordingStatus as string) || 'completed';
+
+    if (!providerCallId || !providerRecordingId) {
+      throw new BadRequestException('Missing CallSid or RecordingSid in recording payload');
+    }
+
+    // 2. Deterministic Compound Idempotency Key
+    const idempotencyKey = `rec:${providerName}:${providerCallId}:${providerRecordingId}:${recordingStatus}`;
+    if (this.processedEvents.has(idempotencyKey)) {
+      this.logger.log(`Skipping duplicate recording webhook event [${idempotencyKey}]`);
+      return { status: 'acknowledged', processed: false, reason: 'DUPLICATE_EVENT' };
+    }
+    this.recordEventProcessed(idempotencyKey);
+
+    this.logger.log(
+      `[RECORDING_WEBHOOK_RECEIVED] provider=${providerName} CallSid=${providerCallId} RecordingSid=${providerRecordingId}`,
+    );
+
+    // 3. Locate Call Record & Persist Initial Metadata
+    let callId = `call-mock-${providerCallId}`;
+    let tenantId = 'default-tenant';
+    let dbRecordingId = `rec-${Date.now()}`;
+
+    try {
+      const call = await this.prisma.call.findFirst({
+        where: { providerCallId },
+      });
+
+      if (call) {
+        callId = call.id;
+        tenantId = call.tenantId;
+
+        const recording = await this.prisma.callRecording.upsert({
+          where: {
+            tenantId_providerRecordingId: {
+              tenantId: call.tenantId,
+              providerRecordingId,
+            },
+          },
+          create: {
+            callId: call.id,
+            tenantId: call.tenantId,
+            providerRecordingId,
+            storageProvider: 'cloudflare_r2',
+            duration,
+            status: 'available',
+            metadata: {
+              rawPayload: payload as any,
+              sourceUrl: recordingUrl,
+            },
+          },
+          update: {
+            duration: duration ?? undefined,
+            status: 'available',
+            metadata: {
+              rawPayload: payload as any,
+              sourceUrl: recordingUrl,
+            },
+          },
+        });
+        dbRecordingId = recording.id;
+      }
+    } catch (err: any) {
+      this.logger.warn(`Database offline or error persisting CallRecording metadata: ${err.message}`);
+    }
+
+    // 4. Enqueue Asynchronous Recording Ingestion Job
+    if (this.recordingQueueService) {
+      await this.recordingQueueService.enqueueRecordingJob({
+        recordingId: dbRecordingId,
+        providerRecordingId,
+        callId,
+        tenantId,
+        sourceUrl: recordingUrl,
+        duration,
+        provider: providerName,
+        enqueuedAt: new Date().toISOString(),
+      });
+    }
+
+    return {
+      status: 'acknowledged',
+      processed: true,
+      recordingId: dbRecordingId,
+    };
   }
 
   /**

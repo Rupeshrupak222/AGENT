@@ -49,6 +49,33 @@ export class CallsController {
     return this.calls.findOne(u.tenantId, id);
   }
 
+  @Get(':id/recording')
+  @ApiBearerAuth('JWT')
+  @Permissions(CALL_VIEW)
+  @ApiOperation({ summary: 'Get signed URL and metadata for call audio recording' })
+  async getRecording(@CurrentUser() u: any, @Param('id') id: string) {
+    const data = await this.calls.getRecording(u.tenantId, id);
+    return { success: true, data };
+  }
+
+  @Get(':id/analysis')
+  @ApiBearerAuth('JWT')
+  @Permissions(CALL_VIEW)
+  @ApiOperation({ summary: 'Get structured post-call AI intelligence analysis' })
+  async getAnalysis(@CurrentUser() u: any, @Param('id') id: string) {
+    const data = await this.calls.getAnalysis(u.tenantId, id);
+    return { success: true, data };
+  }
+
+  @Post(':id/analysis/retry')
+  @ApiBearerAuth('JWT')
+  @Permissions(CALL_INITIATE)
+  @ApiOperation({ summary: 'Manually re-trigger post-call intelligence analysis' })
+  async retryAnalysis(@CurrentUser() u: any, @Param('id') id: string) {
+    const data = await this.calls.retryAnalysis(u.tenantId, id);
+    return { success: true, data };
+  }
+
   // ── Telephony Webhooks (Twilio & Exotel) ──────────────────────────────────
 
   @Public()

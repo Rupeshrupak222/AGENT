@@ -1,6 +1,9 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, OnModuleInit, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TelephonyService } from '../telephony/services/telephony.service';
+import { CloudflareR2StorageProvider } from '../storage/providers/r2-storage.provider';
+import { PostCallQueueService } from '../ai/services/post-call-queue.service';
+import { RecordingProcessor } from '../telephony/processors/recording.processor';
 
 export interface InitiateCallDto {
   leadId:   string;
@@ -9,13 +12,64 @@ export interface InitiateCallDto {
 }
 
 @Injectable()
-export class CallsService {
+export class CallsService implements OnModuleInit {
   private readonly logger = new Logger(CallsService.name);
 
   constructor(
     private prisma: PrismaService,
     private telephonyService: TelephonyService,
+    @Optional() private storageProvider?: CloudflareR2StorageProvider,
+    @Optional() private postCallQueueService?: PostCallQueueService,
+    @Optional() private recordingProcessor?: RecordingProcessor,
   ) {}
+
+  async onModuleInit() {
+    // 1. Register Telephony Call Status Hook -> Auto-trigger Post-Call Intelligence on call completion
+    this.telephonyService.registerCallStatusHook(async (callId, status) => {
+      if (status === 'completed' && this.postCallQueueService) {
+        try {
+          const call = await this.prisma.call.findUnique({
+            where: { id: callId },
+            select: { id: true, tenantId: true },
+          });
+
+          if (call) {
+            await this.postCallQueueService.enqueueAnalysisJob({
+              callId: call.id,
+              tenantId: call.tenantId,
+              triggerSource: 'call_completed',
+              enqueuedAt: new Date().toISOString(),
+            });
+          }
+        } catch (err: any) {
+          this.logger.warn(`Failed to auto-enqueue post-call analysis for call ${callId}: ${err.message}`);
+        }
+      }
+    });
+
+    // 2. Register Recording Processor Hook -> Trigger post-call analysis if recording finishes after call end
+    if (this.recordingProcessor && this.postCallQueueService) {
+      this.recordingProcessor.setPostCallAnalysisTrigger(async (callId, tenantId) => {
+        try {
+          const call = await this.prisma.call.findFirst({
+            where: { id: callId, tenantId },
+            select: { id: true, status: true },
+          });
+
+          if (call && call.status === 'completed' && this.postCallQueueService) {
+            await this.postCallQueueService.enqueueAnalysisJob({
+              callId,
+              tenantId,
+              triggerSource: 'recording_uploaded',
+              enqueuedAt: new Date().toISOString(),
+            });
+          }
+        } catch (err: any) {
+          this.logger.warn(`Failed to trigger analysis from recording processor: ${err.message}`);
+        }
+      });
+    }
+  }
 
   async initiateCall(tenantId: string, dto: InitiateCallDto) {
     const [lead, agent] = await Promise.all([
@@ -167,5 +221,78 @@ export class CallsService {
         avgDuration: 0,
       };
     }
+  }
+
+  /**
+   * Retrieves tenant-isolated, authorized audio recording with a short-lived signed URL.
+   */
+  async getRecording(tenantId: string, callId: string) {
+    const call = await this.prisma.call.findFirst({
+      where: { id: callId, tenantId },
+      include: { recordings: true },
+    });
+
+    if (!call) throw new NotFoundException('Call not found');
+
+    const recording = call.recordings?.[0];
+    let signedUrl: string | undefined;
+
+    if (recording?.objectKey && this.storageProvider) {
+      signedUrl = await this.storageProvider.getSignedUrl(recording.objectKey, 900);
+    } else if (call.recordingUrl) {
+      signedUrl = call.recordingUrl;
+    }
+
+    if (!signedUrl && !recording) {
+      throw new NotFoundException('Recording not available for this call');
+    }
+
+    return {
+      callId,
+      recordingId: recording?.id || `rec-${callId}`,
+      url: signedUrl,
+      duration: recording?.duration || call.duration,
+      mimeType: recording?.mimeType || 'audio/mpeg',
+      expiresInSeconds: 900,
+    };
+  }
+
+  /**
+   * Retrieves canonical structured post-call AI analysis.
+   */
+  async getAnalysis(tenantId: string, callId: string) {
+    const call = await this.prisma.call.findFirst({
+      where: { id: callId, tenantId },
+      include: { analysis: true },
+    });
+
+    if (!call) throw new NotFoundException('Call not found');
+    if (!call.analysis) {
+      throw new NotFoundException('Analysis not found or still processing for this call');
+    }
+
+    return call.analysis;
+  }
+
+  /**
+   * Manually re-triggers post-call analysis for a completed call.
+   */
+  async retryAnalysis(tenantId: string, callId: string) {
+    const call = await this.prisma.call.findFirst({
+      where: { id: callId, tenantId },
+    });
+
+    if (!call) throw new NotFoundException('Call not found');
+
+    if (this.postCallQueueService) {
+      await this.postCallQueueService.enqueueAnalysisJob({
+        callId,
+        tenantId,
+        triggerSource: 'manual_retry',
+        enqueuedAt: new Date().toISOString(),
+      });
+    }
+
+    return { enqueued: true, callId, message: 'Post-call analysis enqueued for reprocessing' };
   }
 }
