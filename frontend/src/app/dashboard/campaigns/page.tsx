@@ -32,10 +32,14 @@ import { CampaignProgressBar } from "@/components/campaigns/CampaignProgressBar"
 import { CampaignLeadsTable } from "@/components/campaigns/CampaignLeadsTable";
 import { CampaignCreationModal } from "@/components/campaigns/CampaignCreationModal";
 import { UnifiedCallWorkspaceModal } from "@/components/campaigns/UnifiedCallWorkspaceModal";
+import { realtimeSocket } from "@/lib/socket";
 
 export default function CampaignOperationsPage() {
   const { success, error, info } = useToast();
   const { can } = usePermissions();
+
+  // Socket Live State
+  const [isLive, setIsLive] = useState(false);
 
   // Permissions
   const canCreate = can(PERMISSIONS.CAMPAIGN_CREATE);
@@ -136,15 +140,106 @@ export default function CampaignOperationsPage() {
     }
   }, [selectedCampaignId, loadMetrics, loadLeads]);
 
-  // Auto-polling when campaign is actively running
+  // ── Realtime Socket.IO Connection & Event Handlers ───────────────
   useEffect(() => {
-    if (!activeCampaign || activeCampaign.status !== "running") return;
+    realtimeSocket.connect();
+
+    const unsubConn = realtimeSocket.on("connection:status", (data) => {
+      setIsLive(data.connected);
+    });
+
+    const unsubStatus = realtimeSocket.on("campaign:status", (data) => {
+      if (data.campaignId === selectedCampaignId) {
+        setCampaigns((prev) =>
+          prev.map((c) => (c.id === data.campaignId ? { ...c, status: data.status } : c))
+        );
+        loadMetrics();
+        loadLeads();
+      }
+    });
+
+    const unsubProgress = realtimeSocket.on("campaign:progress", (data) => {
+      if (data.campaignId === selectedCampaignId) {
+        setMetrics((prev) => (prev ? { ...prev, ...data } : (data as any)));
+      }
+    });
+
+    const unsubLeadStatus = realtimeSocket.on("campaign:lead:status", (data) => {
+      if (selectedCampaignId) {
+        setLeads((prev) =>
+          prev.map((l) =>
+            l.leadId === data.leadId
+              ? {
+                  ...l,
+                  status: data.status,
+                  outcome: data.outcome ?? l.outcome,
+                  attemptCount: data.attemptCount ?? l.attemptCount,
+                  lastCallId: data.lastCallId ?? l.lastCallId,
+                }
+              : l
+          )
+        );
+      }
+    });
+
+    const unsubAnalysis = realtimeSocket.on("call:analysis", (data) => {
+      if (data.campaignId === selectedCampaignId) {
+        setLeads((prev) =>
+          prev.map((l) =>
+            l.lastCallId === data.callId
+              ? {
+                  ...l,
+                  lastCall: l.lastCall
+                    ? {
+                        ...l.lastCall,
+                        analysis: {
+                          leadScore: data.leadScore,
+                          intent: data.intent,
+                          sentiment: data.sentiment,
+                          summary: data.summary,
+                          processingStatus: data.analysisStatus,
+                          qualification: data.qualification,
+                          appointmentDetected: data.appointmentDetected,
+                        },
+                      }
+                    : null,
+                }
+              : l
+          )
+        );
+      }
+    });
+
+    return () => {
+      unsubConn();
+      unsubStatus();
+      unsubProgress();
+      unsubLeadStatus();
+      unsubAnalysis();
+    };
+  }, [selectedCampaignId, loadMetrics, loadLeads]);
+
+  // Subscribe to selected campaign room
+  useEffect(() => {
+    if (selectedCampaignId) {
+      realtimeSocket.subscribeCampaign(selectedCampaignId);
+    }
+    return () => {
+      if (selectedCampaignId) {
+        realtimeSocket.unsubscribeCampaign(selectedCampaignId);
+      }
+    };
+  }, [selectedCampaignId]);
+
+  // Conservative fallback: only pulse every 45s if socket is offline and campaign is running
+  useEffect(() => {
+    if (isLive || !activeCampaign || activeCampaign.status !== "running") return;
     const interval = setInterval(() => {
       loadMetrics();
       loadLeads();
-    }, 6000);
+    }, 45000);
     return () => clearInterval(interval);
-  }, [activeCampaign, loadMetrics, loadLeads]);
+  }, [isLive, activeCampaign, loadMetrics, loadLeads]);
 
   // Lifecycle Controls
   const handleStartCampaign = async () => {
@@ -224,6 +319,17 @@ export default function CampaignOperationsPage() {
             <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400">
               Live Engine
             </span>
+            {isLive ? (
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Live
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                Offline
+              </span>
+            )}
           </div>
           <p className="text-xs text-slate-500 dark:text-white/50 mt-1">
             Autonomous outbound dialer, eligibility validation & post-call AI intelligence workspace

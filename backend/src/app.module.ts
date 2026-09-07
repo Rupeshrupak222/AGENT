@@ -23,6 +23,7 @@ import { TelephonyModule } from './modules/telephony/telephony.module';
 import { AiModule } from './modules/ai/ai.module';
 import { CampaignsModule } from './modules/campaigns/campaigns.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -99,6 +100,7 @@ import { AppController } from './app.controller';
     AiModule,
     CampaignsModule,
     StorageModule,
+    IntegrationsModule,
   ],
 })
 export class AppModule {}

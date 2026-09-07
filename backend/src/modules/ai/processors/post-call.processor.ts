@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Inject, forwardRef, Optional } from '@nestjs/common';
 import { Processor, Process } from '@nestjs/bull';
 import { Job } from 'bull';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -8,6 +8,8 @@ import {
   PostCallQueueService,
 } from '../services/post-call-queue.service';
 import { PostCallAnalysisInput } from '../interfaces/post-call.interface';
+import { CallsGateway } from '../../calls/calls.gateway';
+import { CrmQueueService } from '../../integrations/services/crm-queue.service';
 
 @Injectable()
 @Processor('post-call-analysis')
@@ -18,6 +20,12 @@ export class PostCallProcessor implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly geminiProvider: GeminiPostCallProvider,
     private readonly queueService: PostCallQueueService,
+    @Optional()
+    @Inject(forwardRef(() => CallsGateway))
+    private readonly callsGateway?: CallsGateway,
+    @Optional()
+    @Inject(forwardRef(() => CrmQueueService))
+    private readonly crmQueueService?: CrmQueueService,
   ) {}
 
   onModuleInit() {
@@ -228,6 +236,45 @@ export class PostCallProcessor implements OnModuleInit {
         });
       }
 
+      // 10. Realtime Event Broadcast (Tenant, Call Room, and Campaign Room)
+      this.callsGateway?.broadcastCallAnalysis(callId, tenantId, call.campaignId || null, {
+        analysisStatus: 'completed',
+        leadScore: result.leadScore,
+        intent: result.intent,
+        sentiment: result.sentiment,
+        summary: result.summary,
+        qualification: result.qualification,
+        appointmentDetected: result.appointment.detected,
+      });
+
+      // 11. Two-Way CRM Synchronization (HubSpot, Salesforce, Zoho, Mock)
+      if (this.crmQueueService) {
+        try {
+          await this.crmQueueService.enqueueSyncJob({
+            tenantId,
+            callId: call.id,
+            leadId: call.leadId || undefined,
+            phone: call.phone,
+            direction: call.direction as any,
+            duration: call.duration ?? undefined,
+            callStatus: call.status,
+            analysis: {
+              qualificationScore: result.leadScore,
+              sentiment: result.sentiment,
+              summary: result.summary,
+              outcome: result.outcome,
+              nextAction: result.nextAction,
+              appointmentDetected: result.appointment.detected,
+              appointmentDetails: result.appointment.details,
+              qualification: result.qualification,
+            },
+            timestamp: new Date(),
+          });
+        } catch (crmErr: any) {
+          this.logger.warn(`Failed to enqueue CRM synchronization for call [${callId}]: ${crmErr.message}`);
+        }
+      }
+
       return { success: true, analysisId: savedAnalysis.id };
     } catch (err: any) {
       this.logger.error(`[POST_CALL_ANALYSIS_FAILED] callId=${callId}: ${err.message}`);
@@ -250,6 +297,12 @@ export class PostCallProcessor implements OnModuleInit {
       } catch (dbErr: any) {
         this.logger.warn(`Failed to update call analysis error state: ${dbErr.message}`);
       }
+
+      // Realtime event broadcast on failure
+      this.callsGateway?.broadcastCallAnalysis(callId, tenantId, null, {
+        analysisStatus: 'failed',
+        errorMessage: err.message,
+      });
 
       return { success: false, reason: err.message };
     }

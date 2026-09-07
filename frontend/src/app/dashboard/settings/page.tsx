@@ -1,16 +1,29 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Save, CheckCircle2, Loader2 } from "lucide-react";
+import {
+  Save,
+  CheckCircle2,
+  Loader2,
+  Share2,
+  Key,
+  Globe,
+  ExternalLink,
+  ShieldCheck,
+  Database,
+  RefreshCw,
+  Check,
+  AlertCircle,
+} from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { useToast } from "@/components/ui/Toast";
-import { tenantApi, normalizeApiError } from "@/lib/api";
+import { tenantApi, integrationsApi, IntegrationItem, normalizeApiError } from "@/lib/api";
 
 export default function SettingsPage() {
   const user = useAuthStore(s => s.user);
   const tenant = useAuthStore(s => s.tenant);
   const updateTenant = useAuthStore(s => s.updateTenant);
-  const { success, error } = useToast();
-  const [activeTab, setActiveTab] = useState<"general" | "api_keys" | "telephony" | "security">("general");
+  const { success, error, warning } = useToast();
+  const [activeTab, setActiveTab] = useState<"general" | "api_keys" | "telephony" | "security" | "integrations">("general");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -18,6 +31,100 @@ export default function SettingsPage() {
   const [companyName, setCompanyName] = useState(tenant?.name || "My Workspace");
   const [timezone, setTimezone] = useState("Asia/Kolkata");
   const [currency, setCurrency] = useState("INR");
+
+  // CRM Integrations State
+  const [crmList, setCrmList] = useState<IntegrationItem[]>([]);
+  const [loadingCrm, setLoadingCrm] = useState(false);
+  const [testingCrm, setTestingCrm] = useState<string | null>(null);
+  const [savingCrm, setSavingCrm] = useState<string | null>(null);
+
+  // Form states for CRM credentials
+  const [hubspotKey, setHubspotKey] = useState("");
+  const [hubspotActive, setHubspotActive] = useState(false);
+
+  const [salesforceToken, setSalesforceToken] = useState("");
+  const [salesforceUrl, setSalesforceUrl] = useState("https://login.salesforce.com");
+  const [salesforceActive, setSalesforceActive] = useState(false);
+
+  const [zohoToken, setZohoToken] = useState("");
+  const [zohoDomain, setZohoDomain] = useState("https://www.zohoapis.com/crm/v2");
+  const [zohoActive, setZohoActive] = useState(false);
+
+  const [mockActive, setMockActive] = useState(true);
+
+  // Load CRM integrations when switching to integrations tab
+  useEffect(() => {
+    if (activeTab !== "integrations") return;
+    (async () => {
+      try {
+        setLoadingCrm(true);
+        const list = await integrationsApi.list();
+        setCrmList(list);
+
+        const hs = list.find((i) => i.provider.toLowerCase() === "hubspot");
+        if (hs) {
+          setHubspotActive(hs.isActive);
+          if (hs.maskedKey) setHubspotKey(hs.maskedKey);
+        }
+
+        const sf = list.find((i) => i.provider.toLowerCase() === "salesforce");
+        if (sf) {
+          setSalesforceActive(sf.isActive);
+          if (sf.maskedKey) setSalesforceToken(sf.maskedKey);
+          if (sf.settings?.instanceUrl) setSalesforceUrl(sf.settings.instanceUrl);
+        }
+
+        const zoho = list.find((i) => i.provider.toLowerCase() === "zoho");
+        if (zoho) {
+          setZohoActive(zoho.isActive);
+          if (zoho.maskedKey) setZohoToken(zoho.maskedKey);
+          if (zoho.settings?.apiDomain) setZohoDomain(zoho.settings.apiDomain);
+        }
+
+        const mock = list.find((i) => i.provider.toLowerCase() === "mock");
+        if (mock) {
+          setMockActive(mock.isActive);
+        }
+      } catch {
+        // Fallback for dev mode
+      } finally {
+        setLoadingCrm(false);
+      }
+    })();
+  }, [activeTab]);
+
+  const handleTestConnection = async (provider: string, credentials: Record<string, any>) => {
+    try {
+      setTestingCrm(provider);
+      const res = await integrationsApi.testConnection(provider, credentials);
+      if (res.success) {
+        success(`Connection Verified: ${res.message}`);
+      } else {
+        error(`Connection Failed: ${res.message}`);
+      }
+    } catch (err) {
+      error(`Test Failed: ${normalizeApiError(err)}`);
+    } finally {
+      setTestingCrm(null);
+    }
+  };
+
+  const handleSaveIntegration = async (
+    provider: string,
+    payload: { isActive: boolean; credentials?: Record<string, any>; settings?: Record<string, any> }
+  ) => {
+    try {
+      setSavingCrm(provider);
+      await integrationsApi.upsert(provider, payload);
+      success(`${provider.toUpperCase()} settings saved successfully`);
+      const updated = await integrationsApi.list();
+      setCrmList(updated);
+    } catch (err) {
+      error(`Save Failed: ${normalizeApiError(err)}`);
+    } finally {
+      setSavingCrm(null);
+    }
+  };
 
   // Hydrate from real tenant config
   useEffect(() => {
@@ -63,7 +170,7 @@ export default function SettingsPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Settings & Integrations</h1>
-        <p className="text-sm text-slate-500 dark:text-white/50 mt-1">Configure company preferences, telephony credentials, and security controls.</p>
+        <p className="text-sm text-slate-500 dark:text-white/50 mt-1">Configure company preferences, telephony credentials, two-way CRM sync, and security controls.</p>
       </div>
 
       {saved && (
@@ -74,17 +181,19 @@ export default function SettingsPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-200 dark:border-white/10 gap-6 text-sm">
+      <div className="flex border-b border-slate-200 dark:border-white/10 gap-6 text-sm overflow-x-auto">
         {[
           { id: "general", label: "General & Branding" },
+          { id: "integrations", label: "CRM Integrations (2-Way)" },
           { id: "telephony", label: "Telephony (Twilio/Exotel)" },
           { id: "api_keys", label: "API Keys & Webhooks" },
           { id: "security", label: "Security & RBAC" },
         ].map((tab) => (
           <button
             key={tab.id}
+            type="button"
             onClick={() => setActiveTab(tab.id as any)}
-            className={`pb-3 font-semibold transition-all relative ${
+            className={`pb-3 font-semibold transition-all relative whitespace-nowrap ${
               activeTab === tab.id
                 ? "text-slate-900 dark:text-white"
                 : "text-slate-500 dark:text-white/40 hover:text-slate-700 dark:hover:text-white/70"
@@ -201,6 +310,313 @@ export default function SettingsPage() {
                   <p className="text-slate-500 dark:text-white/40 mt-0.5">Idle-session expiry is enforced by the auth layer and is not user-configurable at this time.</p>
                 </div>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/50 border border-slate-200 dark:border-white/10">Not available</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ──────────────── CRM INTEGRATIONS (TWO-WAY SYNC) ──────────────── */}
+        {activeTab === "integrations" && (
+          <div className="space-y-6">
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-brand-500/10 via-brand-500/5 to-transparent border border-brand-500/20">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Share2 className="w-4 h-4 text-brand-500" />
+                    Two-Way External CRM Synchronization
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-white/60 mt-1 max-w-2xl leading-relaxed">
+                    Automatically push Gemini post-call intelligence (qualification scores, executive summaries, sentiment ratings, and next action items) directly into your team&apos;s CRM upon call completion.
+                  </p>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-1 rounded bg-brand-500/20 text-brand-700 dark:text-brand-300 font-bold uppercase">
+                  BullMQ Queue Active
+                </span>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-5">
+              {/* 1. HUBSPOT CRM */}
+              <div className="rounded-2xl p-5 panel-card border border-slate-200 dark:border-white/[0.08] shadow-lg flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-600 dark:text-orange-400 font-black text-sm">
+                        HS
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">HubSpot CRM</h4>
+                        <p className="text-[11px] text-slate-400">Contacts &amp; Engagements API v3</p>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      hubspotActive
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                        : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/50"
+                    }`}>
+                      {hubspotActive ? "● Active Sync" : "○ Disabled"}
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-white/70 block mb-1">
+                        Private App Access Token
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="pat-na1-xxxxxxxx-xxxx-xxxx"
+                        value={hubspotKey}
+                        onChange={(e) => setHubspotKey(e.target.value)}
+                        className="w-full h-9 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500"
+                      />
+                    </div>
+
+                    <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-white/80 cursor-pointer pt-1">
+                      <input
+                        type="checkbox"
+                        checked={hubspotActive}
+                        onChange={(e) => setHubspotActive(e.target.checked)}
+                        className="rounded text-brand-600 cursor-pointer"
+                      />
+                      Enable automatic post-call sync to HubSpot
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-white/5">
+                  <button
+                    type="button"
+                    disabled={testingCrm === "hubspot" || !hubspotKey}
+                    onClick={() => handleTestConnection("hubspot", { accessToken: hubspotKey })}
+                    className="flex-1 py-1.5 px-3 rounded-xl border border-slate-200 dark:border-white/15 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-40"
+                  >
+                    {testingCrm === "hubspot" ? "Testing..." : "Test Link"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={savingCrm === "hubspot"}
+                    onClick={() =>
+                      handleSaveIntegration("hubspot", {
+                        isActive: hubspotActive,
+                        credentials: { accessToken: hubspotKey },
+                      })
+                    }
+                    className="flex-1 py-1.5 px-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold disabled:opacity-40"
+                  >
+                    {savingCrm === "hubspot" ? "Saving..." : "Save HubSpot"}
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. SALESFORCE CRM */}
+              <div className="rounded-2xl p-5 panel-card border border-slate-200 dark:border-white/[0.08] shadow-lg flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-600 dark:text-sky-400 font-black text-sm">
+                        SF
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">Salesforce</h4>
+                        <p className="text-[11px] text-slate-400">REST API v58.0 SObjects</p>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      salesforceActive
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                        : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/50"
+                    }`}>
+                      {salesforceActive ? "● Active Sync" : "○ Disabled"}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-white/70 block mb-1">
+                        Instance URL
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://yourorg.my.salesforce.com"
+                        value={salesforceUrl}
+                        onChange={(e) => setSalesforceUrl(e.target.value)}
+                        className="w-full h-8 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-white/70 block mb-1">
+                        OAuth Access Token
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="OAuth Access Token"
+                        value={salesforceToken}
+                        onChange={(e) => setSalesforceToken(e.target.value)}
+                        className="w-full h-8 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
+                      />
+                    </div>
+
+                    <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-white/80 cursor-pointer pt-0.5">
+                      <input
+                        type="checkbox"
+                        checked={salesforceActive}
+                        onChange={(e) => setSalesforceActive(e.target.checked)}
+                        className="rounded text-brand-600 cursor-pointer"
+                      />
+                      Enable automatic post-call sync to Salesforce
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-white/5">
+                  <button
+                    type="button"
+                    disabled={testingCrm === "salesforce" || !salesforceToken}
+                    onClick={() => handleTestConnection("salesforce", { accessToken: salesforceToken, instanceUrl: salesforceUrl })}
+                    className="flex-1 py-1.5 px-3 rounded-xl border border-slate-200 dark:border-white/15 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-40"
+                  >
+                    {testingCrm === "salesforce" ? "Testing..." : "Test Link"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={savingCrm === "salesforce"}
+                    onClick={() =>
+                      handleSaveIntegration("salesforce", {
+                        isActive: salesforceActive,
+                        credentials: { accessToken: salesforceToken, instanceUrl: salesforceUrl },
+                        settings: { instanceUrl: salesforceUrl },
+                      })
+                    }
+                    className="flex-1 py-1.5 px-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold disabled:opacity-40"
+                  >
+                    {savingCrm === "salesforce" ? "Saving..." : "Save Salesforce"}
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. ZOHO CRM */}
+              <div className="rounded-2xl p-5 panel-card border border-slate-200 dark:border-white/[0.08] shadow-lg flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-black text-sm">
+                        ZC
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">Zoho CRM</h4>
+                        <p className="text-[11px] text-slate-400">Leads &amp; Notes API v2</p>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      zohoActive
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                        : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/50"
+                    }`}>
+                      {zohoActive ? "● Active Sync" : "○ Disabled"}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-white/70 block mb-1">
+                        API Domain
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://www.zohoapis.com/crm/v2"
+                        value={zohoDomain}
+                        onChange={(e) => setZohoDomain(e.target.value)}
+                        className="w-full h-8 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-white/70 block mb-1">
+                        OAuth Token
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="Zoho-oauthtoken ..."
+                        value={zohoToken}
+                        onChange={(e) => setZohoToken(e.target.value)}
+                        className="w-full h-8 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
+                      />
+                    </div>
+
+                    <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-white/80 cursor-pointer pt-0.5">
+                      <input
+                        type="checkbox"
+                        checked={zohoActive}
+                        onChange={(e) => setZohoActive(e.target.checked)}
+                        className="rounded text-brand-600 cursor-pointer"
+                      />
+                      Enable automatic post-call sync to Zoho CRM
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-white/5">
+                  <button
+                    type="button"
+                    disabled={testingCrm === "zoho" || !zohoToken}
+                    onClick={() => handleTestConnection("zoho", { accessToken: zohoToken, apiDomain: zohoDomain })}
+                    className="flex-1 py-1.5 px-3 rounded-xl border border-slate-200 dark:border-white/15 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-40"
+                  >
+                    {testingCrm === "zoho" ? "Testing..." : "Test Link"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={savingCrm === "zoho"}
+                    onClick={() =>
+                      handleSaveIntegration("zoho", {
+                        isActive: zohoActive,
+                        credentials: { accessToken: zohoToken },
+                        settings: { apiDomain: zohoDomain },
+                      })
+                    }
+                    className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold disabled:opacity-40"
+                  >
+                    {savingCrm === "zoho" ? "Saving..." : "Save Zoho"}
+                  </button>
+                </div>
+              </div>
+
+              {/* 4. MOCK CRM / DEV SANDBOX */}
+              <div className="rounded-2xl p-5 panel-card border border-slate-200 dark:border-white/[0.08] shadow-lg flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400 font-black text-sm">
+                        MK
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">Mock CRM (Sandbox)</h4>
+                        <p className="text-[11px] text-slate-400">In-Memory Local Testing Adapter</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                      ● Ready for Demos
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-500 dark:text-white/60 leading-relaxed">
+                    Used for automated testing and development demonstrations. Records synced contacts and post-call activity logs in an isolated in-memory buffer without requiring live external cloud credentials.
+                  </p>
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-white/5">
+                  <button
+                    type="button"
+                    disabled={testingCrm === "mock"}
+                    onClick={() => handleTestConnection("mock", { apiKey: "mock-valid-key" })}
+                    className="flex-1 py-1.5 px-3 rounded-xl border border-slate-200 dark:border-white/15 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-40 flex items-center justify-center gap-1"
+                  >
+                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    {testingCrm === "mock" ? "Verifying..." : "Verify Health"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

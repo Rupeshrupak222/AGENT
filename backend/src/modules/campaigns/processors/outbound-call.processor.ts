@@ -1,10 +1,11 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Inject, forwardRef, Optional } from '@nestjs/common';
 import { Processor, Process } from '@nestjs/bull';
 import { Job } from 'bull';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TelephonyService } from '../../telephony/services/telephony.service';
 import { CampaignEligibilityService } from '../services/campaign-eligibility.service';
 import { CampaignQueueService, OutboundCallJobData } from '../services/campaign-queue.service';
+import { CallsGateway } from '../../calls/calls.gateway';
 
 @Injectable()
 @Processor('outbound-calls')
@@ -16,6 +17,9 @@ export class OutboundCallProcessor implements OnModuleInit {
     private readonly telephonyService: TelephonyService,
     private readonly eligibilityService: CampaignEligibilityService,
     private readonly queueService: CampaignQueueService,
+    @Optional()
+    @Inject(forwardRef(() => CallsGateway))
+    private readonly callsGateway?: CallsGateway,
   ) {}
 
   onModuleInit() {
@@ -172,9 +176,25 @@ export class OutboundCallProcessor implements OnModuleInit {
 
       this.logger.log(`[CALL_DISPATCHED] callId=${call.id} campaignId=${campaign.id} lead=${eligibility.normalizedPhone} attempt=${updatedCampaignLead.attemptCount}`);
 
+      // Realtime Event: Lead transitioned to calling & Call queued
+      this.callsGateway?.broadcastCampaignLeadStatus(campaign.id, tenantId, {
+        leadId,
+        status: 'calling',
+        attemptCount: updatedCampaignLead.attemptCount,
+        lastCallId: call.id,
+      });
+      this.callsGateway?.broadcastCallStatus(call.id, tenantId, 'queued', {
+        campaignId: campaign.id,
+        leadId,
+      });
+
       // 9. Dispatch Call via TelephonyService Abstraction
       try {
         await this.telephonyService.dispatchOutboundCall(tenantId, call.id, eligibility.normalizedPhone);
+        this.callsGateway?.broadcastCallStatus(call.id, tenantId, 'ringing', {
+          campaignId: campaign.id,
+          leadId,
+        });
         return { dispatched: true, callId: call.id };
       } catch (dispatchErr: any) {
         this.logger.error(`[CALL_DISPATCH_FAILED] callId=${call.id} error: ${dispatchErr.message}`);
@@ -202,6 +222,18 @@ export class OutboundCallProcessor implements OnModuleInit {
         } catch {
           // ignore
         }
+
+        // Realtime Event: Dispatch failure
+        this.callsGateway?.broadcastCallStatus(call.id, tenantId, 'failed', {
+          campaignId: campaign.id,
+          leadId,
+          reason: dispatchErr.message,
+        });
+        this.callsGateway?.broadcastCampaignLeadStatus(campaign.id, tenantId, {
+          leadId,
+          status: 'failed',
+          outcome: 'DISPATCH_ERROR',
+        });
 
         return { dispatched: false, callId: call.id, reason: dispatchErr.message };
       }

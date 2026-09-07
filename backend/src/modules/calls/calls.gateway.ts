@@ -61,11 +61,23 @@ export class CallsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         secret: this.config.get<string>('JWT_SECRET'),
       });
 
-      // Validate user exists and is active
-      const user = await this.prisma.user.findUnique({
-        where: { id: payload.sub },
-        select: { id: true, tenantId: true, role: true, isActive: true, name: true, email: true },
-      });
+      // Validate user exists and is active (with offline dev fallback)
+      let user: any = null;
+      if (this.prisma.isConnected) {
+        user = await this.prisma.user.findUnique({
+          where: { id: payload.sub },
+          select: { id: true, tenantId: true, role: true, isActive: true, name: true, email: true },
+        }).catch(() => null);
+      } else {
+        user = {
+          id: payload.sub || 'dev-user-id',
+          tenantId: payload.tenantId || 'dev-tenant-id',
+          role: payload.role || 'company_admin',
+          isActive: true,
+          name: payload.name || 'Developer User',
+          email: payload.email || 'admin@agentcall.ai',
+        };
+      }
 
       if (!user || !user.isActive) {
         this.logger.warn(`Connection rejected: user not found or inactive (${client.id})`);
@@ -122,6 +134,12 @@ export class CallsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { event: 'error', message: 'Not authenticated' };
     }
 
+    // Fast-path for offline development
+    if (!this.prisma.isConnected) {
+      client.join(`call:${data.callId}`);
+      return { event: 'joined:call', status: 'ok', callId: data.callId };
+    }
+
     // Validate call belongs to this tenant
     const call = await this.prisma.call.findFirst({
       where: { id: data.callId, tenantId: client.tenantId },
@@ -165,23 +183,139 @@ export class CallsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return { event: 'left:call', status: 'ok', callId: data.callId };
   }
 
+  // ── Campaign Room Handlers (tenant-isolated) ─────────────────────
+
+  @SubscribeMessage('join:campaign')
+  async handleJoinCampaign(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { campaignId: string },
+  ) {
+    if (!client.tenantId) {
+      return { event: 'error', message: 'Not authenticated' };
+    }
+
+    if (!data?.campaignId) {
+      return { event: 'error', message: 'campaignId is required' };
+    }
+
+    // Fast-path for offline development
+    if (!this.prisma.isConnected) {
+      client.join(`campaign:${data.campaignId}`);
+      return { event: 'joined:campaign', status: 'ok', campaignId: data.campaignId };
+    }
+
+    // Validate campaign belongs to this tenant
+    const campaign = await this.prisma.campaign.findFirst({
+      where: { id: data.campaignId, tenantId: client.tenantId },
+      select: { id: true, status: true },
+    });
+
+    if (!campaign) {
+      this.logger.warn(
+        `Cross-tenant campaign join attempt: user ${client.userId} tried to join campaign ${data.campaignId} (tenant: ${client.tenantId})`,
+      );
+      await this.auditService.log({
+        action: 'CROSS_TENANT_ACCESS_ATTEMPT',
+        resource: 'campaign',
+        resourceId: data.campaignId,
+        details: { reason: 'join:campaign rejected - cross-tenant or not found' },
+        tenantId: client.tenantId,
+        userId: client.userId,
+      });
+      return { event: 'error', message: 'Campaign not found' };
+    }
+
+    client.join(`campaign:${data.campaignId}`);
+    this.logger.log(
+      `Client ${client.id} joined campaign room: campaign:${data.campaignId} (tenant: ${client.tenantId})`,
+    );
+    return { event: 'joined:campaign', status: 'ok', campaignId: data.campaignId };
+  }
+
+  @SubscribeMessage('leave:campaign')
+  handleLeaveCampaign(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { campaignId: string },
+  ) {
+    if (data?.campaignId) {
+      client.leave(`campaign:${data.campaignId}`);
+      this.logger.log(`Client ${client.id} left campaign room: campaign:${data.campaignId}`);
+    }
+    return { event: 'left:campaign', status: 'ok', campaignId: data?.campaignId };
+  }
+
   // ── Broadcasters (tenant-scoped) ─────────────────────────────────
 
   broadcastCallStatus(callId: string, tenantId: string, status: string, details?: any) {
-    this.server.to(`call:${callId}`).emit('call:status', { callId, status, details });
-    this.server.to(`tenant:${tenantId}`).emit('calls:overview_status', { callId, status, details });
+    if (!this.server) return;
+    this.server.to(`call:${callId}`).emit('call:status', { callId, status, details, timestamp: new Date().toISOString() });
+    this.server.to(`tenant:${tenantId}`).emit('calls:overview_status', { callId, status, details, timestamp: new Date().toISOString() });
   }
 
   broadcastWaveform(callId: string, bars: number[]) {
+    if (!this.server) return;
     this.server.to(`call:${callId}`).emit('call:waveform', { callId, bars });
   }
 
   broadcastTranscript(callId: string, speaker: 'agent' | 'user', text: string, timestamp?: number) {
+    if (!this.server) return;
     this.server.to(`call:${callId}`).emit('call:transcript', {
       callId,
       speaker,
       text,
       timestamp: timestamp || Date.now(),
     });
+  }
+
+  broadcastCampaignStatus(campaignId: string, tenantId: string, payload: { status: string; [key: string]: any }) {
+    if (!this.server) return;
+    const body = { campaignId, ...payload, timestamp: new Date().toISOString() };
+    this.server.to(`campaign:${campaignId}`).emit('campaign:status', body);
+    this.server.to(`tenant:${tenantId}`).emit('campaign:status', body);
+  }
+
+  broadcastCampaignProgress(
+    campaignId: string,
+    tenantId: string,
+    payload: { processed: number; total: number; completed?: number; failed?: number; skipped?: number; calling?: number; [key: string]: any },
+  ) {
+    if (!this.server) return;
+    const body = { campaignId, ...payload, timestamp: new Date().toISOString() };
+    this.server.to(`campaign:${campaignId}`).emit('campaign:progress', body);
+    this.server.to(`tenant:${tenantId}`).emit('campaign:progress', body);
+  }
+
+  broadcastCampaignLeadStatus(
+    campaignId: string,
+    tenantId: string,
+    payload: { leadId: string; status: string; attemptCount?: number; lastCallId?: string; outcome?: string; [key: string]: any },
+  ) {
+    if (!this.server) return;
+    const body = { campaignId, ...payload, timestamp: new Date().toISOString() };
+    this.server.to(`campaign:${campaignId}`).emit('campaign:lead:status', body);
+  }
+
+  broadcastCallAnalysis(
+    callId: string,
+    tenantId: string,
+    campaignId: string | null,
+    payload: { analysisStatus: string; leadScore?: number; intent?: string; sentiment?: string; summary?: string; [key: string]: any },
+  ) {
+    if (!this.server) return;
+    const body = { callId, campaignId, ...payload, timestamp: new Date().toISOString() };
+    this.server.to(`call:${callId}`).emit('call:analysis', body);
+    this.server.to(`tenant:${tenantId}`).emit('call:analysis', body);
+    if (campaignId) {
+      this.server.to(`campaign:${campaignId}`).emit('call:analysis', body);
+    }
+  }
+
+  broadcastCrmSyncStatus(
+    tenantId: string,
+    payload: { provider: string; callId?: string; status: string; message?: string; externalId?: string; [key: string]: any },
+  ) {
+    if (!this.server) return;
+    const body = { ...payload, timestamp: new Date().toISOString() };
+    this.server.to(`tenant:${tenantId}`).emit('crm:sync:status', body);
   }
 }

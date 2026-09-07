@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CreateLeadDto, UpdateLeadDto, BulkImportLeadsDto, UpdateLeadStatusDto } from './dto/lead.dto';
+import { LeadStatus } from '@prisma/client';
 
 @Injectable()
 export class LeadsService {
@@ -27,8 +28,43 @@ export class LeadsService {
   }
 
   async bulkImport(tenantId: string, dto: BulkImportLeadsDto) {
-    const data = dto.leads.map(l => ({ ...l, tenantId }));
+    if (!this.prisma.isConnected) {
+      const mockCreated = dto.leads.map((l, idx) => ({
+        id: `mock-imported-lead-${Date.now()}-${idx}`,
+        name: l.name,
+        phone: l.phone,
+        email: l.email || null,
+        company: l.company || null,
+        status: l.status || 'new',
+        tenantId,
+      }));
+      return {
+        total: dto.leads.length,
+        created: mockCreated.length,
+        duplicates: 0,
+        invalid: 0,
+        leads: mockCreated,
+      };
+    }
+
+    const data = dto.leads.map(l => ({
+      name: l.name,
+      phone: l.phone,
+      email: l.email || null,
+      company: l.company || null,
+      source: l.source || 'csv_import',
+      status: (l.status as LeadStatus) || LeadStatus.new,
+      tenantId,
+    }));
+
     const result = await this.prisma.lead.createMany({ data, skipDuplicates: true });
+
+    // Fetch the leads matching these phones in this tenant so we can return their IDs
+    const phones = dto.leads.map(l => l.phone);
+    const resolvedLeads = await this.prisma.lead.findMany({
+      where: { tenantId, phone: { in: phones }, deletedAt: null },
+      select: { id: true, name: true, phone: true, email: true, company: true, status: true },
+    });
 
     this.auditService.log({
       action: 'LEAD_IMPORTED',
@@ -37,7 +73,13 @@ export class LeadsService {
       tenantId,
     });
 
-    return result;
+    return {
+      total: dto.leads.length,
+      created: result.count,
+      duplicates: Math.max(0, dto.leads.length - result.count),
+      invalid: 0,
+      leads: resolvedLeads,
+    };
   }
 
   async findAll(tenantId: string, query: {

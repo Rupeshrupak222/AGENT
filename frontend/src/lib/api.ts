@@ -707,6 +707,27 @@ export const leadsApi = {
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/leads/${id}`);
   },
+
+  bulkImport: async (
+    leads: Array<{ name: string; phone: string; email?: string; company?: string; status?: string }>
+  ): Promise<{
+    total: number;
+    created: number;
+    duplicates: number;
+    invalid: number;
+    leads: LeadItem[];
+  }> => {
+    const res = await apiClient.post<
+      ApiResponseWrapper<{
+        total: number;
+        created: number;
+        duplicates: number;
+        invalid: number;
+        leads: LeadItem[];
+      }>
+    >("/leads/bulk", { leads });
+    return res.data.data;
+  },
 };
 
 // ── Team / Users API Contracts ────────────────────────────────────
@@ -1246,6 +1267,74 @@ export const campaignsApi = {
   cancel: async (id: string): Promise<{ status: string }> => {
     const res = await apiClient.post<ApiResponseWrapper<{ status: string }>>(
       `/campaigns/${id}/cancel`
+    );
+    return res.data.data;
+  },
+};
+
+export interface IntegrationItem {
+  id: string;
+  provider: string;
+  isActive: boolean;
+  isConfigured: boolean;
+  settings?: Record<string, any>;
+  lastSyncAt?: string | null;
+  maskedKey?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CrmConnectionTestResponse {
+  success: boolean;
+  provider: string;
+  message: string;
+  accountInfo?: {
+    organization?: string;
+    userId?: string;
+    email?: string;
+  };
+}
+
+export const integrationsApi = {
+  list: async (): Promise<IntegrationItem[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<IntegrationItem[]>>("/integrations");
+    return res.data.data;
+  },
+
+  get: async (provider: string): Promise<IntegrationItem | null> => {
+    const res = await apiClient.get<ApiResponseWrapper<IntegrationItem>>(`/integrations/${provider}`);
+    return res.data.data;
+  },
+
+  upsert: async (
+    provider: string,
+    payload: {
+      isActive?: boolean;
+      credentials?: Record<string, any>;
+      settings?: Record<string, any>;
+    }
+  ): Promise<IntegrationItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<IntegrationItem>>(
+      `/integrations/${provider}`,
+      payload
+    );
+    return res.data.data;
+  },
+
+  testConnection: async (
+    provider: string,
+    credentials?: Record<string, any>
+  ): Promise<CrmConnectionTestResponse> => {
+    const res = await apiClient.post<ApiResponseWrapper<CrmConnectionTestResponse>>(
+      `/integrations/${provider}/test`,
+      { credentials }
+    );
+    return res.data.data;
+  },
+
+  syncCall: async (callId: string): Promise<any> => {
+    const res = await apiClient.post<ApiResponseWrapper<any>>(
+      `/integrations/sync/${callId}`
     );
     return res.data.data;
   },

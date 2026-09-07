@@ -7,11 +7,13 @@ import { CampaignQueueService } from './services/campaign-queue.service';
 import { OutboundCallProcessor } from './processors/outbound-call.processor';
 import { PrismaModule } from '../prisma/prisma.module';
 import { TelephonyModule } from '../telephony/telephony.module';
+import { CallsModule } from '../calls/calls.module';
 
 @Module({
   imports: [
     PrismaModule,
     forwardRef(() => TelephonyModule),
+    forwardRef(() => CallsModule),
     BullModule.registerQueue({
       name: 'outbound-calls',
     }),

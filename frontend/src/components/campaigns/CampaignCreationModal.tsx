@@ -17,6 +17,11 @@ import {
   Calendar,
   Layers,
   ArrowRight,
+  Upload,
+  FileText,
+  AlertTriangle,
+  FileSpreadsheet,
+  Check,
 } from "lucide-react";
 import {
   campaignsApi,
@@ -27,6 +32,7 @@ import {
   EligibilityPreviewResult,
   normalizeApiError,
 } from "@/lib/api";
+import { parseCsvContent, CsvParseResult, CsvColumnMapping } from "@/lib/csv-parser";
 import { Badge } from "@/components/ui/Badge";
 import { useToast } from "@/components/ui/Toast";
 
@@ -55,6 +61,7 @@ export function CampaignCreationModal({ onClose, onSuccess }: CampaignCreationMo
   const [loadingAgents, setLoadingAgents] = useState(false);
 
   // CRM Leads Pagination & Selection State
+  const [leadTab, setLeadTab] = useState<"crm" | "csv">("crm");
   const [leads, setLeads] = useState<LeadItem[]>([]);
   const [leadPage, setLeadPage] = useState(1);
   const [leadTotal, setLeadTotal] = useState(0);
@@ -62,6 +69,14 @@ export function CampaignCreationModal({ onClose, onSuccess }: CampaignCreationMo
   const [leadStatusFilter, setLeadStatusFilter] = useState("");
   const [loadingLeads, setLoadingLeads] = useState(false);
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
+
+  // CSV Import State
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [rawCsvText, setRawCsvText] = useState<string>("");
+  const [csvResult, setCsvResult] = useState<CsvParseResult | null>(null);
+  const [customMapping, setCustomMapping] = useState<Partial<CsvColumnMapping>>({});
+  const [isImportingCsv, setIsImportingCsv] = useState(false);
+  const [showInvalidRows, setShowInvalidRows] = useState(false);
 
   // Eligibility Preview State
   const [preview, setPreview] = useState<EligibilityPreviewResult | null>(null);
@@ -147,6 +162,79 @@ export function CampaignCreationModal({ onClose, onSuccess }: CampaignCreationMo
     setDaysOfWeek((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()
     );
+  };
+
+  // Handle CSV File Selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".csv") && file.type !== "text/csv") {
+      warning("File Type: Please upload a valid .csv file.");
+      return;
+    }
+    setCsvFile(file);
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const text = (evt.target?.result as string) || "";
+      setRawCsvText(text);
+      try {
+        const parsed = parseCsvContent(text, file.name);
+        setCsvResult(parsed);
+        setCustomMapping(parsed.detectedMapping);
+      } catch (err: any) {
+        error(`CSV Parsing Error: ${err.message || err}`);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Handle Mapping change
+  const handleMappingChange = (field: keyof CsvColumnMapping, value: string) => {
+    if (!rawCsvText || !csvFile) return;
+    const updated = { ...customMapping, [field]: value || undefined };
+    setCustomMapping(updated);
+    try {
+      const reParsed = parseCsvContent(rawCsvText, csvFile.name, updated);
+      setCsvResult(reParsed);
+    } catch (err: any) {
+      error(`Mapping Error: ${err.message || err}`);
+    }
+  };
+
+  // Handle Bulk Import
+  const handleImportCsvLeads = async () => {
+    if (!csvResult || csvResult.validRows.length === 0) {
+      warning("No Valid Leads: File does not contain any valid lead records.");
+      return;
+    }
+    try {
+      setIsImportingCsv(true);
+      const leadsPayload = csvResult.validRows.map((r) => ({
+        name: r.name,
+        phone: r.phone,
+        email: r.email,
+        company: r.company,
+        status: "new",
+      }));
+
+      const res = await leadsApi.bulkImport(leadsPayload);
+      const importedIds = res.leads.map((l) => l.id);
+
+      // Auto-select imported leads
+      setSelectedLeadIds((prev) => Array.from(new Set([...prev, ...importedIds])));
+      success(`Imported ${res.created} new leads (${res.duplicates} existing matched). ${importedIds.length} total leads selected!`);
+
+      // Reset CSV and switch back to CRM tab
+      setCsvFile(null);
+      setRawCsvText("");
+      setCsvResult(null);
+      setLeadTab("crm");
+      setLeadPage(1);
+    } catch (err) {
+      error(`Import Failed: ${normalizeApiError(err)}`);
+    } finally {
+      setIsImportingCsv(false);
+    }
   };
 
   // Submit and Create Campaign
@@ -364,136 +452,353 @@ export function CampaignCreationModal({ onClose, onSuccess }: CampaignCreationMo
             </div>
           )}
 
-          {/* ──────────────── STEP 2: CRM LEAD SELECTION ──────────────── */}
+          {/* ──────────────── STEP 2: LEAD SELECTION (CRM & CSV) ──────────────── */}
           {step === 2 && (
             <div className="space-y-4">
-              {/* Controls */}
-              <div className="flex items-center justify-between gap-3">
-                <div className="relative flex-1">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Search CRM leads by name or phone..."
-                    value={leadSearch}
-                    onChange={(e) => setLeadSearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 rounded-xl text-xs bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2">
+              {/* Sub-tab Switcher */}
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-2">
+                <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={selectVisiblePage}
-                    className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/10 text-xs font-semibold text-slate-700 dark:text-white hover:bg-slate-200"
+                    onClick={() => setLeadTab("crm")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      leadTab === "crm"
+                        ? "bg-brand-600 text-white shadow-sm"
+                        : "bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white/60 hover:bg-slate-200 dark:hover:bg-white/10"
+                    }`}
                   >
-                    Select Page
+                    <Users className="w-3.5 h-3.5" />
+                    CRM Database
                   </button>
                   <button
                     type="button"
-                    onClick={deselectAll}
-                    className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/10 text-xs font-semibold text-slate-700 dark:text-white hover:bg-slate-200"
+                    onClick={() => setLeadTab("csv")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      leadTab === "csv"
+                        ? "bg-brand-600 text-white shadow-sm"
+                        : "bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white/60 hover:bg-slate-200 dark:hover:bg-white/10"
+                    }`}
                   >
-                    Clear All
+                    <Upload className="w-3.5 h-3.5" />
+                    Bulk CSV Upload
                   </button>
+                </div>
+
+                <div className="text-[11px] font-semibold text-brand-600 dark:text-brand-400 bg-brand-500/10 px-2.5 py-1 rounded-full border border-brand-500/20">
+                  {selectedLeadIds.length} Selected
                 </div>
               </div>
 
-              {/* Selection Counter Bar */}
-              <div className="p-2.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-700 dark:text-brand-300 text-xs flex items-center justify-between">
-                <span className="font-semibold">
-                  {selectedLeadIds.length} lead(s) selected for enrollment
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-brand-200/70">
-                  Total in CRM: {leadTotal}
-                </span>
-              </div>
+              {/* CRM SUB-TAB */}
+              {leadTab === "crm" && (
+                <div className="space-y-3">
+                  {/* Controls */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="relative flex-1">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Search CRM leads by name or phone..."
+                        value={leadSearch}
+                        onChange={(e) => setLeadSearch(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 rounded-xl text-xs bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10"
+                      />
+                    </div>
 
-              {/* Leads Table */}
-              <div className="border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden max-h-[300px] overflow-y-auto">
-                <table className="w-full text-left text-xs text-slate-600 dark:text-white/70">
-                  <thead className="bg-slate-50 dark:bg-white/[0.02] text-[10px] uppercase text-slate-400 font-semibold border-b border-slate-200 dark:border-white/10">
-                    <tr>
-                      <th className="p-2.5 w-8"></th>
-                      <th className="p-2.5">Name</th>
-                      <th className="p-2.5">Phone</th>
-                      <th className="p-2.5">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200/60 dark:divide-white/5">
-                    {loadingLeads ? (
-                      <tr>
-                        <td colSpan={4} className="py-8 text-center text-slate-400">
-                          Loading leads...
-                        </td>
-                      </tr>
-                    ) : leads.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="py-8 text-center text-slate-400">
-                          No matching leads found in CRM.
-                        </td>
-                      </tr>
-                    ) : (
-                      leads.map((l) => {
-                        const isSelected = selectedLeadIds.includes(l.id);
-                        return (
-                          <tr
-                            key={l.id}
-                            onClick={() => toggleLead(l.id)}
-                            className={`cursor-pointer transition-colors ${
-                              isSelected
-                                ? "bg-brand-500/10 dark:bg-brand-500/20"
-                                : "hover:bg-slate-50 dark:hover:bg-white/[0.02]"
-                            }`}
-                          >
-                            <td className="p-2.5 text-center">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() => {}}
-                                className="rounded text-brand-600 cursor-pointer"
-                              />
-                            </td>
-                            <td className="p-2.5 font-semibold text-slate-900 dark:text-white truncate max-w-[150px]">
-                              {l.name}
-                            </td>
-                            <td className="p-2.5 font-mono text-[11px]">
-                              {l.phone}
-                            </td>
-                            <td className="p-2.5">
-                              <span className="capitalize text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/10">
-                                {l.status?.replace("_", " ") || "new"}
-                              </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={selectVisiblePage}
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/10 text-xs font-semibold text-slate-700 dark:text-white hover:bg-slate-200"
+                      >
+                        Select Page
+                      </button>
+                      <button
+                        type="button"
+                        onClick={deselectAll}
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/10 text-xs font-semibold text-slate-700 dark:text-white hover:bg-slate-200"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Leads Table */}
+                  <div className="border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden max-h-[280px] overflow-y-auto">
+                    <table className="w-full text-left text-xs text-slate-600 dark:text-white/70">
+                      <thead className="bg-slate-50 dark:bg-white/[0.02] text-[10px] uppercase text-slate-400 font-semibold border-b border-slate-200 dark:border-white/10 sticky top-0">
+                        <tr>
+                          <th className="p-2.5 w-8"></th>
+                          <th className="p-2.5">Name</th>
+                          <th className="p-2.5">Phone</th>
+                          <th className="p-2.5">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200/60 dark:divide-white/5">
+                        {loadingLeads ? (
+                          <tr>
+                            <td colSpan={4} className="py-8 text-center text-slate-400">
+                              Loading leads...
                             </td>
                           </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                        ) : leads.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="py-8 text-center text-slate-400">
+                              No matching leads found in CRM.
+                            </td>
+                          </tr>
+                        ) : (
+                          leads.map((l) => {
+                            const isSelected = selectedLeadIds.includes(l.id);
+                            return (
+                              <tr
+                                key={l.id}
+                                onClick={() => toggleLead(l.id)}
+                                className={`cursor-pointer transition-colors ${
+                                  isSelected
+                                    ? "bg-brand-500/10 dark:bg-brand-500/20"
+                                    : "hover:bg-slate-50 dark:hover:bg-white/[0.02]"
+                                }`}
+                              >
+                                <td className="p-2.5 text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => {}}
+                                    className="rounded text-brand-600 cursor-pointer"
+                                  />
+                                </td>
+                                <td className="p-2.5 font-semibold text-slate-900 dark:text-white truncate max-w-[150px]">
+                                  {l.name}
+                                </td>
+                                <td className="p-2.5 font-mono text-[11px]">
+                                  {l.phone}
+                                </td>
+                                <td className="p-2.5">
+                                  <span className="capitalize text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/10">
+                                    {l.status?.replace("_", " ") || "new"}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
 
-              {/* Lead Pagination */}
-              <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
-                <span>Page {leadPage} of {Math.max(1, Math.ceil(leadTotal / 8))}</span>
-                <div className="flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setLeadPage((p) => Math.max(1, p - 1))}
-                    disabled={leadPage <= 1}
-                    className="p-1 rounded border border-slate-200 dark:border-white/10 disabled:opacity-30"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLeadPage((p) => p + 1)}
-                    disabled={leadPage >= Math.ceil(leadTotal / 8)}
-                    className="p-1 rounded border border-slate-200 dark:border-white/10 disabled:opacity-30"
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
+                  {/* Lead Pagination */}
+                  <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+                    <span>Page {leadPage} of {Math.max(1, Math.ceil(leadTotal / 8))} ({leadTotal} total)</span>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setLeadPage((p) => Math.max(1, p - 1))}
+                        disabled={leadPage <= 1}
+                        className="p-1 rounded border border-slate-200 dark:border-white/10 disabled:opacity-30"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLeadPage((p) => p + 1)}
+                        disabled={leadPage >= Math.ceil(leadTotal / 8)}
+                        className="p-1 rounded border border-slate-200 dark:border-white/10 disabled:opacity-30"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* CSV IMPORT SUB-TAB */}
+              {leadTab === "csv" && (
+                <div className="space-y-3.5">
+                  {/* File Upload Box */}
+                  {!csvResult ? (
+                    <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-300 dark:border-white/15 rounded-2xl hover:border-brand-500/50 hover:bg-brand-50/20 dark:hover:bg-brand-950/10 cursor-pointer transition-all">
+                      <FileSpreadsheet className="w-10 h-10 text-brand-500 mb-2" />
+                      <span className="text-xs font-bold text-slate-800 dark:text-white">
+                        Upload Leads CSV File
+                      </span>
+                      <span className="text-[11px] text-slate-400 mt-1 text-center">
+                        RFC 4180 compliant • Max 5 MB • E.164 phone formats
+                      </span>
+                      <input
+                        type="file"
+                        accept=".csv,text/csv"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                    </label>
+                  ) : (
+                    <div className="space-y-3">
+                      {/* File Summary Header */}
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10">
+                        <div className="flex items-center gap-2.5">
+                          <FileText className="w-5 h-5 text-brand-500" />
+                          <div>
+                            <div className="text-xs font-bold truncate max-w-[250px]">{csvResult.fileName}</div>
+                            <div className="text-[10px] text-slate-400">
+                              {(csvResult.fileSizeBytes / 1024).toFixed(1)} KB • {csvResult.totalRowsDetected} detected rows
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCsvResult(null);
+                            setCsvFile(null);
+                            setRawCsvText("");
+                          }}
+                          className="text-[11px] text-rose-500 hover:text-rose-600 font-semibold"
+                        >
+                          Change File
+                        </button>
+                      </div>
+
+                      {/* KPI Stats */}
+                      <div className="grid grid-cols-4 gap-2">
+                        <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center">
+                          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase">Valid</div>
+                          <div className="text-base font-black text-emerald-600 dark:text-emerald-400">{csvResult.validRows.length}</div>
+                        </div>
+                        <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-center">
+                          <div className="text-[10px] text-rose-600 dark:text-rose-400 font-bold uppercase">Invalid</div>
+                          <div className="text-base font-black text-rose-600 dark:text-rose-400">{csvResult.invalidRows.length}</div>
+                        </div>
+                        <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-center">
+                          <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase">Duplicates</div>
+                          <div className="text-base font-black text-amber-600 dark:text-amber-400">{csvResult.duplicateCountInFile}</div>
+                        </div>
+                        <div className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-center">
+                          <div className="text-[10px] text-slate-400 font-bold uppercase">Total</div>
+                          <div className="text-base font-black text-slate-800 dark:text-white">{csvResult.totalRowsDetected}</div>
+                        </div>
+                      </div>
+
+                      {/* Column Mapping Section */}
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 space-y-2">
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-white/80">
+                          Confirm Column Mappings
+                        </span>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <label className="block text-[10px] text-slate-400 mb-0.5">Name Column *</label>
+                            <select
+                              value={customMapping.nameCol || ""}
+                              onChange={(e) => handleMappingChange("nameCol", e.target.value)}
+                              className="w-full px-2 py-1 rounded-lg text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10"
+                            >
+                              {csvResult.headers.map((h) => (
+                                <option key={h} value={h}>{h}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-slate-400 mb-0.5">Phone Column *</label>
+                            <select
+                              value={customMapping.phoneCol || ""}
+                              onChange={(e) => handleMappingChange("phoneCol", e.target.value)}
+                              className="w-full px-2 py-1 rounded-lg text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10"
+                            >
+                              {csvResult.headers.map((h) => (
+                                <option key={h} value={h}>{h}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-slate-400 mb-0.5">Email (Optional)</label>
+                            <select
+                              value={customMapping.emailCol || ""}
+                              onChange={(e) => handleMappingChange("emailCol", e.target.value)}
+                              className="w-full px-2 py-1 rounded-lg text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10"
+                            >
+                              <option value="">-- None --</option>
+                              {csvResult.headers.map((h) => (
+                                <option key={h} value={h}>{h}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-slate-400 mb-0.5">Company (Optional)</label>
+                            <select
+                              value={customMapping.companyCol || ""}
+                              onChange={(e) => handleMappingChange("companyCol", e.target.value)}
+                              className="w-full px-2 py-1 rounded-lg text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10"
+                            >
+                              <option value="">-- None --</option>
+                              {csvResult.headers.map((h) => (
+                                <option key={h} value={h}>{h}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Sample Preview Table */}
+                      <div className="border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden text-xs">
+                        <div className="px-3 py-1.5 bg-slate-50 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/10 text-[10px] font-bold uppercase text-slate-400">
+                          Sample Preview (First 5 Rows)
+                        </div>
+                        <div className="overflow-x-auto max-h-[140px]">
+                          <table className="w-full text-left">
+                            <thead className="bg-slate-50/50 dark:bg-white/[0.01] text-[10px] text-slate-400 border-b border-slate-200/50 dark:border-white/5">
+                              <tr>
+                                <th className="p-2">Name</th>
+                                <th className="p-2">Phone</th>
+                                <th className="p-2">Email</th>
+                                <th className="p-2">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200/50 dark:divide-white/5">
+                              {csvResult.rows.slice(0, 5).map((r, i) => (
+                                <tr key={i} className={r.isValid ? "" : "bg-rose-500/5"}>
+                                  <td className="p-2 font-medium">{r.name || "—"}</td>
+                                  <td className="p-2 font-mono text-[11px]">{r.phone || "—"}</td>
+                                  <td className="p-2 text-slate-400">{r.email || "—"}</td>
+                                  <td className="p-2">
+                                    {r.isValid ? (
+                                      <span className="text-emerald-500 text-[10px] font-semibold flex items-center gap-0.5">
+                                        <Check className="w-3 h-3" /> Valid
+                                      </span>
+                                    ) : (
+                                      <span className="text-rose-500 text-[10px] font-semibold flex items-center gap-0.5" title={r.errors.join(", ")}>
+                                        <AlertTriangle className="w-3 h-3" /> {r.errors[0]}
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Import Action Bar */}
+                      <button
+                        type="button"
+                        disabled={isImportingCsv || csvResult.validRows.length === 0}
+                        onClick={handleImportCsvLeads}
+                        className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 transition-all"
+                      >
+                        {isImportingCsv ? (
+                          <>
+                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            Ingesting {csvResult.validRows.length} Leads...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-4 h-4" />
+                            Import & Select {csvResult.validRows.length} Valid Leads
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
