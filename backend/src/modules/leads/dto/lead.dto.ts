@@ -1,4 +1,16 @@
-import { IsString, IsEmail, IsOptional, IsEnum, IsInt, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsEnum,
+  IsInt,
+  Min,
+  Max,
+  IsArray,
+  ValidateNested,
+  ValidateIf,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
 export enum LeadStatus {
@@ -14,7 +26,7 @@ export enum LeadStatus {
 export class CreateLeadDto {
   @ApiProperty()  @IsString()  name:    string;
   @ApiProperty()  @IsString()  phone:   string;
-  @ApiPropertyOptional() @IsEmail()   @IsOptional() email?:    string;
+  @ApiPropertyOptional() @ValidateIf((o) => o.email && o.email.trim() !== '') @IsEmail() @IsOptional() email?: string;
   @ApiPropertyOptional() @IsString()  @IsOptional() company?:  string;
   @ApiPropertyOptional() @IsString()  @IsOptional() source?:   string;
   @ApiPropertyOptional() @IsString()  @IsOptional() agentId?:  string;
@@ -26,6 +38,9 @@ export class UpdateLeadDto extends PartialType(CreateLeadDto) {}
 
 export class BulkImportLeadsDto {
   @ApiProperty({ type: [CreateLeadDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateLeadDto)
   leads: CreateLeadDto[];
 }
 
