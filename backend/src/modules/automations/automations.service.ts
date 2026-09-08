@@ -12,6 +12,8 @@ import { AutomationProviderRegistry } from './providers/provider-registry.servic
 import { ConditionEngine } from './engine/condition.engine';
 import { TemplateEngine } from './engine/template.engine';
 import { AutomationTriggerEvent } from './interfaces/message-provider.interface';
+import { buildAppointmentContext } from '../calendar/lib/appointment-context';
+import { WhatsAppAppointmentRouter } from './services/whatsapp-appointment.router';
 
 export type AutomationType = 'whatsapp' | 'sms' | 'email';
 
@@ -33,6 +35,7 @@ export class AutomationsService {
     private readonly providerRegistry: AutomationProviderRegistry,
     private readonly conditionEngine: ConditionEngine,
     private readonly templateEngine: TemplateEngine,
+    private readonly whatsappAppointmentRouter: WhatsAppAppointmentRouter,
   ) {}
 
   /**
@@ -49,9 +52,13 @@ export class AutomationsService {
         triggerName: event.trigger,
         leadId: event.leadId,
         callId: event.callId,
+        appointmentId: event.appointmentId,
         actionType: 'send_whatsapp',
         template: 'Automated follow-up message for {{lead.name}}',
-        variables: event.data?.lead,
+        variables: {
+          lead: event.data?.lead,
+          appointment: event.data?.appointment,
+        },
       });
       return { triggered: 1, rulesMatched: 1 };
     }
@@ -89,11 +96,22 @@ export class AutomationsService {
       }
     }
 
+    // 2b. Appointment context — formatted for template rendering in its timezone
+    let appointmentCtx: Record<string, any> | undefined = event.data?.appointment;
+    if (event.appointmentId) {
+      const appointment = await this.prisma.appointment.findFirst({
+        where: { id: event.appointmentId, tenantId },
+      });
+      if (appointment && !appointmentCtx) {
+        appointmentCtx = buildAppointmentContext(appointment, lead);
+      }
+    }
+
     const context = {
       lead,
       call,
       analysis: event.data?.analysis || (call?.metadata as any)?.analysis,
-      appointment: event.data?.appointment,
+      appointment: appointmentCtx,
       tenant: { id: tenantId },
     };
 
@@ -124,7 +142,7 @@ export class AutomationsService {
 
       for (const act of actionsToRun) {
         const actionType = act.type.includes('email') ? 'send_email' : 'send_whatsapp';
-        const triggerEventId = `${event.trigger}_${event.callId || event.leadId || Date.now()}`;
+        const triggerEventId = `${event.trigger}_${event.callId || event.leadId || event.appointmentId || Date.now()}`;
 
         await this.queueService.enqueueAction({
           tenantId,
@@ -133,10 +151,14 @@ export class AutomationsService {
           triggerName: event.trigger,
           leadId: lead?.id || event.leadId,
           callId: call?.id || event.callId,
+          appointmentId: event.appointmentId,
           actionType: actionType as any,
           template: act.template || rule.template || undefined,
           subject: act.subject,
-          variables: event.data?.lead,
+          variables: {
+            lead: event.data?.lead,
+            appointment: appointmentCtx,
+          },
         });
 
         enqueuedCount++;
@@ -273,7 +295,25 @@ export class AutomationsService {
       }
     }
 
-    return { success: true, processedStatuses: statuses.length, updated: updatedCount };
+    // Day 17: inbound appointment assistant (lookup / cancel / reschedule / book)
+    let inboundHandled = 0;
+    let inboundReplies = 0;
+    if (this.prisma.isConnected) {
+      const inbound = this.providerRegistry.metaWhatsApp.parseInboundMessages(payload);
+      if (inbound.length > 0) {
+        const result = await this.whatsappAppointmentRouter.handleInbound(inbound);
+        inboundHandled = result.handled;
+        inboundReplies = result.replies.length;
+      }
+    }
+
+    return {
+      success: true,
+      processedStatuses: statuses.length,
+      updated: updatedCount,
+      inboundMessages: inboundHandled,
+      inboundReplies,
+    };
   }
 
   /**

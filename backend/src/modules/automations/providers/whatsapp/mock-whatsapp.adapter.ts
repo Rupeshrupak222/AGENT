@@ -4,6 +4,7 @@ import {
   WhatsAppSendOptions,
   ConnectionTestResult,
   WhatsAppWebhookStatusUpdate,
+  WhatsAppInboundMessage,
 } from '../../interfaces/message-provider.interface';
 import { WhatsAppCredentials } from './whatsapp.interface';
 
@@ -14,6 +15,19 @@ export class MockWhatsAppAdapter {
   private readonly logger = new Logger(MockWhatsAppAdapter.name);
   public mode: MockWhatsAppMode = 'success';
   public sentMessages: Array<{ options: WhatsAppSendOptions; timestamp: number }> = [];
+  public inboundMessages: WhatsAppInboundMessage[] = [];
+
+  /** Test hook: seed inbound messages emitted by the mock webhook payload. */
+  seedInboundMessages(messages: WhatsAppInboundMessage[]) {
+    this.inboundMessages = [...messages];
+  }
+
+  parseInboundMessages(body: any): WhatsAppInboundMessage[] {
+    if (body?.mockInbound && Array.isArray(body.mockInbound)) {
+      return body.mockInbound;
+    }
+    return this.inboundMessages;
+  }
 
   setMode(mode: MockWhatsAppMode) {
     this.mode = mode;

@@ -103,9 +103,10 @@ export class AutomationActionProcessor implements OnModuleInit {
 
     // 3. Template Rendering
     const templateContext = {
-      lead: lead ? { ...lead, ...(job.variables || {}) } : job.variables,
+      lead: lead ? { ...lead, ...(job.variables?.lead ?? {}) } : job.variables?.lead,
       call,
       analysis: (call?.metadata as any)?.analysis,
+      appointment: job.variables?.appointment,
       agent: call?.agent,
     };
 

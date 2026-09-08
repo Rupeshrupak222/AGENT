@@ -53,6 +53,16 @@ export interface WhatsAppWebhookStatusUpdate {
   };
 }
 
+export interface WhatsAppInboundMessage {
+  messageId: string;
+  /** Sender wa_id (E.164 without '+') */
+  from: string;
+  fromName?: string;
+  type: 'text' | 'button' | 'interactive' | 'image' | 'audio' | 'video' | 'document' | 'unknown';
+  text?: string;
+  timestamp: number;
+}
+
 export interface AutomationTriggerEvent {
   trigger: string;
   tenantId: string;

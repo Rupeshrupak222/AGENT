@@ -6,6 +6,7 @@ import {
   WhatsAppSendOptions,
   ConnectionTestResult,
   WhatsAppWebhookStatusUpdate,
+  WhatsAppInboundMessage,
 } from '../../interfaces/message-provider.interface';
 import { WhatsAppCredentials, MetaWhatsAppPayload, MetaWhatsAppResponse } from './whatsapp.interface';
 
@@ -184,6 +185,52 @@ export class MetaWhatsAppAdapter {
               title: s.errors[0].title,
               message: s.errors[0].message || s.errors[0].error_data?.details,
             } : undefined,
+          });
+        }
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Parses agent-originated (inbound) message text from a webhook payload.
+   * Supports text, interactive, button, and attachment messages; media-only
+   * messages are surfaced as type with no text so downstream routers can
+   * choose to reply with a prompt instead of silently dropping them.
+   */
+  parseInboundMessages(body: any): WhatsAppInboundMessage[] {
+    const results: WhatsAppInboundMessage[] = [];
+    if (!body || body.object !== 'whatsapp_business_account' || !Array.isArray(body.entry)) {
+      return results;
+    }
+
+    for (const entry of body.entry) {
+      if (!Array.isArray(entry.changes)) continue;
+      for (const change of entry.changes) {
+        const messages = change.value?.messages;
+        if (!Array.isArray(messages)) continue;
+
+        for (const m of messages) {
+          if (!m.id || !m.from) continue;
+          const type = m.type && ['text', 'button', 'interactive', 'image', 'audio', 'video', 'document'].includes(m.type)
+            ? m.type
+            : 'unknown';
+          let text: string | undefined;
+          if (m.type === 'text') text = m.text?.body;
+          else if (m.type === 'interactive') {
+            text = m.interactive?.button_reply?.title || m.interactive?.list_reply?.title;
+          } else if (m.type === 'button') {
+            text = m.button?.text;
+          }
+
+          results.push({
+            messageId: m.id,
+            from: String(m.from),
+            fromName: m.profile?.name,
+            type: type as any,
+            text,
+            timestamp: Number(m.timestamp) || Math.floor(Date.now() / 1000),
           });
         }
       }

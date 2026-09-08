@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { useToast } from "@/components/ui/Toast";
-import { tenantApi, integrationsApi, automationsApi, IntegrationItem, normalizeApiError } from "@/lib/api";
+import { tenantApi, integrationsApi, automationsApi, appointmentsApi, IntegrationItem, CalendarProviderStatus, normalizeApiError } from "@/lib/api";
 
 export default function SettingsPage() {
   const user = useAuthStore(s => s.user);
@@ -62,6 +62,17 @@ export default function SettingsPage() {
   const [resendStatus, setResendStatus] = useState<string>("Not Connected");
   const [testingMsgProvider, setTestingMsgProvider] = useState<string | null>(null);
 
+  // Calendar Provider State (Day 17)
+  const [calcomKey, setCalcomKey] = useState("");
+  const [calcomApiUrl, setCalcomApiUrl] = useState("https://api.cal.com/v1");
+  const [calcomEventType, setCalcomEventType] = useState("");
+  const [calcomTimezone, setCalcomTimezone] = useState("Asia/Kolkata");
+  const [calcomDuration, setCalcomDuration] = useState(30);
+  const [calcomActive, setCalcomActive] = useState(false);
+  const [calcomStatus, setCalcomStatus] = useState<string>("Not Configured");
+  const [testingCalcom, setTestingCalcom] = useState(false);
+  const [savingCalcom, setSavingCalcom] = useState(false);
+
   // Load CRM & Messaging integrations when switching to integrations tab
   useEffect(() => {
     if (activeTab !== "integrations") return;
@@ -73,6 +84,24 @@ export default function SettingsPage() {
           automationsApi.getProviderStatuses().catch(() => []),
         ]);
         setCrmList(list);
+
+        const prov = await appointmentsApi.providerStatus().catch(() => null);
+        if (prov) {
+          if (prov.isMock) {
+            setCalcomStatus(prov.provider === "native" ? "Native Calendar" : "Mock Mode");
+          } else {
+            setCalcomStatus(prov.configured && prov.success ? "Connected" : "Configured");
+          }
+        }
+
+        const cal = list.find((i) => i.provider.toLowerCase() === "calcom");
+        if (cal) {
+          setCalcomActive(cal.isActive);
+          if (cal.maskedKey) setCalcomKey(""); // raw key is never returned — user must re-enter to rotate
+          if (cal.settings?.eventTypeId != null) setCalcomEventType(String(cal.settings.eventTypeId));
+          if (typeof cal.settings?.timezone === "string") setCalcomTimezone(cal.settings.timezone);
+          if (typeof cal.settings?.defaultDuration === "number") setCalcomDuration(cal.settings.defaultDuration);
+        }
 
         const wa = msgProvs.find((p) => p.provider === "whatsapp");
         if (wa) {
@@ -161,6 +190,54 @@ export default function SettingsPage() {
       error(`Save Failed: ${normalizeApiError(err)}`);
     } finally {
       setSavingCrm(null);
+    }
+  };
+
+  const handleTestCalcom = async () => {
+    try {
+      setTestingCalcom(true);
+      const res: CalendarProviderStatus = await appointmentsApi.testProvider();
+      if (res.provider === "calcom" && res.configured && res.success) {
+        success(`Cal.com verified: ${res.message}`);
+        setCalcomStatus("Connected");
+      } else {
+        warning(`Calendar provider: ${res.message}${res.provider !== "calcom" ? " — live Cal.com not configured yet" : ""}`);
+        setCalcomStatus(res.provider === "calcom" ? "Configured" : res.isMock ? "Mock Mode" : "Not Configured");
+      }
+    } catch (err) {
+      error(`Cal.com test failed: ${normalizeApiError(err)}`);
+    } finally {
+      setTestingCalcom(false);
+    }
+  };
+
+  const handleSaveCalcom = async () => {
+    try {
+      setSavingCalcom(true);
+      const settings: Record<string, any> = {
+        eventTypeId: calcomEventType.trim() ? Number(calcomEventType.trim()) : undefined,
+        timezone: calcomTimezone,
+        defaultDuration: calcomDuration,
+      };
+      if (!settings.eventTypeId) delete settings.eventTypeId;
+      await integrationsApi.upsert("calcom", {
+        isActive: calcomActive,
+        credentials: { ...(calcomKey.trim() ? { apiKey: calcomKey.trim() } : {}), apiUrl: calcomApiUrl.trim() || undefined },
+        settings,
+      });
+      success("Cal.com settings saved. Availability is now served from your live booking calendar.");
+      setCalcomKey("");
+      const prov: CalendarProviderStatus = await appointmentsApi.providerStatus().catch(() => null as any);
+      if (prov) {
+        if (!prov.isMock && prov.configured && prov.success) setCalcomStatus("Connected");
+        else setCalcomStatus(prov.configured ? "Configured" : "Mock Mode");
+      }
+      const updated = await integrationsApi.list();
+      setCrmList(updated);
+    } catch (err) {
+      error(`Save Failed: ${normalizeApiError(err)}`);
+    } finally {
+      setSavingCalcom(false);
     }
   };
 
@@ -786,14 +863,145 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </div>
+
+              {/* 7. CAL.COM BOOKING CALENDAR (Day 17) */}
+              <div className="rounded-2xl p-5 panel-card border border-slate-200 dark:border-white/[0.08] shadow-lg flex flex-col justify-between space-y-4 md:col-span-2">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 font-black text-sm">
+                        CC
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">Cal.com Booking Calendar</h4>
+                        <p className="text-[11px] text-slate-400">Live availability &amp; appointment scheduling API v1</p>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      calcomStatus === "Connected"
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                        : calcomStatus === "Mock Mode"
+                        ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
+                        : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/50"
+                    }`}>
+                      {calcomStatus}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-500 dark:text-white/60 leading-relaxed mb-3">
+                    Connect a Cal.com account to serve live booking slots, provider-synced confirmations, idempotent
+                    booking, and automatic 24h/1h WhatsApp reminders. Without a key the built-in mock calendar keeps
+                    every flow working in demo mode.
+                  </p>
+
+                  <div className="grid sm:grid-cols-2 gap-2.5 text-xs">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-white/70 block mb-1">
+                        Cal.com API Key
+                      </label>
+                      <input
+                        type="password"
+                        placeholder={calcomKey === "" && calcomStatus !== "Not Configured" ? "Saved — leave empty to keep" : "cal_live_..."}
+                        value={calcomKey}
+                        onChange={(e) => setCalcomKey(e.target.value)}
+                        className="w-full h-8 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white font-mono outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-white/70 block mb-1">
+                        Event Type ID
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 123456"
+                        value={calcomEventType}
+                        onChange={(e) => setCalcomEventType(e.target.value)}
+                        className="w-full h-8 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-white/70 block mb-1">
+                        Default Timezone
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Asia/Kolkata"
+                        value={calcomTimezone}
+                        onChange={(e) => setCalcomTimezone(e.target.value)}
+                        className="w-full h-8 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-white/70 block mb-1">
+                        Default Duration
+                      </label>
+                      <select
+                        value={calcomDuration}
+                        onChange={(e) => setCalcomDuration(Number(e.target.value))}
+                        className="w-full h-8 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
+                      >
+                        <option value={15}>15 mins</option>
+                        <option value={30}>30 mins</option>
+                        <option value={45}>45 mins</option>
+                        <option value={60}>60 mins</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-white/70 block mb-1">
+                        API URL
+                      </label>
+                      <input
+                        type="text"
+                        value={calcomApiUrl}
+                        onChange={(e) => setCalcomApiUrl(e.target.value)}
+                        className="w-full h-8 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white font-mono outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-white/80 cursor-pointer pt-2">
+                    <input
+                      type="checkbox"
+                      checked={calcomActive}
+                      onChange={(e) => setCalcomActive(e.target.checked)}
+                      className="rounded text-brand-600 cursor-pointer"
+                    />
+                    Use Cal.com as the tenant&apos;s calendar provider (overrides mock/native defaults)
+                  </label>
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-white/5">
+                  <button
+                    type="button"
+                    disabled={testingCalcom}
+                    onClick={handleTestCalcom}
+                    className="flex-1 py-1.5 px-3 rounded-xl border border-slate-200 dark:border-white/15 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-40"
+                  >
+                    {testingCalcom ? <Loader2 className="w-3.5 h-3.5 inline animate-spin mr-1" /> : <RefreshCw className="w-3.5 h-3.5 inline mr-1" />}
+                    {testingCalcom ? "Testing..." : "Test Provider"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={savingCalcom}
+                    onClick={handleSaveCalcom}
+                    className="flex-1 py-1.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold disabled:opacity-40"
+                  >
+                    {savingCalcom ? "Saving..." : "Save Cal.com"}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-3 pt-4">
-          {activeTab !== "general" && (
+          {activeTab !== "general" && activeTab !== "integrations" && (
             <p className="text-xs text-slate-500 dark:text-white/40">
-              This tab has no server persistence yet — only General &amp; Branding settings are saved.
+              This tab has no server persistence yet — only General &amp; Branding settings and CRM / Cal.com integrations are saved.
             </p>
           )}
           <button

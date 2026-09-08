@@ -845,10 +845,16 @@ export const voicesApi = {
 // ── Calendar / Appointments API ────────────────────────────────
 export type AppointmentStatus =
   | "scheduled"
+  | "pending"
   | "confirmed"
   | "completed"
   | "cancelled"
-  | "no_show";
+  | "no_show"
+  | "rescheduled"
+  | "failed";
+
+export type CalendarProviderKind = "auto" | "native" | "calcom" | "mock";
+export type AppointmentSource = "manual" | "ai" | "whatsapp" | "call";
 
 export interface Appointment {
   id: string;
@@ -856,23 +862,107 @@ export interface Appointment {
   phone: string;
   email?: string | null;
   topic?: string | null;
+  title?: string | null;
+  description?: string | null;
   date: string;
+  startAt?: string | null;
+  endAt?: string | null;
   duration: number;
+  timezone?: string | null;
   status: AppointmentStatus;
+  calendarProvider?: string | null;
+  providerAppointmentId?: string | null;
+  providerEventId?: string | null;
+  providerBookingUrl?: string | null;
+  location?: string | null;
+  attendeeEmail?: string | null;
+  attendeePhone?: string | null;
+  source?: AppointmentSource | string | null;
   leadId?: string | null;
   agentId?: string | null;
+  callId?: string | null;
+  campaignId?: string | null;
+  cancelledAt?: string | null;
+  cancellationReason?: string | null;
+  rescheduledAt?: string | null;
+  rescheduleReason?: string | null;
+  reminder24hSentAt?: string | null;
+  reminder1hSentAt?: string | null;
+  idempotencyKey?: string | null;
+  createdById?: string | null;
+  createdByEmail?: string | null;
+  metadata?: Record<string, any> | null;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface AppointmentOverview {
   total: number;
+  scheduled: number;
+  pending: number;
   confirmed: number;
   completed: number;
   cancelled: number;
   noShow: number;
+  rescheduled: number;
+  failed: number;
   showUpRatio: string;
   avgDurationMins: number;
+}
+
+export interface AppointmentSlot {
+  provider: string;
+  startAt: string;
+  endAt: string;
+  timezone: string;
+  available: boolean;
+}
+
+export interface AvailabilityResponse {
+  provider: string;
+  isMock: boolean;
+  source: string;
+  timezone: string;
+  authenticated: boolean;
+  slots: AppointmentSlot[];
+  excluded?: number;
+}
+
+export interface AvailabilityRequest {
+  from: string;
+  to: string;
+  timezone?: string;
+  duration?: number;
+  agentId?: string;
+  provider?: CalendarProviderKind;
+  topic?: string;
+}
+
+export interface CalendarProviderStatus {
+  provider: string;
+  configured: boolean;
+  source: string;
+  isMock: boolean;
+  message: string;
+  success?: boolean;
+  details?: Record<string, any>;
+}
+
+export interface AppointmentReminderItem {
+  kind: "24h" | "1h";
+  offsetMs: number;
+  remindAt: string;
+  scheduled: boolean;
+  sentAt: string | null;
+  status: "scheduled" | "sent" | "passed";
+}
+
+export interface AppointmentReminderStatus {
+  appointmentId: string;
+  startAt: string;
+  timezone: string;
+  status: AppointmentStatus;
+  reminders: AppointmentReminderItem[];
 }
 
 export interface CreateAppointmentInput {
@@ -885,6 +975,40 @@ export interface CreateAppointmentInput {
   status?: AppointmentStatus;
   leadId?: string;
   agentId?: string;
+}
+
+export interface ScheduleAppointmentInput {
+  leadName: string;
+  phone: string;
+  email?: string;
+  topic?: string;
+  startAt?: string;
+  date?: string;
+  duration?: number;
+  timezone?: string;
+  agentId?: string;
+  leadId?: string;
+  location?: string;
+  title?: string;
+  description?: string;
+  provider?: CalendarProviderKind;
+  idempotencyKey?: string;
+  source?: AppointmentSource;
+  callId?: string;
+  campaignId?: string;
+  createdByEmail?: string;
+}
+
+export interface RescheduleAppointmentInput {
+  startAt: string;
+  timezone?: string;
+  reason?: string;
+}
+
+export interface CancelAppointmentInput {
+  reason?: string;
+  force?: boolean;
+  provider?: CalendarProviderKind;
 }
 
 export const calendarApi = {
@@ -935,6 +1059,106 @@ export const calendarApi = {
   },
 };
 
+// ── Appointments API (Day 17 scheduling — /appointments) ──────
+export type AppointmentBookingResponse = Appointment & { idempotent?: boolean };
+export type AppointmentCancelResponse = Appointment & { alreadyCancelled?: boolean };
+
+export const appointmentsApi = {
+  list: async (params?: {
+    status?: string;
+    from?: string;
+    to?: string;
+    agentId?: string;
+    leadId?: string;
+    upcoming?: boolean;
+  }): Promise<Appointment[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<Appointment[]>>(
+      "/appointments",
+      { params }
+    );
+    return res.data.data;
+  },
+
+  overview: async (params?: {
+    from?: string;
+    to?: string;
+  }): Promise<AppointmentOverview> => {
+    const res = await apiClient.get<ApiResponseWrapper<AppointmentOverview>>(
+      "/appointments/overview",
+      { params }
+    );
+    return res.data.data;
+  },
+
+  availability: async (
+    params: AvailabilityRequest
+  ): Promise<AvailabilityResponse> => {
+    const res = await apiClient.get<ApiResponseWrapper<AvailabilityResponse>>(
+      "/appointments/availability",
+      { params }
+    );
+    return res.data.data;
+  },
+
+  providerStatus: async (): Promise<CalendarProviderStatus> => {
+    const res = await apiClient.get<ApiResponseWrapper<CalendarProviderStatus>>(
+      "/appointments/provider/status"
+    );
+    return res.data.data;
+  },
+
+  testProvider: async (): Promise<CalendarProviderStatus> => {
+    const res = await apiClient.post<ApiResponseWrapper<CalendarProviderStatus>>(
+      "/appointments/provider/test"
+    );
+    return res.data.data;
+  },
+
+  create: async (
+    dto: ScheduleAppointmentInput
+  ): Promise<AppointmentBookingResponse> => {
+    const res = await apiClient.post<
+      ApiResponseWrapper<AppointmentBookingResponse>
+    >("/appointments", dto);
+    return res.data.data;
+  },
+
+  get: async (id: string): Promise<Appointment> => {
+    const res = await apiClient.get<ApiResponseWrapper<Appointment>>(
+      `/appointments/${id}`
+    );
+    return res.data.data;
+  },
+
+  reminders: async (id: string): Promise<AppointmentReminderStatus> => {
+    const res = await apiClient.get<ApiResponseWrapper<AppointmentReminderStatus>>(
+      `/appointments/${id}/reminders`
+    );
+    return res.data.data;
+  },
+
+  reschedule: async (
+    id: string,
+    dto: RescheduleAppointmentInput
+  ): Promise<Appointment> => {
+    const res = await apiClient.post<ApiResponseWrapper<Appointment>>(
+      `/appointments/${id}/reschedule`,
+      dto
+    );
+    return res.data.data;
+  },
+
+  cancel: async (
+    id: string,
+    dto?: CancelAppointmentInput
+  ): Promise<AppointmentCancelResponse> => {
+    const res = await apiClient.post<
+      ApiResponseWrapper<AppointmentCancelResponse>
+    >(`/appointments/${id}/cancel`, dto ?? {});
+    return res.data.data;
+  },
+};
+
 // ── Automations (Rules CRUD) API ───────────────────────────────
 export type AutomationTrigger =
   | "call_completed"
@@ -944,7 +1168,14 @@ export type AutomationTrigger =
   | "call_analysis_completed"
   | "lead_disqualified"
   | "appointment_detected"
-  | "campaign_lead_completed";
+  | "campaign_lead_completed"
+  | "appointment_booked"
+  | "appointment_confirmed"
+  | "appointment_rescheduled"
+  | "appointment_cancelled"
+  | "appointment_completed"
+  | "appointment_no_show"
+  | "appointment_reminder";
 
 export type AutomationAction =
   | "whatsapp"
