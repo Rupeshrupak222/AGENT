@@ -229,7 +229,6 @@ export default function LoginPage() {
                   onFocus={e=>(e.target.style.borderColor="rgba(212,32,39,0.65)")}
                   onBlur={e=>(e.target.style.borderColor="")}
                 />
-                {/* Demo password toggle */}
                 <button
                   type="button"
                   onClick={()=>setShowPwd(!showPwd)}
@@ -253,17 +252,6 @@ export default function LoginPage() {
               ) : <>Sign In <ArrowRight className="w-4 h-4"/></>}
             </button>
           </form>
-
-          {/* Development Seed Helper */}
-          {process.env.NODE_ENV !== "production" && (
-            <div className="mt-5 p-3 rounded-xl text-xs flex items-center justify-between bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] text-slate-500 dark:text-white/45">
-              <span>Seeded Admin: <strong className="text-slate-900 dark:text-white">admin@acmecorp.com</strong> / <strong className="text-slate-900 dark:text-white">Demo@1234</strong></span>
-              <button type="button" onClick={() => { setEmail("admin@acmecorp.com"); setPassword("Demo@1234"); }}
-                className="text-[11px] font-semibold underline transition-colors" style={{ color: R }}>
-                Fill
-              </button>
-            </div>
-          )}
 
           <p className="text-center text-sm mt-8 text-slate-500 dark:text-white/40">
             Don&apos;t have an account?{" "}

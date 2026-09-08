@@ -59,6 +59,7 @@ import {
   LeadItem,
 } from "@/lib/api";
 import { UnifiedCallWorkspaceModal } from "@/components/campaigns/UnifiedCallWorkspaceModal";
+import { realtimeSocket } from "@/lib/socket";
 
 type CallFilterStatus =
   | "all"
@@ -596,6 +597,7 @@ function CallsPageContent() {
 
   const [metrics, setMetrics] = useState<CallMetrics | null>(null);
   const [trendData, setTrendData] = useState<CallTrendItem[]>([]);
+  const [liveActiveCalls, setLiveActiveCalls] = useState<CallItem[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<CallFilterStatus>("all");
@@ -613,17 +615,20 @@ function CallsPageContent() {
     }
   }, [initialLeadPhone]);
 
-  const fetchCallsData = useCallback(async () => {
+  const fetchCallsData = useCallback(async (isSilent = false) => {
     try {
-      setLoading(true);
+      if (!isSilent) {
+        setLoading(true);
+      }
       setError(null);
 
       const statusParam = filter === "all" ? undefined : filter;
 
-      const [callsRes, metricsRes, trendRes] = await Promise.allSettled([
+      const [callsRes, metricsRes, trendRes, activeCallsRes] = await Promise.allSettled([
         callsApi.list({ page, limit, status: statusParam }),
         callsApi.metrics("today"),
         analyticsApi.callTrend(7),
+        callsApi.list({ status: "in_progress", limit: 10 }),
       ]);
 
       if (callsRes.status === "fulfilled") {
@@ -640,6 +645,10 @@ function CallsPageContent() {
       if (trendRes.status === "fulfilled") {
         setTrendData(trendRes.value || []);
       }
+
+      if (activeCallsRes.status === "fulfilled") {
+        setLiveActiveCalls(activeCallsRes.value.items || []);
+      }
     } catch (err) {
       setError(normalizeApiError(err));
     } finally {
@@ -647,8 +656,27 @@ function CallsPageContent() {
     }
   }, [page, filter]);
 
+  // Real-time live sync: WebSockets + 5s polling
   useEffect(() => {
-    fetchCallsData();
+    fetchCallsData(false);
+
+    realtimeSocket.connect();
+    const unsub1 = realtimeSocket.on("calls:overview_status", () => {
+      fetchCallsData(true);
+    });
+    const unsub2 = realtimeSocket.on("call:status", () => {
+      fetchCallsData(true);
+    });
+
+    const interval = setInterval(() => {
+      fetchCallsData(true);
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+      unsub1?.();
+      unsub2?.();
+    };
   }, [fetchCallsData]);
 
   // Client-side search on loaded page
@@ -676,7 +704,7 @@ function CallsPageContent() {
     };
   });
 
-  const liveCalls = calls.filter((c) => c.status === "in_progress");
+  const liveCalls = liveActiveCalls.length > 0 ? liveActiveCalls : calls.filter((c) => c.status === "in_progress");
 
   return (
     <div className="flex flex-col min-h-full">

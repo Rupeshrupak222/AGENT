@@ -45,25 +45,6 @@ export class CampaignsService implements OnModuleInit {
 
   // ── 1. Create Campaign ──────────────────────────────────────
   async create(tenantId: string, createdById: string, dto: CreateCampaignDto) {
-    if (!this.prisma.isConnected) {
-      return {
-        id: `campaign-mock-${Date.now()}`,
-        name: dto.name,
-        description: dto.description || null,
-        status: CampaignStatus.DRAFT,
-        agentId: dto.agentId,
-        tenantId,
-        maxConcurrentCalls: dto.maxConcurrentCalls || 5,
-        maxAttempts: dto.maxAttempts || 3,
-        callsPerDay: dto.callsPerDay || null,
-        startTime: dto.startTime || '09:00',
-        endTime: dto.endTime || '18:00',
-        daysOfWeek: dto.daysOfWeek || [1, 2, 3, 4, 5],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-    }
-
     // Verify Agent belongs to tenant and is active
     const agent = await this.prisma.aIAgent.findFirst({
       where: { id: dto.agentId, tenantId, deletedAt: null },
@@ -107,33 +88,6 @@ export class CampaignsService implements OnModuleInit {
 
   // ── 2. Find All Campaigns (Tenant-Scoped) ───────────────────
   async findAll(tenantId: string, query: CampaignQueryDto) {
-    if (!this.prisma.isConnected) {
-      return {
-        items: [
-          {
-            id: 'campaign-dev-1',
-            name: 'Q4 Enterprise Inbound Follow-up',
-            description: 'Automated outreach for high-intent demo requests',
-            status: CampaignStatus.RUNNING,
-            agentId: 'agent-dev-1',
-            tenantId,
-            maxConcurrentCalls: 5,
-            maxAttempts: 3,
-            callsPerDay: 100,
-            startTime: '09:00',
-            endTime: '18:00',
-            daysOfWeek: [1, 2, 3, 4, 5],
-            agent: { id: 'agent-dev-1', name: 'Sarah - Inbound Concierge', role: 'telecaller' },
-            _count: { leads: 48, calls: 32 },
-            createdAt: new Date().toISOString(),
-          },
-        ],
-        total: 1,
-        page: query.page || 1,
-        limit: query.limit || 20,
-      };
-    }
-
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
     const skip = (page - 1) * limit;
@@ -168,24 +122,6 @@ export class CampaignsService implements OnModuleInit {
 
   // ── 3. Find One Campaign ────────────────────────────────────
   async findOne(tenantId: string, id: string) {
-    if (!this.prisma.isConnected) {
-      return {
-        id,
-        name: 'Demo Outbound Campaign',
-        status: CampaignStatus.RUNNING,
-        agentId: 'agent-dev-1',
-        tenantId,
-        maxConcurrentCalls: 5,
-        maxAttempts: 3,
-        callsPerDay: 50,
-        startTime: '09:00',
-        endTime: '18:00',
-        daysOfWeek: [1, 2, 3, 4, 5],
-        agent: { id: 'agent-dev-1', name: 'Sarah - Inbound Concierge', role: 'telecaller' },
-        _count: { leads: 48, calls: 32 },
-      };
-    }
-
     const campaign = await this.prisma.campaign.findFirst({
       where: { id, tenantId },
       include: {
@@ -204,10 +140,6 @@ export class CampaignsService implements OnModuleInit {
   // ── 4. Update Campaign ──────────────────────────────────────
   async update(tenantId: string, id: string, dto: UpdateCampaignDto) {
     const campaign = await this.findOne(tenantId, id);
-
-    if (!this.prisma.isConnected) {
-      return { ...campaign, ...dto, updatedAt: new Date().toISOString() };
-    }
 
     if (dto.agentId && dto.agentId !== campaign.agentId) {
       const agent = await this.prisma.aIAgent.findFirst({
@@ -239,9 +171,6 @@ export class CampaignsService implements OnModuleInit {
   // ── 5. Delete Campaign ──────────────────────────────────────
   async delete(tenantId: string, id: string) {
     const campaign = await this.findOne(tenantId, id);
-    if (!this.prisma.isConnected) {
-      return { id, deleted: true };
-    }
 
     if (campaign.status === CampaignStatus.RUNNING) {
       throw new BadRequestException('Cannot delete a running campaign. Pause or cancel the campaign first.');
@@ -253,10 +182,6 @@ export class CampaignsService implements OnModuleInit {
   // ── 6. Add Leads to Campaign ────────────────────────────────
   async addLeads(tenantId: string, campaignId: string, leadIds: string[]) {
     await this.findOne(tenantId, campaignId);
-
-    if (!this.prisma.isConnected) {
-      return { added: leadIds.length, total: leadIds.length };
-    }
 
     // Verify leads belong to tenant and not deleted
     const leads = await this.prisma.lead.findMany({
@@ -301,92 +226,6 @@ export class CampaignsService implements OnModuleInit {
   // ── 7. Get Campaign Leads ───────────────────────────────────
   async getLeads(tenantId: string, campaignId: string, query: { status?: string; page?: number; limit?: number }) {
     await this.findOne(tenantId, campaignId);
-
-    if (!this.prisma.isConnected) {
-      return {
-        items: [
-          {
-            id: 'clead-1',
-            campaignId,
-            leadId: 'lead-1',
-            status: 'completed',
-            attemptCount: 1,
-            lastCallId: 'call-101',
-            outcome: 'appointment',
-            lead: { id: 'lead-1', name: 'Sophia Chen', phone: '+12025550143', email: 'sophia@example.com', company: 'Apex Innovations', status: 'converted' },
-            lastCall: {
-              id: 'call-101',
-              status: 'completed',
-              duration: 215,
-              startedAt: new Date(Date.now() - 3600000).toISOString(),
-              recordingUrl: 'https://r2.agentcall.ai/recordings/call-101.mp3',
-              outcome: 'appointment',
-              analysis: {
-                leadScore: 92,
-                intent: 'appointment',
-                sentiment: 'positive',
-                summary: 'Prospect scheduled product demo for tomorrow afternoon.',
-                processingStatus: 'completed',
-                qualification: { qualified: true, reasons: ['Budget approved', 'Authority confirmed'] },
-                appointmentDetected: true,
-              },
-            },
-          },
-          {
-            id: 'clead-2',
-            campaignId,
-            leadId: 'lead-2',
-            status: 'calling',
-            attemptCount: 1,
-            lastCallId: 'call-102',
-            outcome: null,
-            lead: { id: 'lead-2', name: 'Marcus Vance', phone: '+12025550188', email: 'marcus@example.com', company: 'Vance Dynamics', status: 'in_progress' },
-            lastCall: {
-              id: 'call-102',
-              status: 'in_progress',
-              duration: 45,
-              startedAt: new Date().toISOString(),
-              recordingUrl: null,
-              outcome: null,
-              analysis: null,
-            },
-          },
-          {
-            id: 'clead-3',
-            campaignId,
-            leadId: 'lead-3',
-            status: 'queued',
-            attemptCount: 0,
-            lastCallId: null,
-            outcome: null,
-            lead: { id: 'lead-3', name: 'Elena Rostova', phone: '+12025550199', email: 'elena@example.com', company: 'Global Logistics', status: 'new' },
-            lastCall: null,
-          },
-          {
-            id: 'clead-4',
-            campaignId,
-            leadId: 'lead-4',
-            status: 'failed',
-            attemptCount: 3,
-            lastCallId: 'call-104',
-            outcome: 'no_answer',
-            lead: { id: 'lead-4', name: 'David Miller', phone: '+12025550111', email: 'david@example.com', company: 'Miller Corp', status: 'lost' },
-            lastCall: {
-              id: 'call-104',
-              status: 'failed',
-              duration: 0,
-              startedAt: new Date(Date.now() - 7200000).toISOString(),
-              recordingUrl: null,
-              outcome: 'no_answer',
-              analysis: null,
-            },
-          },
-        ],
-        total: 4,
-        page: 1,
-        limit: 20,
-      };
-    }
 
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
@@ -443,10 +282,6 @@ export class CampaignsService implements OnModuleInit {
     }
     if (campaign.status === CampaignStatus.CANCELLED) {
       throw new BadRequestException('Cannot start a cancelled campaign');
-    }
-
-    if (!this.prisma.isConnected) {
-      return { status: CampaignStatus.RUNNING, enqueued: 12 };
     }
 
     // Verify Agent is active
@@ -527,9 +362,6 @@ export class CampaignsService implements OnModuleInit {
   // ── 9. Pause Campaign ───────────────────────────────────────
   async pauseCampaign(tenantId: string, campaignId: string) {
     const campaign = await this.findOne(tenantId, campaignId);
-    if (!this.prisma.isConnected) {
-      return { status: CampaignStatus.PAUSED };
-    }
 
     if (campaign.status !== CampaignStatus.RUNNING) {
       throw new BadRequestException(`Cannot pause campaign with status '${campaign.status}' (must be running)`);
@@ -550,9 +382,6 @@ export class CampaignsService implements OnModuleInit {
   // ── 10. Resume Campaign ─────────────────────────────────────
   async resumeCampaign(tenantId: string, campaignId: string) {
     const campaign = await this.findOne(tenantId, campaignId);
-    if (!this.prisma.isConnected) {
-      return { status: CampaignStatus.RUNNING, enqueued: 8 };
-    }
 
     if (campaign.status !== CampaignStatus.PAUSED) {
       throw new BadRequestException(`Cannot resume campaign with status '${campaign.status}' (must be paused)`);
@@ -567,10 +396,6 @@ export class CampaignsService implements OnModuleInit {
 
     // Cancel in-memory queue jobs
     this.queueService.clearCampaignInMemoryJobs(campaignId);
-
-    if (!this.prisma.isConnected) {
-      return { status: CampaignStatus.CANCELLED };
-    }
 
     // Update campaign status
     await this.prisma.campaign.update({
@@ -588,7 +413,6 @@ export class CampaignsService implements OnModuleInit {
     this.callsGateway?.broadcastCampaignStatus(campaignId, tenantId, {
       status: CampaignStatus.CANCELLED,
     });
-    return { status: CampaignStatus.CANCELLED };
   }
 
   // ── 12. Campaign Metrics ────────────────────────────────────
@@ -667,33 +491,6 @@ export class CampaignsService implements OnModuleInit {
       campaignId,
       campaign.callsPerDay,
     );
-
-    if (!this.prisma.isConnected) {
-      return {
-        campaignId,
-        totalEnrolled: 12,
-        eligibleCount: 10,
-        ineligibleCount: 2,
-        callingWindow,
-        dailyLimit,
-        categories: {
-          'Eligible': 10,
-          'Invalid Phone': 1,
-          'Already Completed': 1,
-          'Outside Calling Window': 0,
-          'Lead Not Callable': 0,
-          'Daily Limit': 0,
-          'Maximum Attempts Reached': 0,
-          'Already Active': 0,
-        },
-        leads: [
-          { leadId: 'lead-1', name: 'Sophia Chen', phone: '+12025550143', isEligible: true, reason: 'Eligible' },
-          { leadId: 'lead-2', name: 'Marcus Vance', phone: '+12025550188', isEligible: true, reason: 'Eligible' },
-          { leadId: 'lead-3', name: 'David Miller', phone: 'invalid', isEligible: false, reason: 'Invalid Phone' },
-          { leadId: 'lead-4', name: 'James Wilson', phone: '+12025550119', isEligible: false, reason: 'Already Completed' },
-        ],
-      };
-    }
 
     const campaignLeads = await this.prisma.campaignLead.findMany({
       where: { campaignId },
@@ -820,22 +617,6 @@ export class CampaignsService implements OnModuleInit {
   async previewLeadsEligibility(tenantId: string, leadIds: string[], agentId?: string) {
     if (!leadIds || leadIds.length === 0) {
       return { total: 0, eligibleCount: 0, ineligibleCount: 0, categories: {}, leads: [] };
-    }
-
-    if (!this.prisma.isConnected) {
-      return {
-        total: leadIds.length,
-        eligibleCount: leadIds.length,
-        ineligibleCount: 0,
-        categories: { 'Eligible': leadIds.length },
-        leads: leadIds.map((id, i) => ({
-          leadId: id,
-          name: `Lead ${i + 1}`,
-          phone: '+12025550100',
-          isEligible: true,
-          reason: 'Eligible',
-        })),
-      };
     }
 
     const leads = await this.prisma.lead.findMany({
@@ -1052,18 +833,6 @@ export class CampaignsService implements OnModuleInit {
   }
 
   async getMetrics(tenantId: string, campaignId: string) {
-    if (!this.prisma.isConnected) {
-      return {
-        totalLeads: 50,
-        completed: 10,
-        failed: 2,
-        skipped: 1,
-        calling: 2,
-        connectRate: 75.0,
-        conversionRate: 20.0,
-      };
-    }
-
     const leads = await this.prisma.campaignLead.findMany({
       where: { campaignId },
       select: { status: true },

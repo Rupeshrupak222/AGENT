@@ -21,6 +21,8 @@ import {
   TenantUsage,
 } from "@/lib/api";
 
+import { realtimeSocket } from "@/lib/socket";
+
 import { SuperAdminView } from "./components/SuperAdminView";
 import { CompanyAdminView } from "./components/CompanyAdminView";
 import { ManagerView } from "./components/ManagerView";
@@ -59,7 +61,7 @@ export default function OverviewPage() {
     async (isManualRefresh = false) => {
       if (isManualRefresh) {
         setIsRefreshing(true);
-      } else {
+      } else if (!metrics) {
         setIsLoading(true);
       }
       setErrorMessage(null);
@@ -118,24 +120,9 @@ export default function OverviewPage() {
 
       // Fetch tenants if Super Admin
       if (isSuperAdmin) {
-        try {
-          const tenantsList = await tenantsApi.list();
-          if (Array.isArray(tenantsList) && tenantsList.length > 0) {
-            setTenants(tenantsList);
-          }
-        } catch {
-          // Fallback gracefully
-        }
-      }
-
-      // Fetch workspace usage for company admins (real quota counters)
-      if (isCompanyAdmin) {
-        try {
-          const usage = await tenantApi.usage();
-          if (usage) setTenantUsage(usage);
-        } catch {
-          setTenantUsage(null);
-        }
+        tenantsApi.list().then(setTenants).catch(() => {});
+      } else if (isCompanyAdmin && tenant?.id) {
+        tenantApi.usage().then(setTenantUsage).catch(() => {});
       }
 
       if (
@@ -151,11 +138,35 @@ export default function OverviewPage() {
       setIsLoading(false);
       setIsRefreshing(false);
     },
-    [period, isSuperAdmin, isCompanyAdmin]
+    [period, isSuperAdmin, isCompanyAdmin, tenant?.id, metrics]
   );
 
+  // Live real-time socket listeners & auto-polling
   useEffect(() => {
     fetchDashboardData();
+
+    realtimeSocket.connect();
+    const unsub1 = realtimeSocket.on("calls:overview_status", () => {
+      fetchDashboardData(false);
+    });
+    const unsub2 = realtimeSocket.on("call:status", () => {
+      fetchDashboardData(false);
+    });
+    const unsub3 = realtimeSocket.on("campaign:status", () => {
+      fetchDashboardData(false);
+    });
+
+    // 8-second live sync interval
+    const interval = setInterval(() => {
+      fetchDashboardData(false);
+    }, 8000);
+
+    return () => {
+      clearInterval(interval);
+      unsub1?.();
+      unsub2?.();
+      unsub3?.();
+    };
   }, [fetchDashboardData]);
 
   const totalCallsCount = metrics?.totalCalls ?? callMetrics?.total ?? 0;

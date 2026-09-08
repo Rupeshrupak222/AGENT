@@ -116,37 +116,6 @@ export class CallsService implements OnModuleInit {
     status?: string; agentId?: string; leadId?: string;
     page?: number; limit?: number;
   }) {
-    if (!this.prisma.isConnected) {
-      return {
-        items: [
-          {
-            id: 'call-mock-1',
-            direction: 'outbound',
-            status: 'completed',
-            phone: '+14155552671',
-            duration: 184,
-            sentimentScore: 4.5,
-            startedAt: new Date(Date.now() - 3600000).toISOString(),
-            lead: { id: 'lead-1', name: 'James Wilson', phone: '+14155552671' },
-            agent: { id: 'agent-dev-2', name: 'Alex - Outbound SDR', role: 'Outbound Prospecting' },
-          },
-          {
-            id: 'call-mock-2',
-            direction: 'inbound',
-            status: 'completed',
-            phone: '+14155559812',
-            duration: 240,
-            sentimentScore: 4.8,
-            startedAt: new Date(Date.now() - 7200000).toISOString(),
-            lead: { id: 'lead-2', name: 'Elena Rostova', phone: '+14155559812' },
-            agent: { id: 'agent-dev-1', name: 'Sarah - Inbound Concierge', role: 'Inbound Support & Qual' },
-          },
-        ],
-        total: 2,
-        page: Number(query?.page) || 1,
-        limit: Number(query?.limit) || 20,
-      };
-    }
     try {
       const pageNum  = Math.max(1, Number(query?.page) || 1);
       const limitNum = Math.max(1, Math.min(100, Number(query?.limit) || 20));
@@ -169,7 +138,7 @@ export class CallsService implements OnModuleInit {
       return { items, total, page: pageNum, limit: limitNum };
     } catch (err: any) {
       this.logger.warn(`Failed to query calls: ${err.message}`);
-      return { items: [], total: 0, page: query.page ?? 1, limit: query.limit ?? 20 };
+      return { items: [], total: 0, page: Number(query?.page) || 1, limit: Number(query?.limit) || 20 };
     }
   }
 
@@ -183,16 +152,6 @@ export class CallsService implements OnModuleInit {
   }
 
   async getMetrics(tenantId: string, range: 'today' | 'week' | 'month' = 'today') {
-    if (!this.prisma.isConnected) {
-      return {
-        total: 124,
-        completed: 98,
-        missed: 14,
-        failed: 12,
-        connectRate: '79.0',
-        avgDuration: 195,
-      };
-    }
     try {
       const now   = new Date();
       const start = range === 'today'

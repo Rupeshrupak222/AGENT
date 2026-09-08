@@ -271,12 +271,12 @@ export default function AutomationsPage() {
           { label: "Triggers Executed", value: totalSent.toLocaleString(), color: "text-brand-600 dark:text-brand-400" },
           {
             label: "WhatsApp Engine",
-            value: providers.find(p => p.provider === 'whatsapp')?.isConfigured ? "Meta Cloud" : "Mock (Offline)",
+            value: providers.find(p => p.provider === 'whatsapp')?.isConfigured ? "Meta Cloud" : "Offline",
             color: providers.find(p => p.provider === 'whatsapp')?.isConfigured ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500",
           },
           {
             label: "Email Engine",
-            value: providers.find(p => p.provider === 'resend')?.isConfigured ? "Resend API" : "Mock (Offline)",
+            value: providers.find(p => p.provider === 'resend')?.isConfigured ? "Resend API" : "Offline",
             color: providers.find(p => p.provider === 'resend')?.isConfigured ? "text-emerald-600 dark:text-emerald-400" : "text-cyan-500",
           },
         ].map((s) => (
@@ -834,8 +834,8 @@ export default function AutomationsPage() {
                     onChange={e => setTestActionData({ ...testActionData, actionType: e.target.value as any })}
                     className="w-full h-9 rounded-xl px-3 bg-slate-800 border border-white/15 text-white"
                   >
-                    <option value="send_whatsapp">WhatsApp (Meta Cloud / Mock)</option>
-                    <option value="send_email">Email (Resend / Mock)</option>
+                    <option value="send_whatsapp">WhatsApp (Meta Cloud)</option>
+                    <option value="send_email">Email (Resend)</option>
                   </select>
                 </div>
 
