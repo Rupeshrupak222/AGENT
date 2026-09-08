@@ -24,6 +24,8 @@ import {
   TrendingUp,
   ShieldCheck,
   Award,
+  Radio,
+  Download,
 } from "lucide-react";
 import {
   callsApi,
@@ -35,6 +37,7 @@ import {
 import { formatDuration } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { useToast } from "@/components/ui/Toast";
+import { LiveVoiceSession } from "./LiveVoiceSession";
 
 interface UnifiedCallWorkspaceModalProps {
   callId: string;
@@ -51,6 +54,7 @@ export function UnifiedCallWorkspaceModal({
   const [detail, setDetail] = useState<CallDetail | null>(null);
   const [analysis, setAnalysis] = useState<CallAnalysisData | null>(null);
   const [recording, setRecording] = useState<CallRecordingData | null>(null);
+  const [mode, setMode] = useState<"live" | "intelligence">("intelligence");
 
   const [loading, setLoading] = useState(true);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
@@ -62,8 +66,16 @@ export function UnifiedCallWorkspaceModal({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [playbackError, setPlaybackError] = useState(false);
+
+  const handlePlaybackRateChange = (rate: number) => {
+    setPlaybackRate(rate);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = rate;
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -76,6 +88,9 @@ export function UnifiedCallWorkspaceModal({
         const callData = await callsApi.get(callId);
         if (!mounted) return;
         setDetail(callData);
+        if (callData.status === "in_progress" || callData.status === "ringing") {
+          setMode("live");
+        }
 
         // 2. Fetch Recording URL
         try {
@@ -183,7 +198,7 @@ export function UnifiedCallWorkspaceModal({
         className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl bg-white dark:bg-[#0d121f] border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden text-slate-900 dark:text-white"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400">
               <Brain className="w-5 h-5" />
@@ -200,13 +215,42 @@ export function UnifiedCallWorkspaceModal({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          <div className="flex items-center gap-2">
+            {/* Mode Switcher */}
+            <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-xs">
+              <button
+                type="button"
+                onClick={() => setMode("live")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all ${
+                  mode === "live"
+                    ? "bg-brand-600 text-white shadow-sm"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <Radio className="w-3.5 h-3.5" /> Live Voice Studio
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("intelligence")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all ${
+                  mode === "intelligence"
+                    ? "bg-brand-600 text-white shadow-sm"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <Brain className="w-3.5 h-3.5" /> Intelligence & Analytics
+              </button>
+            </div>
+
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Modal Body */}
@@ -224,8 +268,24 @@ export function UnifiedCallWorkspaceModal({
               <p className="text-sm font-semibold">{error}</p>
             </div>
           ) : detail ? (
-            <>
-              {/* Top Overview Cards */}
+            mode === "live" ? (
+              <LiveVoiceSession
+                callId={callId}
+                agentName={detail.agent?.name}
+                customerName={detail.lead?.name}
+                customerPhone={detail.phone}
+                onCallEnded={async () => {
+                  setMode("intelligence");
+                  try {
+                    const updated = await callsApi.get(callId);
+                    setDetail(updated);
+                    onAnalysisUpdated?.();
+                  } catch {}
+                }}
+              />
+            ) : (
+              <>
+                {/* Top Overview Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/5">
                   <p className="text-[11px] text-slate-500 dark:text-white/40 font-medium">Customer / Lead</p>
@@ -355,6 +415,22 @@ export function UnifiedCallWorkspaceModal({
                           </div>
                         </div>
 
+                        <div className="flex items-center gap-1 bg-slate-200/60 dark:bg-white/5 p-0.5 rounded-lg text-[10px] font-semibold">
+                          {[1, 1.25, 1.5, 2].map((rate) => (
+                            <button
+                              key={rate}
+                              onClick={() => handlePlaybackRateChange(rate)}
+                              className={`px-1.5 py-0.5 rounded transition-all ${
+                                playbackRate === rate
+                                  ? "bg-brand-600 text-white shadow-sm"
+                                  : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                              }`}
+                            >
+                              {rate}x
+                            </button>
+                          ))}
+                        </div>
+
                         <button
                           onClick={toggleMute}
                           className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white"
@@ -362,6 +438,18 @@ export function UnifiedCallWorkspaceModal({
                         >
                           {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                         </button>
+
+                        <a
+                          href={audioUrl}
+                          download={`call-${callId}.wav`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-lg text-slate-400 hover:text-brand-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                          title="Download Call Recording"
+                          aria-label="Download Recording"
+                        >
+                          <Download className="w-4 h-4" />
+                        </a>
                       </div>
                     )}
                   </div>
@@ -625,7 +713,7 @@ export function UnifiedCallWorkspaceModal({
                 </div>
               </div>
             </>
-          ) : null}
+          )) : null}
         </div>
       </motion.div>
     </div>

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { ITelephonyProvider } from '../interfaces/telephony-provider.interface';
 import { TwilioTelephonyProvider } from './twilio.provider';
 import { ExotelTelephonyProvider } from './exotel.provider';
+import { SandboxTelephonyProvider } from './sandbox.provider';
 
 @Injectable()
 export class TelephonyProviderRegistry {
@@ -13,9 +14,11 @@ export class TelephonyProviderRegistry {
     private configService: ConfigService,
     private twilioProvider: TwilioTelephonyProvider,
     private exotelProvider: ExotelTelephonyProvider,
+    private sandboxProvider: SandboxTelephonyProvider,
   ) {
     this.register(this.twilioProvider);
     this.register(this.exotelProvider);
+    this.register(this.sandboxProvider);
   }
 
   register(provider: ITelephonyProvider): void {
@@ -33,15 +36,23 @@ export class TelephonyProviderRegistry {
 
   getDefaultProvider(): ITelephonyProvider {
     const preferred = this.configService.get<string>('TELEPHONY_PROVIDER', 'twilio').toLowerCase();
-    if (this.providers.has(preferred)) {
-      return this.providers.get(preferred)!;
+    const candidate = this.providers.get(preferred);
+
+    // If preferred carrier has live credentials, use it
+    if (candidate && candidate.isConfigured) {
+      return candidate;
     }
-    // Fallback to first registered
-    const first = this.providers.values().next().value;
-    if (!first) {
-      throw new NotFoundException('No telephony providers available');
+
+    // If Exotel has live credentials, use it
+    if (this.exotelProvider.isConfigured) {
+      return this.exotelProvider;
     }
-    return first;
+
+    // Graceful fallback to Sandbox provider for development & WebRTC voice testing
+    this.logger.log(
+      `No live carrier credentials configured in .env. Using [sandbox] WebRTC provider for interactive voice testing.`,
+    );
+    return this.sandboxProvider;
   }
 
   getAllProviders(): Array<{ name: string; isConfigured: boolean }> {

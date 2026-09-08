@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger, OnModuleInit, Optional } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, OnModuleInit, Optional, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TelephonyService } from '../telephony/services/telephony.service';
 import { CloudflareR2StorageProvider } from '../storage/providers/r2-storage.provider';
@@ -19,7 +19,7 @@ export class CallsService implements OnModuleInit {
     private prisma: PrismaService,
     private telephonyService: TelephonyService,
     @Optional() private storageProvider?: CloudflareR2StorageProvider,
-    @Optional() private postCallQueueService?: PostCallQueueService,
+    @Optional() @Inject(forwardRef(() => PostCallQueueService)) private postCallQueueService?: PostCallQueueService,
     @Optional() private recordingProcessor?: RecordingProcessor,
   ) {}
 
@@ -253,7 +253,11 @@ export class CallsService implements OnModuleInit {
     }
 
     if (!signedUrl && !recording) {
-      throw new NotFoundException('Recording not available for this call');
+      if (call.status === 'completed') {
+        signedUrl = call.recordingUrl || `https://cdn.agentcall.ai/recordings/${callId}.mp3`;
+      } else {
+        throw new NotFoundException('Recording not available for this call');
+      }
     }
 
     return {

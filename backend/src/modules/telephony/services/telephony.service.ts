@@ -518,6 +518,7 @@ export class TelephonyService {
       case 'ringing':
         return 'ringing';
       case 'in_progress':
+      case 'in-progress' as any:
         return 'in_progress';
       case 'completed':
         return 'completed';

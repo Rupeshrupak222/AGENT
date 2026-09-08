@@ -8,12 +8,19 @@ let cachedDecoderClass: any = null;
 async function getMPEGDecoderClass(): Promise<any> {
   if (cachedDecoderClass) return cachedDecoderClass;
   try {
-    const dynamicImport = new Function('specifier', 'return import(specifier)');
-    const mod = await dynamicImport('mpg123-decoder');
-    cachedDecoderClass = mod.MPEGDecoder || mod.default?.MPEGDecoder || mod.default;
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const mod = require('mpg123-decoder');
+    cachedDecoderClass = mod.MPEGDecoder || mod.default?.MPEGDecoder || mod.default || mod;
     return cachedDecoderClass;
   } catch {
-    return null;
+    try {
+      const dynamicImport = new Function('specifier', 'return import(specifier)');
+      const mod = await dynamicImport('mpg123-decoder');
+      cachedDecoderClass = mod.MPEGDecoder || mod.default?.MPEGDecoder || mod.default;
+      return cachedDecoderClass;
+    } catch {
+      return null;
+    }
   }
 }
 

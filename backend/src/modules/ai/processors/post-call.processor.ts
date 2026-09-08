@@ -10,6 +10,7 @@ import {
 import { PostCallAnalysisInput } from '../interfaces/post-call.interface';
 import { CallsGateway } from '../../calls/calls.gateway';
 import { CrmQueueService } from '../../integrations/services/crm-queue.service';
+import { AutomationsService } from '../../automations/automations.service';
 
 @Injectable()
 @Processor('post-call-analysis')
@@ -26,6 +27,9 @@ export class PostCallProcessor implements OnModuleInit {
     @Optional()
     @Inject(forwardRef(() => CrmQueueService))
     private readonly crmQueueService?: CrmQueueService,
+    @Optional()
+    @Inject(forwardRef(() => AutomationsService))
+    private readonly automationsService?: AutomationsService,
   ) {}
 
   onModuleInit() {
@@ -236,6 +240,32 @@ export class PostCallProcessor implements OnModuleInit {
         });
       }
 
+      // 9b. Auto-Create Calendar Appointment when Detected by AI
+      if (result.appointment.detected) {
+        try {
+          const appointmentDate = this.resolveAppointmentDate(result.appointment.details?.date);
+          const newAppointment = await this.prisma.appointment.create({
+            data: {
+              leadName: call.lead?.name || 'Prospect',
+              phone: call.phone,
+              email: call.lead?.email || null,
+              topic: result.appointment.details?.topic || result.summary || 'AI Follow-up Consultation',
+              date: appointmentDate,
+              duration: result.appointment.details?.duration || 30,
+              status: 'scheduled',
+              tenantId: call.tenantId,
+              leadId: call.leadId,
+              agentId: call.agentId,
+            },
+          });
+          this.logger.log(
+            `[APPOINTMENT_SCHEDULED] Successfully booked appointment ${newAppointment.id} on ${appointmentDate.toISOString()} for call ${callId}`,
+          );
+        } catch (appErr: any) {
+          this.logger.warn(`Failed to auto-schedule appointment for call [${callId}]: ${appErr.message}`);
+        }
+      }
+
       // 10. Realtime Event Broadcast (Tenant, Call Room, and Campaign Room)
       this.callsGateway?.broadcastCallAnalysis(callId, tenantId, call.campaignId || null, {
         analysisStatus: 'completed',
@@ -272,6 +302,16 @@ export class PostCallProcessor implements OnModuleInit {
           });
         } catch (crmErr: any) {
           this.logger.warn(`Failed to enqueue CRM synchronization for call [${callId}]: ${crmErr.message}`);
+        }
+      }
+
+      // 12. Post-Call Automation Messaging (WhatsApp / SMS / Email)
+      if (this.automationsService) {
+        try {
+          await this.automationsService.sendPostCallAutomation(tenantId, callId);
+          this.logger.log(`[AUTOMATIONS_TRIGGERED] Executed post-call automation rules for call ${callId}`);
+        } catch (autoErr: any) {
+          this.logger.warn(`Failed to execute post-call automations for call [${callId}]: ${autoErr.message}`);
         }
       }
 
@@ -323,4 +363,43 @@ export class PostCallProcessor implements OnModuleInit {
 
     return '';
   }
+
+  private resolveAppointmentDate(dateStr?: string): Date {
+    if (dateStr) {
+      const parsed = new Date(dateStr);
+      if (!isNaN(parsed.getTime()) && parsed.getTime() > Date.now() - 86400000) {
+        return parsed;
+      }
+      const lower = dateStr.toLowerCase();
+      const now = new Date();
+      if (lower.includes('tomorrow')) {
+        const d = new Date();
+        d.setDate(now.getDate() + 1);
+        d.setHours(14, 0, 0, 0);
+        return d;
+      }
+      if (lower.includes('monday')) {
+        const d = new Date();
+        const day = d.getDay();
+        const diff = (1 - day + 7) % 7 || 7;
+        d.setDate(d.getDate() + diff);
+        d.setHours(14, 0, 0, 0);
+        return d;
+      }
+      if (lower.includes('friday')) {
+        const d = new Date();
+        const day = d.getDay();
+        const diff = (5 - day + 7) % 7 || 7;
+        d.setDate(d.getDate() + diff);
+        d.setHours(15, 0, 0, 0);
+        return d;
+      }
+    }
+    // Default fallback: 2 days from now at 10:00 AM
+    const fallback = new Date();
+    fallback.setDate(fallback.getDate() + 2);
+    fallback.setHours(10, 0, 0, 0);
+    return fallback;
+  }
 }
+

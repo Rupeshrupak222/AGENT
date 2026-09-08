@@ -278,7 +278,7 @@ function CallDetailModal({
 interface NewCallModalProps {
   initialPhone?: string;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (newCallId?: string) => void;
 }
 
 function NewCallModal({ initialPhone = "", onClose, onSuccess }: NewCallModalProps) {
@@ -385,7 +385,7 @@ function NewCallModal({ initialPhone = "", onClose, onSuccess }: NewCallModalPro
       } else {
         success(`Outbound call dispatched to ${target} via gateway...`);
       }
-      onSuccess();
+      onSuccess(call.id);
       onClose();
     } catch (err) {
       toastError(normalizeApiError(err));
@@ -1174,8 +1174,11 @@ function CallsPageContent() {
               setIsNewCallModalOpen(false);
               setInitialDialPhone("");
             }}
-            onSuccess={() => {
+            onSuccess={(newCallId?: string) => {
               fetchCallsData();
+              if (newCallId) {
+                setSelectedCallId(newCallId);
+              }
             }}
           />
         )}

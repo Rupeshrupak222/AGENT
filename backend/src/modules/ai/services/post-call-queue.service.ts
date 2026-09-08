@@ -61,7 +61,10 @@ export class PostCallQueueService implements OnModuleInit {
     data: PostCallAnalysisJobData,
     options: EnqueueAnalysisOptions = {},
   ): Promise<{ jobId: string; queued: boolean; mode: 'bull' | 'in_memory' }> {
-    const jobId = `analysis:${data.tenantId}:${data.callId}`;
+    const jobId =
+      data.triggerSource === 'manual_retry'
+        ? `analysis:${data.tenantId}:${data.callId}:${Date.now()}`
+        : `analysis:${data.tenantId}:${data.callId}`;
 
     if (this.isRedisAvailable) {
       try {

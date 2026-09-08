@@ -13,25 +13,45 @@ export class GeminiPostCallProvider implements PostCallIntelligenceProvider {
   readonly name = 'gemini';
   private readonly logger = new Logger(GeminiPostCallProvider.name);
 
-  private readonly apiKey: string;
-  readonly modelName: string;
+  private readonly geminiApiKey: string;
+  readonly geminiModelName: string;
+  private readonly groqApiKey: string;
+  readonly groqModelName: string;
   private readonly maxTranscriptChars = 16000;
 
   constructor(private readonly configService: ConfigService) {
-    this.apiKey = this.configService.get<string>('GEMINI_API_KEY', '');
-    this.modelName = this.configService.get<string>('GEMINI_MODEL', 'gemini-1.5-flash');
+    this.geminiApiKey = this.configService.get<string>('GEMINI_API_KEY', '');
+    this.geminiModelName = this.configService.get<string>('GEMINI_MODEL', 'gemini-1.5-flash');
+    this.groqApiKey = this.configService.get<string>('GROQ_API_KEY', '');
+    this.groqModelName = this.configService.get<string>('GROQ_MODEL', 'openai/gpt-oss-20b');
 
-    if (this.isConfigured) {
-      this.logger.log(`Gemini Post-Call Provider initialized with model [${this.modelName}]`);
+    if (this.isGeminiConfigured) {
+      this.logger.log(`Gemini Post-Call Provider initialized with model [${this.geminiModelName}]`);
+    } else if (this.isGroqConfigured) {
+      this.logger.log(`Groq LPU Post-Call Provider initialized with model [${this.groqModelName}]`);
     } else {
       this.logger.warn(
-        'GEMINI_API_KEY is unconfigured. Operating in safe offline mock intelligence mode.',
+        'Neither GEMINI_API_KEY nor GROQ_API_KEY is configured. Operating in safe offline mock intelligence mode.',
       );
     }
   }
 
+  get modelName(): string {
+    if (this.isGeminiConfigured) return this.geminiModelName;
+    if (this.isGroqConfigured) return this.groqModelName;
+    return 'heuristic-mock';
+  }
+
+  get isGeminiConfigured(): boolean {
+    return Boolean(this.geminiApiKey && this.geminiApiKey.trim().length > 0);
+  }
+
+  get isGroqConfigured(): boolean {
+    return Boolean(this.groqApiKey && this.groqApiKey.trim().length > 0);
+  }
+
   get isConfigured(): boolean {
-    return Boolean(this.apiKey && this.apiKey.trim().length > 0);
+    return this.isGeminiConfigured || this.isGroqConfigured;
   }
 
   /**
@@ -40,12 +60,19 @@ export class GeminiPostCallProvider implements PostCallIntelligenceProvider {
   async analyze(input: PostCallAnalysisInput): Promise<PostCallAnalysisResult> {
     const truncatedTranscript = this.truncateTranscript(input.transcript);
 
-    if (this.isConfigured) {
+    if (this.isGeminiConfigured) {
       try {
         return await this.callGeminiApi(input, truncatedTranscript);
       } catch (err: any) {
-        this.logger.error(`Gemini live API analysis failed for call ${input.callId}: ${err.message}`);
-        throw err;
+        this.logger.warn(`Gemini live API analysis failed for call ${input.callId}: ${err.message}. Trying Groq...`);
+      }
+    }
+
+    if (this.isGroqConfigured) {
+      try {
+        return await this.callGroqApi(input, truncatedTranscript);
+      } catch (err: any) {
+        this.logger.warn(`Groq live API analysis failed for call ${input.callId}: ${err.message}. Falling back to heuristic...`);
       }
     }
 
@@ -59,7 +86,7 @@ export class GeminiPostCallProvider implements PostCallIntelligenceProvider {
   ): Promise<PostCallAnalysisResult> {
     const prompt = this.buildPrompt(input, transcriptText);
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModelName}:generateContent?key=${this.geminiApiKey}`;
 
     const payload = {
       contents: [
@@ -90,6 +117,48 @@ export class GeminiPostCallProvider implements PostCallIntelligenceProvider {
     }
 
     const parsedJson = JSON.parse(rawText);
+    return this.validateAndNormalize(parsedJson);
+  }
+
+  private async callGroqApi(
+    input: PostCallAnalysisInput,
+    transcriptText: string,
+  ): Promise<PostCallAnalysisResult> {
+    const prompt = this.buildPrompt(input, transcriptText);
+
+    const res = await axios.post(
+      'https://api.groq.com/openai/v1/chat/completions',
+      {
+        model: this.groqModelName,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are an elite post-call business intelligence and QA analysis system for an enterprise voice AI platform. You must output strictly valid JSON conforming to the requested schema.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.2,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${this.groqApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 20000,
+      },
+    );
+
+    const content = res.data?.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new Error('Empty response from Groq API');
+    }
+
+    const parsedJson = JSON.parse(content);
     return this.validateAndNormalize(parsedJson);
   }
 
@@ -136,8 +205,8 @@ You must output a single JSON object with EXACTLY these fields:
     "detected": <true if the lead agreed to an appointment/demo with a date or timeframe, else false>,
     "details": {
       "topic": <Appointment topic or null>,
-      "date": <Mentioned date/time or null>,
-      "duration": <Duration in minutes, default 30, or null>
+      "date": <Mentioned date/time e.g. "next Monday at 3pm" or ISO string or null>,
+      "duration": <Duration in minutes, default 30>
     }
   }
 }
@@ -145,25 +214,97 @@ Output strictly valid JSON. Do not include markdown code block tags or extra com
   }
 
   /**
-   * Validates model-generated JSON using Zod with defensive defaults.
+   * Validates model-generated JSON using Zod with defensive defaults and casing normalization.
    */
   private validateAndNormalize(raw: any): PostCallAnalysisResult {
-    // Ensure bounds before Zod
+    // 1. Lead score normalization
+    let leadScore = 50;
     if (typeof raw.leadScore === 'number') {
-      raw.leadScore = Math.max(0, Math.min(100, Math.round(raw.leadScore)));
-    } else {
-      raw.leadScore = 50;
+      leadScore = raw.leadScore <= 10 && raw.leadScore > 0 ? raw.leadScore * 10 : raw.leadScore;
+      leadScore = Math.max(0, Math.min(100, Math.round(leadScore)));
     }
 
-    // Default nested structures if missing
-    if (!raw.qualification || typeof raw.qualification !== 'object') {
-      raw.qualification = { qualified: false, reasons: [], metCriteria: [], unmetCriteria: [] };
-    }
-    if (!raw.appointment || typeof raw.appointment !== 'object') {
-      raw.appointment = { detected: false, details: null };
+    // 2. Intent normalization
+    const validIntents = [
+      'interested',
+      'not_interested',
+      'request_information',
+      'pricing',
+      'demo_request',
+      'appointment',
+      'follow_up',
+      'qualified',
+      'unqualified',
+      'unknown',
+    ];
+    let rawIntent = String(raw.intent || '').toLowerCase().replace(/[\s-]+/g, '_');
+    if (rawIntent.includes('demo') || rawIntent.includes('book')) rawIntent = 'demo_request';
+    if (!validIntents.includes(rawIntent)) {
+      rawIntent = raw.qualification?.qualified ? 'qualified' : 'request_information';
     }
 
-    return PostCallAnalysisResultSchema.parse(raw);
+    // 3. Sentiment normalization
+    const validSentiments = ['positive', 'neutral', 'negative', 'mixed', 'unknown'];
+    let rawSentiment = String(raw.sentiment || '').toLowerCase().trim();
+    if (!validSentiments.includes(rawSentiment)) {
+      rawSentiment = 'neutral';
+    }
+
+    // 4. Next action normalization
+    const validActions = [
+      'call_back',
+      'send_information',
+      'schedule_demo',
+      'schedule_follow_up',
+      'no_action',
+      'mark_not_interested',
+    ];
+    let rawNextAction = String(raw.nextAction || '').toLowerCase().replace(/[\s-]+/g, '_');
+    if (rawNextAction.includes('invite') || rawNextAction.includes('demo')) rawNextAction = 'schedule_demo';
+    if (rawNextAction.includes('follow')) rawNextAction = 'schedule_follow_up';
+    if (rawNextAction.includes('call')) rawNextAction = 'call_back';
+    if (rawNextAction.includes('info') || rawNextAction.includes('email')) rawNextAction = 'send_information';
+    if (!validActions.includes(rawNextAction)) {
+      rawNextAction = 'schedule_demo';
+    }
+
+    // 5. Qualification normalization
+    const qualification = {
+      qualified: Boolean(raw.qualification?.qualified ?? (leadScore >= 60)),
+      reasons: Array.isArray(raw.qualification?.reasons) ? raw.qualification.reasons.map(String) : [],
+      metCriteria: Array.isArray(raw.qualification?.metCriteria) ? raw.qualification.metCriteria.map(String) : [],
+      unmetCriteria: Array.isArray(raw.qualification?.unmetCriteria) ? raw.qualification.unmetCriteria.map(String) : [],
+    };
+
+    // 6. Appointment normalization
+    let appointment = { detected: false, details: null as any };
+    if (raw.appointment && typeof raw.appointment === 'object') {
+      const detected = Boolean(raw.appointment.detected);
+      let details = null;
+      if (detected && raw.appointment.details) {
+        const rawDur = raw.appointment.details.duration;
+        const durNum = typeof rawDur === 'number' ? rawDur : parseInt(String(rawDur || '30'), 10) || 30;
+        details = {
+          topic: raw.appointment.details.topic ? String(raw.appointment.details.topic) : 'Consultation Call',
+          date: raw.appointment.details.date ? String(raw.appointment.details.date) : undefined,
+          duration: durNum,
+        };
+      }
+      appointment = { detected, details };
+    }
+
+    const normalized = {
+      summary: String(raw.summary || 'Call completed successfully.'),
+      leadScore,
+      intent: rawIntent as any,
+      sentiment: rawSentiment as any,
+      outcome: String(raw.outcome || (appointment.detected ? 'appointment_scheduled' : 'interested')),
+      nextAction: rawNextAction as any,
+      qualification,
+      appointment,
+    };
+
+    return PostCallAnalysisResultSchema.parse(normalized);
   }
 
   /**

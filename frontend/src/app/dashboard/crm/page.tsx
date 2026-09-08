@@ -19,12 +19,14 @@ import {
   Users,
   Activity,
   Calendar,
+  UploadCloud,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { ImportLeadsModal } from "@/components/crm/ImportLeadsModal";
 import {
   leadsApi,
   normalizeApiError,
@@ -465,6 +467,7 @@ export default function CRMPage() {
   const [search, setSearch] = useState("");
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const fetchLeadsData = useCallback(async () => {
     try {
@@ -530,6 +533,13 @@ export default function CRMPage() {
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-brand-500" : ""}`} />
             Refresh
+          </button>
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/30 text-brand-600 dark:text-brand-400 transition-all shadow-sm"
+          >
+            <UploadCloud className="w-3.5 h-3.5" />
+            Import CSV
           </button>
           <button
             onClick={() => setShowAddModal(true)}
@@ -866,6 +876,16 @@ export default function CRMPage() {
         {showAddModal && (
           <CreateLeadModal
             onClose={() => setShowAddModal(false)}
+            onSuccess={fetchLeadsData}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Bulk Import CSV Modal */}
+      <AnimatePresence>
+        {showImportModal && (
+          <ImportLeadsModal
+            onClose={() => setShowImportModal(false)}
             onSuccess={fetchLeadsData}
           />
         )}

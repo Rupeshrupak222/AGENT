@@ -16,7 +16,7 @@ export class GroqAgentBrainService implements AgentBrain {
 
   constructor(private configService: ConfigService) {
     this.apiKey = this.configService.get<string>('GROQ_API_KEY', '');
-    this.model = this.configService.get<string>('GROQ_MODEL', 'openai/gpt-oss-120b');
+    this.model = this.configService.get<string>('GROQ_MODEL', 'openai/gpt-oss-20b');
   }
 
   get isConfigured(): boolean {
@@ -47,7 +47,7 @@ export class GroqAgentBrainService implements AgentBrain {
           model: this.model,
           messages,
           temperature: 0.6,
-          max_tokens: 250,
+          max_tokens: 500,
         },
         {
           headers: {

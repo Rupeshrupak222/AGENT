@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -11,9 +11,9 @@ import { GeminiPostCallProvider } from './providers/gemini-post-call.provider';
 import { PostCallQueueService } from './services/post-call-queue.service';
 import { PostCallProcessor } from './processors/post-call.processor';
 
-import { forwardRef } from '@nestjs/common';
 import { CallsModule } from '../calls/calls.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
+import { AutomationsModule } from '../automations/automations.module';
 
 @Module({
   imports: [
@@ -21,6 +21,7 @@ import { IntegrationsModule } from '../integrations/integrations.module';
     PrismaModule,
     forwardRef(() => CallsModule),
     forwardRef(() => IntegrationsModule),
+    forwardRef(() => AutomationsModule),
     BullModule.registerQueue({
       name: 'post-call-analysis',
     }),

@@ -62,18 +62,16 @@ export class CallsController {
   @ApiBearerAuth('JWT')
   @Permissions(CALL_VIEW)
   @ApiOperation({ summary: 'Get structured post-call AI intelligence analysis' })
-  async getAnalysis(@CurrentUser() u: any, @Param('id') id: string) {
-    const data = await this.calls.getAnalysis(u.tenantId, id);
-    return { success: true, data };
+  getAnalysis(@CurrentUser() u: any, @Param('id') id: string) {
+    return this.calls.getAnalysis(u.tenantId, id);
   }
 
   @Post(':id/analysis/retry')
   @ApiBearerAuth('JWT')
   @Permissions(CALL_INITIATE)
   @ApiOperation({ summary: 'Manually re-trigger post-call intelligence analysis' })
-  async retryAnalysis(@CurrentUser() u: any, @Param('id') id: string) {
-    const data = await this.calls.retryAnalysis(u.tenantId, id);
-    return { success: true, data };
+  retryAnalysis(@CurrentUser() u: any, @Param('id') id: string) {
+    return this.calls.retryAnalysis(u.tenantId, id);
   }
 
   // ── Telephony Webhooks (Twilio & Exotel) ──────────────────────────────────

@@ -11,6 +11,8 @@ import {
 
 import { AudioFormatConverterService } from '../../telephony/services/audio-format-converter.service';
 
+import { PostCallQueueService } from '../services/post-call-queue.service';
+
 export interface ActiveCallStream {
   sessionId: string;
   callId: string;
@@ -26,6 +28,7 @@ export interface ActiveCallStream {
   onAudioChunk: (chunk: Buffer) => void;
   onBargeInClear: () => void;
   onTranscriptBroadcast?: (event: TranscriptEvent) => void;
+  startedAt: number;
 }
 
 @Injectable()
@@ -39,6 +42,7 @@ export class ConversationOrchestrator implements OnModuleDestroy {
     private readonly ttsProvider: EdgeTTSProvider,
     private readonly prisma: PrismaService,
     private readonly audioFormatConverter: AudioFormatConverterService,
+    private readonly postCallQueueService: PostCallQueueService,
   ) {}
 
   onModuleDestroy() {
@@ -86,6 +90,7 @@ export class ConversationOrchestrator implements OnModuleDestroy {
       onAudioChunk,
       onBargeInClear,
       onTranscriptBroadcast,
+      startedAt: Date.now(),
     };
 
     this.sessions.set(sessionId, callStream);
@@ -140,6 +145,28 @@ export class ConversationOrchestrator implements OnModuleDestroy {
     if (event.isFinal && event.text.trim().length > 0) {
       await this.processTurn(session, event.text.trim());
     }
+  }
+
+  /**
+   * Handles simulated text input from browser sandbox directly into conversational AI loop.
+   */
+  async handleUserTextMessage(sessionId: string, text: string): Promise<void> {
+    const session = this.sessions.get(sessionId);
+    if (!session || !text.trim()) return;
+
+    if (session.onTranscriptBroadcast) {
+      session.onTranscriptBroadcast({
+        sessionId,
+        callId: session.callId,
+        speaker: 'user',
+        text: text.trim(),
+        isFinal: true,
+        timestamp: Date.now(),
+        sequenceNumber: session.history.length + 1,
+      });
+    }
+
+    await this.processTurn(session, text.trim());
   }
 
   /**
@@ -232,12 +259,12 @@ export class ConversationOrchestrator implements OnModuleDestroy {
     this.logger.log(`Ending conversation orchestration for session [${sessionId}]`);
     this.sttProvider.closeStream(sessionId);
 
-    // Asynchronously persist conversation transcript
-    if (session.history.length > 0) {
-      this.persistTranscript(session.callId, session.history).catch((err) =>
-        this.logger.warn(`Failed to persist transcript for call [${session.callId}]: ${err.message}`),
-      );
-    }
+    const duration = Math.max(1, Math.round((Date.now() - session.startedAt) / 1000));
+
+    // Asynchronously persist conversation transcript and complete call
+    this.persistTranscript(session.callId, session.tenantId, session.history, duration).catch((err) =>
+      this.logger.warn(`Failed to finalize call [${session.callId}]: ${err.message}`),
+    );
 
     this.sessions.delete(sessionId);
   }
@@ -282,31 +309,56 @@ export class ConversationOrchestrator implements OnModuleDestroy {
   }
 
   /**
-   * Persists normalized turns to Prisma CallTranscript.
+   * Persists normalized turns to Prisma CallTranscript, marks Call completed, and triggers post-call intelligence.
    */
-  private async persistTranscript(callId: string, history: ConversationTurn[]): Promise<void> {
+  private async persistTranscript(
+    callId: string,
+    tenantId: string,
+    history: ConversationTurn[],
+    duration: number,
+  ): Promise<void> {
     try {
-      const segments = history.map((turn) => ({
-        speaker: turn.speaker,
-        text: turn.content,
-        timestamp: turn.timestamp,
-      }));
+      if (history.length > 0) {
+        const segments = history.map((turn) => ({
+          speaker: turn.speaker,
+          text: turn.content,
+          timestamp: turn.timestamp,
+        }));
 
-      await this.prisma.callTranscript.upsert({
-        where: { callId },
-        create: {
-          callId,
-          segments: segments as any,
-          summary: `Call contained ${history.length} turns.`,
-        },
-        update: {
-          segments: segments as any,
+        await this.prisma.callTranscript.upsert({
+          where: { callId },
+          create: {
+            callId,
+            segments: segments as any,
+            summary: `Call contained ${history.length} turns.`,
+          },
+          update: {
+            segments: segments as any,
+          },
+        });
+        this.logger.log(`Persisted ${history.length} transcript turns for call [${callId}]`);
+      }
+
+      // Mark call as completed in database
+      await this.prisma.call.updateMany({
+        where: { id: callId },
+        data: {
+          status: 'completed',
+          duration,
+          endedAt: new Date(),
         },
       });
 
-      this.logger.log(`Persisted ${history.length} transcript turns for call [${callId}]`);
+      // Trigger post-call intelligence pipeline
+      await this.postCallQueueService.enqueueAnalysisJob({
+        callId,
+        tenantId,
+        triggerSource: 'call_completed',
+        enqueuedAt: new Date().toISOString(),
+      });
+      this.logger.log(`Enqueued post-call analysis for call [${callId}]`);
     } catch (err: any) {
-      this.logger.warn(`Could not persist transcript to database: ${err.message}`);
+      this.logger.warn(`Could not persist transcript / complete call: ${err.message}`);
     }
   }
 }

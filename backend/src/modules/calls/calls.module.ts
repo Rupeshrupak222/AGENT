@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { CallsService } from './calls.service';
 import { CallsController } from './calls.controller';
 import { CallsGateway } from './calls.gateway';
@@ -9,7 +9,7 @@ import { StorageModule } from '../storage/storage.module';
 import { AiModule } from '../ai/ai.module';
 
 @Module({
-  imports: [AuditModule, TelephonyModule, AuthModule, StorageModule, AiModule],
+  imports: [AuditModule, TelephonyModule, AuthModule, StorageModule, forwardRef(() => AiModule)],
   providers: [CallsService, CallsGateway],
   controllers: [CallsController],
   exports: [CallsService, CallsGateway],
