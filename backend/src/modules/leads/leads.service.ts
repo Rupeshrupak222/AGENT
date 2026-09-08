@@ -28,25 +28,6 @@ export class LeadsService {
   }
 
   async bulkImport(tenantId: string, dto: BulkImportLeadsDto) {
-    if (!this.prisma.isConnected) {
-      const mockCreated = dto.leads.map((l, idx) => ({
-        id: `mock-imported-lead-${Date.now()}-${idx}`,
-        name: l.name,
-        phone: l.phone,
-        email: l.email || null,
-        company: l.company || null,
-        status: l.status || 'new',
-        tenantId,
-      }));
-      return {
-        total: dto.leads.length,
-        created: mockCreated.length,
-        duplicates: 0,
-        invalid: 0,
-        leads: mockCreated,
-      };
-    }
-
     const data = dto.leads.map(l => ({
       name: l.name,
       phone: l.phone,

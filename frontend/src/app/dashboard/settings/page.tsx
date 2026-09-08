@@ -50,8 +50,6 @@ export default function SettingsPage() {
   const [zohoDomain, setZohoDomain] = useState("https://www.zohoapis.com/crm/v2");
   const [zohoActive, setZohoActive] = useState(false);
 
-  const [mockActive, setMockActive] = useState(true);
-
   // Messaging Providers State (Day 16)
   const [waPhoneId, setWaPhoneId] = useState("");
   const [waToken, setWaToken] = useState("");
@@ -107,13 +105,13 @@ export default function SettingsPage() {
 
         const wa = msgProvs.find((p) => p.provider === "whatsapp");
         if (wa) {
-          setWaStatus(wa.isConfigured ? "Connected" : wa.isMock ? "Mock Mode" : "Not Connected");
+          setWaStatus(wa.isConfigured ? "Connected" : "Not Connected");
           if (wa.phoneNumberId) setWaPhoneId(wa.phoneNumberId);
         }
 
         const resend = msgProvs.find((p) => p.provider === "resend");
         if (resend) {
-          setResendStatus(resend.isConfigured ? "Connected" : resend.isMock ? "Mock Mode" : "Not Connected");
+          setResendStatus(resend.isConfigured ? "Connected" : "Not Connected");
           if (resend.from) setResendFrom(resend.from);
         }
 
@@ -135,11 +133,6 @@ export default function SettingsPage() {
           setZohoActive(zoho.isActive);
           if (zoho.maskedKey) setZohoToken(zoho.maskedKey);
           if (zoho.settings?.apiDomain) setZohoDomain(zoho.settings.apiDomain);
-        }
-
-        const mock = list.find((i) => i.provider.toLowerCase() === "mock");
-        if (mock) {
-          setMockActive(mock.isActive);
         }
       } catch {
         // Fallback for dev mode
@@ -705,43 +698,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* 4. MOCK CRM / DEV SANDBOX */}
-              <div className="rounded-2xl p-5 panel-card border border-slate-200 dark:border-white/[0.08] shadow-lg flex flex-col justify-between space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400 font-black text-sm">
-                        MK
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">Mock CRM (Sandbox)</h4>
-                        <p className="text-[11px] text-slate-400">In-Memory Local Testing Adapter</p>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                      ● Ready for Demos
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-slate-500 dark:text-white/60 leading-relaxed">
-                    Used for automated testing and development demonstrations. Records synced contacts and post-call activity logs in an isolated in-memory buffer without requiring live external cloud credentials.
-                  </p>
-                </div>
-
-                <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-white/5">
-                  <button
-                    type="button"
-                    disabled={testingCrm === "mock"}
-                    onClick={() => handleTestConnection("mock", { apiKey: "mock-valid-key" })}
-                    className="flex-1 py-1.5 px-3 rounded-xl border border-slate-200 dark:border-white/15 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-40 flex items-center justify-center gap-1"
-                  >
-                    <Check className="w-3.5 h-3.5 text-emerald-500" />
-                    {testingCrm === "mock" ? "Verifying..." : "Verify Health"}
-                  </button>
-                </div>
-              </div>
-
-              {/* 5. META WHATSAPP CLOUD API */}
+              {/* 4. META WHATSAPP CLOUD API */}
               <div className="rounded-2xl p-5 panel-card border border-slate-200 dark:border-white/[0.08] shadow-lg flex flex-col justify-between space-y-4">
                 <div>
                   <div className="flex items-center justify-between mb-3">
@@ -757,8 +714,6 @@ export default function SettingsPage() {
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       waStatus === "Connected"
                         ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                        : waStatus === "Mock Mode"
-                        ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
                         : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/50"
                     }`}>
                       {waStatus}
@@ -826,7 +781,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* 6. RESEND EMAIL API */}
+              {/* 5. RESEND EMAIL API */}
               <div className="rounded-2xl p-5 panel-card border border-slate-200 dark:border-white/[0.08] shadow-lg flex flex-col justify-between space-y-4">
                 <div>
                   <div className="flex items-center justify-between mb-3">
@@ -842,8 +797,6 @@ export default function SettingsPage() {
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       resendStatus === "Connected"
                         ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                        : resendStatus === "Mock Mode"
-                        ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
                         : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/50"
                     }`}>
                       {resendStatus}

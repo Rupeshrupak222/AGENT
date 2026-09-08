@@ -8,19 +8,6 @@ export class AnalyticsService {
   constructor(private prisma: PrismaService) {}
 
   async getDashboardMetrics(tenantId: string, range: 'today' | 'week' | 'month' = 'week') {
-    if (!this.prisma.isConnected) {
-      return {
-        totalCalls: 124,
-        connected: 98,
-        qualified: 42,
-        appointments: 18,
-        closedWon: 11,
-        connectRate: 79.0,
-        conversionRate: 33.9,
-        avgDuration: 195,
-        avgSentiment: 4.2,
-      };
-    }
     try {
       const now   = new Date();
       const start = range === 'today'
@@ -72,18 +59,6 @@ export class AnalyticsService {
   }
 
   async getCallTrend(tenantId: string, days = 7) {
-    if (!this.prisma.isConnected) {
-      const now = new Date();
-      return Array.from({ length: days }).map((_, i) => {
-        const d = new Date(now.getTime() - (days - 1 - i) * 86400000);
-        return {
-          day: d.toISOString().split('T')[0],
-          total_calls: 12 + Math.floor(Math.random() * 8),
-          connected: 9 + Math.floor(Math.random() * 6),
-          avg_sentiment: 4.1,
-        };
-      });
-    }
     try {
       const rows: any[] = await this.prisma.$queryRaw`
         SELECT
@@ -105,30 +80,6 @@ export class AnalyticsService {
   }
 
   async getAgentPerformance(tenantId: string) {
-    if (!this.prisma.isConnected) {
-      return [
-        {
-          id: 'agent-dev-1',
-          name: 'Sarah - Inbound Concierge',
-          role: 'Inbound Support & Qual',
-          totalCalls: 64,
-          completedCalls: 59,
-          avgDuration: 210,
-          avgSentiment: 4.6,
-          avgQuality: 9.4,
-        },
-        {
-          id: 'agent-dev-2',
-          name: 'Alex - Outbound SDR',
-          role: 'Outbound Prospecting',
-          totalCalls: 60,
-          completedCalls: 39,
-          avgDuration: 180,
-          avgSentiment: 4.1,
-          avgQuality: 8.9,
-        },
-      ];
-    }
     try {
       const agents = await this.prisma.aIAgent.findMany({
         where: { tenantId, deletedAt: null },
@@ -165,16 +116,6 @@ export class AnalyticsService {
   }
 
   async getConversionFunnel(tenantId: string) {
-    if (!this.prisma.isConnected) {
-      return [
-        { stage: 'new', count: 120, pct: 100 },
-        { stage: 'contacted', count: 98, pct: 81.7 },
-        { stage: 'interested', count: 65, pct: 54.2 },
-        { stage: 'qualified', count: 42, pct: 35.0 },
-        { stage: 'appointment', count: 18, pct: 15.0 },
-        { stage: 'closed_won', count: 11, pct: 9.2 },
-      ];
-    }
     try {
       const statuses = ['new','contacted','interested','qualified','appointment','closed_won','closed_lost'];
       const counts   = await this.prisma.lead.groupBy({
@@ -198,40 +139,39 @@ export class AnalyticsService {
   }
 
   async getSentimentDistribution(tenantId: string) {
-    if (!this.prisma.isConnected) {
-      return [
-        { bucket: 'very_positive', count: 45 },
-        { bucket: 'positive', count: 38 },
-        { bucket: 'neutral', count: 15 },
-        { bucket: 'negative', count: 4 },
-      ];
+    try {
+      const buckets = await this.prisma.$queryRaw<any[]>`
+        SELECT
+          CASE
+            WHEN "sentimentScore" >= 4.5 THEN 'very_positive'
+            WHEN "sentimentScore" >= 3.5 THEN 'positive'
+            WHEN "sentimentScore" >= 2.5 THEN 'neutral'
+            WHEN "sentimentScore" >= 1.5 THEN 'negative'
+            ELSE 'very_negative'
+          END AS bucket,
+          COUNT(*)::int AS count
+        FROM "Call"
+        WHERE "tenantId" = ${tenantId} AND "sentimentScore" IS NOT NULL
+        GROUP BY 1
+      `;
+      return buckets;
+    } catch (err: any) {
+      this.logger.warn(`Failed to query sentiment distribution: ${err.message}`);
+      return [];
     }
-    const buckets = await this.prisma.$queryRaw<any[]>`
-      SELECT
-        CASE
-          WHEN "sentimentScore" >= 4.5 THEN 'very_positive'
-          WHEN "sentimentScore" >= 3.5 THEN 'positive'
-          WHEN "sentimentScore" >= 2.5 THEN 'neutral'
-          WHEN "sentimentScore" >= 1.5 THEN 'negative'
-          ELSE 'very_negative'
-        END AS bucket,
-        COUNT(*)::int AS count
-      FROM "Call"
-      WHERE "tenantId" = ${tenantId} AND "sentimentScore" IS NOT NULL
-      GROUP BY 1
-    `;
-    return buckets;
   }
 
   async getLeadPriorityStats(tenantId: string) {
-    if (!this.prisma.isConnected) {
+    try {
+      return await this.prisma.lead.groupBy({
+        by:    ['score'],
+        where: { tenantId, deletedAt: null },
+        _count: { score: true },
+        orderBy: { score: 'desc' },
+      });
+    } catch (err: any) {
+      this.logger.warn(`Failed to query lead priority stats: ${err.message}`);
       return [];
     }
-    return this.prisma.lead.groupBy({
-      by:    ['score'],
-      where: { tenantId, deletedAt: null },
-      _count: { score: true },
-      orderBy: { score: 'desc' },
-    });
   }
 }

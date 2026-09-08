@@ -167,4 +167,66 @@ export class HealthService {
       environment: this.configService.get<string>('NODE_ENV', 'development'),
     };
   }
+
+  async getPublicLiveStats() {
+    if (!this.prisma.isConnected) {
+      return {
+        totalCalls: 0,
+        activeCalls: 0,
+        totalAgents: 0,
+        completedCalls: 0,
+        automationRate: 100,
+        activeCallsList: [],
+      };
+    }
+
+    try {
+      const [totalCalls, activeCallsCount, totalAgents, completedCalls, activeList] = await Promise.all([
+        this.prisma.call.count(),
+        this.prisma.call.count({ where: { status: 'in_progress' } }),
+        this.prisma.aIAgent.count({ where: { status: 'active', deletedAt: null } }),
+        this.prisma.call.count({ where: { status: 'completed' } }),
+        this.prisma.call.findMany({
+          where: { status: 'in_progress' },
+          take: 5,
+          orderBy: { startedAt: 'desc' },
+          select: {
+            id: true,
+            phone: true,
+            duration: true,
+            startedAt: true,
+            agent: { select: { name: true } },
+            lead: { select: { name: true } },
+          },
+        }),
+      ]);
+
+      const automationRate = totalCalls > 0 ? Math.round((completedCalls / totalCalls) * 100) : 100;
+
+      return {
+        totalCalls,
+        activeCalls: activeCallsCount,
+        totalAgents,
+        completedCalls,
+        automationRate,
+        activeCallsList: activeList.map((c) => ({
+          id: c.id,
+          agent: c.agent?.name || 'AI Voice Agent',
+          lead: c.lead?.name || c.phone || 'Customer',
+          duration: c.duration || (c.startedAt ? Math.floor((Date.now() - new Date(c.startedAt).getTime()) / 1000) : 0),
+          status: 'Live',
+        })),
+      };
+    } catch (err: any) {
+      this.logger.warn(`Failed to fetch public live stats: ${err.message}`);
+      return {
+        totalCalls: 0,
+        activeCalls: 0,
+        totalAgents: 0,
+        completedCalls: 0,
+        automationRate: 100,
+        activeCallsList: [],
+      };
+    }
+  }
 }

@@ -355,39 +355,6 @@ export class AutomationsService {
     if (status) where.status = status;
     if (leadId) where.leadId = leadId;
 
-    if (!this.prisma.isConnected) {
-      // Return synthesized dev logs when offline
-      return {
-        items: [
-          {
-            id: 'mock-log-1',
-            type: 'whatsapp',
-            template: 'Hi {{lead.name}}, thanks for your call!',
-            message: 'Hi Alex Mercer, thanks for your call!',
-            status: 'delivered',
-            providerMessageId: 'wamid.mock_123',
-            createdAt: new Date(),
-            sentAt: new Date(),
-            lead: { name: 'Alex Mercer', phone: '+919876543210' },
-          },
-          {
-            id: 'mock-log-2',
-            type: 'email',
-            template: 'Appointment Confirmation',
-            message: 'Hello Alex Mercer, your demo has been scheduled.',
-            status: 'sent',
-            providerMessageId: 'resend_mock_456',
-            createdAt: new Date(Date.now() - 3600000),
-            sentAt: new Date(Date.now() - 3600000),
-            lead: { name: 'Alex Mercer', phone: '+919876543210' },
-          },
-        ],
-        total: 2,
-        page: 1,
-        limit: 20,
-      };
-    }
-
     const [items, total] = await Promise.all([
       this.prisma.automationLog.findMany({
         where,
@@ -405,22 +372,6 @@ export class AutomationsService {
   // ── Automation Rule CRUD ─────────────────────────────────────
 
   async createRule(tenantId: string, dto: CreateAutomationRuleDto) {
-    if (!this.prisma.isConnected) {
-      return {
-        id: `rule_mock_${Date.now()}`,
-        name: dto.name,
-        trigger: dto.trigger,
-        action: dto.action,
-        template: dto.template,
-        conditions: dto.conditions || [],
-        actions: dto.actions || [],
-        status: dto.status ?? 'active',
-        executions: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-    }
-
     return this.prisma.automationRule.create({
       data: {
         name: dto.name,
@@ -436,35 +387,6 @@ export class AutomationsService {
   }
 
   async listRules(tenantId: string) {
-    if (!this.prisma.isConnected) {
-      return [
-        {
-          id: 'rule_mock_1',
-          name: 'WhatsApp follow-up on Qualified Lead',
-          trigger: 'lead_qualified',
-          action: 'whatsapp',
-          template: 'Hi {{lead.name}}, our team reviewed your details and would love to schedule a demo.',
-          conditions: [{ field: 'leadScore', operator: '>=', value: 75 }],
-          status: 'active',
-          executions: 12,
-          lastRunAt: new Date(Date.now() - 1800000),
-          createdAt: new Date(),
-        },
-        {
-          id: 'rule_mock_2',
-          name: 'Email Confirmation on Appointment',
-          trigger: 'appointment_detected',
-          action: 'email',
-          template: 'Hello {{lead.name}}, your appointment is booked for {{appointment.date}} at {{appointment.time}}.',
-          conditions: [],
-          status: 'active',
-          executions: 5,
-          lastRunAt: new Date(Date.now() - 7200000),
-          createdAt: new Date(),
-        },
-      ];
-    }
-
     return this.prisma.automationRule.findMany({
       where: { tenantId },
       orderBy: { createdAt: 'desc' },
@@ -472,10 +394,6 @@ export class AutomationsService {
   }
 
   async updateRule(tenantId: string, id: string, dto: UpdateAutomationRuleDto) {
-    if (!this.prisma.isConnected) {
-      return { id, ...dto, updatedAt: new Date() };
-    }
-
     const existing = await this.prisma.automationRule.findFirst({
       where: { id, tenantId },
       select: { id: true },
@@ -501,10 +419,6 @@ export class AutomationsService {
   }
 
   async deleteRule(tenantId: string, id: string) {
-    if (!this.prisma.isConnected) {
-      return { success: true, id };
-    }
-
     const existing = await this.prisma.automationRule.findFirst({
       where: { id, tenantId },
       select: { id: true },

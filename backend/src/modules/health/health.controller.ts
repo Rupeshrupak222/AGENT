@@ -36,4 +36,12 @@ export class HealthController {
   async getDiagnostics() {
     return this.healthService.getDiagnostics();
   }
+
+  @Get('public-stats')
+  @Public()
+  @ApiOperation({ summary: 'Public live system telemetry for landing page' })
+  @ApiResponse({ status: 200, description: 'Live platform call and agent stats' })
+  async getPublicStats() {
+    return this.healthService.getPublicLiveStats();
+  }
 }

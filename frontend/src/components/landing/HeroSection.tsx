@@ -6,14 +6,60 @@ import { WaveAnimation, LiveCallIndicator } from "@/components/ui/WaveAnimation"
 import { Badge } from "@/components/ui/Badge";
 import { formatDuration } from "@/lib/utils";
 
+import { useState, useEffect } from "react";
+import { apiClient } from "@/lib/api";
+
 const R = "#D42027";
 
 function LiveDashboard() {
-  const feed = [
-    { agent:"Priya AI",  lead:"Rahul Sharma",  duration:154, status:"Qualifying" },
-    { agent:"Arjun AI",  lead:"Anita Patel",   duration:72,  status:"Pitching"   },
-    { agent:"Meera AI",  lead:"Vikram Singh",  duration:48,  status:"Closing"    },
-  ];
+  const [stats, setStats] = useState<{
+    totalCalls: number;
+    activeCalls: number;
+    totalAgents: number;
+    completedCalls: number;
+    automationRate: number;
+    activeCallsList: Array<{
+      id: string;
+      agent: string;
+      lead: string;
+      duration: number;
+      status: string;
+    }>;
+  }>({
+    totalCalls: 0,
+    activeCalls: 0,
+    totalAgents: 0,
+    completedCalls: 0,
+    automationRate: 100,
+    activeCallsList: [],
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchLive = async () => {
+      try {
+        const res = await apiClient.get<any>("/health/public-stats");
+        const data = res.data?.data || res.data;
+        if (mounted && data) {
+          setStats(data);
+        }
+      } catch {
+        // graceful fallback
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    fetchLive();
+    const interval = setInterval(fetchLive, 5000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  const hasActive = stats.activeCallsList && stats.activeCallsList.length > 0;
+
   return (
     <motion.div initial={{ opacity:0, scale:0.92 }} animate={{ opacity:1, scale:1 }}
       transition={{ delay:0.4, duration:0.8, ease:"easeOut" }}
@@ -34,17 +80,22 @@ function LiveDashboard() {
         <div className="flex items-center justify-between mb-5">
           <div>
             <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-400">Live Call Center</p>
-            <p className="text-base font-bold text-gray-900 mt-0.5">Today&apos;s Performance</p>
+            <p className="text-base font-bold text-gray-900 mt-0.5">Real-Time Telemetry</p>
           </div>
-          <LiveCallIndicator active />
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tracking-wide uppercase">
+              {stats.activeCalls > 0 ? `${stats.activeCalls} Live Now` : "System Live"}
+            </span>
+          </div>
         </div>
 
-        {/* Metrics */}
+        {/* Real Metrics */}
         <div className="grid grid-cols-3 gap-2.5 mb-4">
           {[
-            { label:"Total Calls", value:"2,847", icon:<Phone className="w-3.5 h-3.5"/> },
-            { label:"Qualified",   value:"847",   icon:<TrendingUp className="w-3.5 h-3.5"/> },
-            { label:"Agents",      value:"12",    icon:<Users className="w-3.5 h-3.5"/> },
+            { label:"Total Calls", value: loading ? "—" : stats.totalCalls.toLocaleString(), icon:<Phone className="w-3.5 h-3.5"/> },
+            { label:"Completed",   value: loading ? "—" : stats.completedCalls.toLocaleString(), icon:<TrendingUp className="w-3.5 h-3.5"/> },
+            { label:"AI Agents",   value: loading ? "—" : stats.totalAgents.toLocaleString(), icon:<Users className="w-3.5 h-3.5"/> },
           ].map(m=>(
             <div key={m.label} className="rounded-xl p-2.5 text-center"
               style={{ background:"rgba(212,32,39,0.06)", border:"1px solid rgba(212,32,39,0.14)" }}>
@@ -55,37 +106,47 @@ function LiveDashboard() {
           ))}
         </div>
 
-        {/* Live calls */}
+        {/* Active calls feed */}
         <div className="space-y-2 mb-4">
-          <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-400">Active Calls</p>
-          {feed.map(c=>(
-            <div key={c.lead} className="flex items-center gap-3 p-2.5 rounded-xl"
-              style={{ background:"rgba(0,0,0,0.025)", border:"1px solid rgba(0,0,0,0.06)" }}>
-              <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ background:"rgba(212,32,39,0.10)" }}>
-                <PhoneCall className="w-3.5 h-3.5" style={{ color:R }}/>
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-400">Live Telephony Feed</p>
+            <span className="text-[10px] text-gray-400 font-mono">Live DB Sync</span>
+          </div>
+
+          {hasActive ? (
+            stats.activeCallsList.map(c=>(
+              <div key={c.id} className="flex items-center gap-3 p-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background:"rgba(212,32,39,0.10)" }}>
+                  <PhoneCall className="w-3.5 h-3.5" style={{ color:R }}/>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-gray-900 truncate">{c.lead}</p>
+                  <p className="text-[10px] text-gray-400">{c.agent}</p>
+                </div>
+                <WaveAnimation active size="sm" bars={4} color="bg-emerald-500" />
+                <div className="text-right flex-shrink-0">
+                  <p className="text-xs font-mono text-gray-500">{formatDuration(c.duration)}</p>
+                  <p className="text-[10px] text-green-600 font-semibold">{c.status}</p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-gray-900 truncate">{c.lead}</p>
-                <p className="text-[10px] text-gray-400">{c.agent}</p>
-              </div>
-              <WaveAnimation active size="sm" bars={4} color="#16a34a" />
-              <div className="text-right flex-shrink-0">
-                <p className="text-xs font-mono text-gray-500">{formatDuration(c.duration)}</p>
-                <p className="text-[10px] text-green-600">{c.status}</p>
-              </div>
+            ))
+          ) : (
+            <div className="py-4 px-3 rounded-xl text-center bg-gray-50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/5">
+              <p className="text-xs font-medium text-gray-600 dark:text-white/70">Autonomous Dispatch Ready</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">All AI Voice Employees online and standby</p>
             </div>
-          ))}
+          )}
         </div>
 
         {/* Conv bar */}
         <div className="pt-3 border-t border-gray-100">
           <div className="flex justify-between text-xs mb-1.5">
-            <span className="text-gray-400">Conversion Rate</span>
-            <span className="font-bold text-green-600">29.7%</span>
+            <span className="text-gray-400">Platform Automation Rate</span>
+            <span className="font-bold text-green-600">{stats.automationRate}%</span>
           </div>
           <div className="h-1.5 rounded-full overflow-hidden bg-gray-100">
-            <motion.div initial={{ width:0 }} animate={{ width:"29.7%" }} transition={{ delay:1.2, duration:1.4, ease:"easeOut" }}
+            <motion.div initial={{ width:0 }} animate={{ width:`${stats.automationRate}%` }} transition={{ delay:0.5, duration:1, ease:"easeOut" }}
               className="h-full rounded-full"
               style={{ background:`linear-gradient(90deg,${R},#ff6464)` }}
             />

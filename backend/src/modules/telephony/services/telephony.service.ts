@@ -377,7 +377,7 @@ export class TelephonyService {
     );
 
     // 3. Locate Call Record & Persist Initial Metadata
-    let callId = `call-mock-${providerCallId}`;
+    let callId = providerCallId;
     let tenantId = 'default-tenant';
     let dbRecordingId = `rec-${Date.now()}`;
 
