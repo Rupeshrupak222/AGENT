@@ -11,6 +11,7 @@ import { PostCallAnalysisInput } from '../interfaces/post-call.interface';
 import { CallsGateway } from '../../calls/calls.gateway';
 import { CrmQueueService } from '../../integrations/services/crm-queue.service';
 import { AutomationsService } from '../../automations/automations.service';
+import { MetricsService } from '../../../common/services/metrics.service';
 
 @Injectable()
 @Processor('post-call-analysis')
@@ -21,6 +22,7 @@ export class PostCallProcessor implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly geminiProvider: GeminiPostCallProvider,
     private readonly queueService: PostCallQueueService,
+    private readonly metrics: MetricsService,
     @Optional()
     @Inject(forwardRef(() => CallsGateway))
     private readonly callsGateway?: CallsGateway,
@@ -145,7 +147,11 @@ export class PostCallProcessor implements OnModuleInit {
       };
 
       // 5. Invoke Gemini Post-Call Provider
+      const analysisStart = Date.now();
       const result = await this.geminiProvider.analyze(analysisInput);
+      const analysisLatencyMs = Date.now() - analysisStart;
+      this.metrics.recordLatency('analysis.gemini', analysisLatencyMs);
+      this.metrics.increment('analyses.completed');
       this.logger.log(
         `[POST_CALL_ANALYSIS_COMPLETED] callId=${callId} leadScore=${result.leadScore} intent=${result.intent} qualified=${result.qualification.qualified}`,
       );
@@ -318,6 +324,7 @@ export class PostCallProcessor implements OnModuleInit {
       return { success: true, analysisId: savedAnalysis.id };
     } catch (err: any) {
       this.logger.error(`[POST_CALL_ANALYSIS_FAILED] callId=${callId}: ${err.message}`);
+      this.metrics.increment('analyses.failed');
 
       // Crucial: Call status is NEVER regressed to failed!
       try {

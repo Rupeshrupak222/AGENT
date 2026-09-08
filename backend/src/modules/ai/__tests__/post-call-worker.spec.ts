@@ -84,10 +84,22 @@ describe('Post-Call Analysis Worker & CRM/Campaign Integration', () => {
       setInMemoryProcessor: jest.fn(),
     };
 
+    const mockMetrics = {
+      increment: jest.fn(),
+      recordLatency: jest.fn(),
+      gauge: jest.fn(),
+      getCounter: jest.fn(),
+      getCounterValue: jest.fn().mockReturnValue(0),
+      getHistogramStats: jest.fn(),
+      getAllMetrics: jest.fn(),
+      reset: jest.fn(),
+    };
+
     processor = new PostCallProcessor(
       mockPrisma as any,
       mockProvider as any,
       mockQueue as any,
+      mockMetrics as any,
     );
   });
 

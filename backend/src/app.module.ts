@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
@@ -24,19 +24,21 @@ import { AiModule } from './modules/ai/ai.module';
 import { CampaignsModule } from './modules/campaigns/campaigns.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { HealthModule } from './modules/health/health.module';
+import { MetricsModule } from './common/services/metrics.module';
 import { AppController } from './app.controller';
+import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
+import { SecurityHeadersMiddleware } from './common/middleware/security-headers.middleware';
 
 @Module({
   controllers: [AppController],
   providers: [
-    // ── Global rate limiting (applied to every HTTP route incl. public auth/webhooks) ──
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
   imports: [
-    // ── Config ────────────────────────────────────────────────
+    MetricsModule,
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env', '.env.local'] }),
 
-    // ── Rate Limiting ─────────────────────────────────────────
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => [
@@ -44,7 +46,6 @@ import { AppController } from './app.controller';
       ],
     }),
 
-    // ── Background Jobs ───────────────────────────────────────
     BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
@@ -56,7 +57,6 @@ import { AppController } from './app.controller';
           enableReadyCheck: false,
         },
         createClient: (_type, redisOpts) => {
-          // eslint-disable-next-line @typescript-eslint/no-var-requires
           const Redis = require('ioredis');
           const client = new Redis({
             ...redisOpts,
@@ -64,21 +64,16 @@ import { AppController } from './app.controller';
             enableReadyCheck: false,
             retryStrategy: (times: number) => Math.min(times * 100, 2000),
           });
-          client.on('error', () => {
-            // Silently absorb connection errors in dev mode so in-memory queue fallback operates
-          });
+          client.on('error', () => {});
           return client;
         },
       }),
     }),
 
-    // ── Scheduler ─────────────────────────────────────────────
     ScheduleModule.forRoot(),
 
-    // ── RBAC ──────────────────────────────────────────────────
     RbacModule,
 
-    // ── Feature Modules ───────────────────────────────────────
     PrismaModule,
     AuthModule,
     TenantsModule,
@@ -98,6 +93,16 @@ import { AppController } from './app.controller';
     CampaignsModule,
     StorageModule,
     IntegrationsModule,
+    HealthModule,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(CorrelationIdMiddleware)
+      .forRoutes('*');
+    consumer
+      .apply(SecurityHeadersMiddleware)
+      .forRoutes('*');
+  }
+}

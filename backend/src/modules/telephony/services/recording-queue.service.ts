@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
+import { MetricsService } from '../../../common/services/metrics.service';
 
 export interface RecordingJobData {
   recordingId: string;
@@ -20,6 +21,7 @@ export interface EnqueueRecordingOptions {
 
 @Injectable()
 export class RecordingQueueService implements OnModuleInit {
+  static failedJobCount = 0;
   private readonly logger = new Logger(RecordingQueueService.name);
   public isRedisAvailable = false;
   private readonly inMemoryQueue: Array<{
@@ -29,10 +31,13 @@ export class RecordingQueueService implements OnModuleInit {
   }> = [];
   private inMemoryProcessor?: (data: RecordingJobData) => Promise<void>;
   private isProcessingInMemory = false;
+  private failedJobs: Array<{ jobId: string; data: RecordingJobData; error: string; timestamp: number }> = [];
+  private readonly MAX_FAILED_JOBS = 100;
 
   constructor(
     @InjectQueue('recording-processing')
     private readonly recordingQueue: Queue<RecordingJobData>,
+    private readonly metrics: MetricsService,
   ) {}
 
   async onModuleInit() {
@@ -41,6 +46,7 @@ export class RecordingQueueService implements OnModuleInit {
       if (client && client.status === 'ready') {
         this.isRedisAvailable = true;
         this.logger.log('Bull queue [recording-processing] connected to Redis');
+        this.registerQueueEventListeners();
       } else {
         this.isRedisAvailable = false;
         this.logger.warn(
@@ -53,19 +59,59 @@ export class RecordingQueueService implements OnModuleInit {
     }
   }
 
+  private registerQueueEventListeners() {
+    this.recordingQueue.on('completed', (job) => {
+      this.metrics.increment('queue.recording-processing.completed');
+      this.logger.log(
+        JSON.stringify({ event: 'queue.job.completed', queue: 'recording-processing', jobId: job.id }),
+      );
+    });
+
+    this.recordingQueue.on('failed', (job, err) => {
+      this.metrics.increment('queue.recording-processing.failed');
+      this.addFailedJob(String(job.id), job.data, err.message);
+      this.logger.error(
+        JSON.stringify({
+          event: 'queue.job.failed',
+          queue: 'recording-processing',
+          jobId: job.id,
+          attempt: job.attemptsMade,
+          error: err.message,
+        }),
+      );
+    });
+
+    this.recordingQueue.on('stalled', (jobId) => {
+      this.metrics.increment('queue.recording-processing.stalled');
+      this.logger.warn(
+        JSON.stringify({ event: 'queue.job.stalled', queue: 'recording-processing', jobId }),
+      );
+    });
+  }
+
+  private addFailedJob(jobId: string, data: RecordingJobData, error: string) {
+    this.failedJobs.push({ jobId, data, error, timestamp: Date.now() });
+    RecordingQueueService.failedJobCount += 1;
+    if (this.failedJobs.length > this.MAX_FAILED_JOBS) {
+      this.failedJobs = this.failedJobs.slice(-this.MAX_FAILED_JOBS);
+    }
+  }
+
+  getFailedJobs() {
+    return [...this.failedJobs];
+  }
+
   setInMemoryProcessor(fn: (data: RecordingJobData) => Promise<void>) {
     this.inMemoryProcessor = fn;
     this.triggerInMemoryProcessing();
   }
 
-  /**
-   * Enqueues a recording processing job with a deterministic idempotency key.
-   */
   async enqueueRecordingJob(
     data: RecordingJobData,
     options: EnqueueRecordingOptions = {},
   ): Promise<{ jobId: string; queued: boolean; mode: 'bull' | 'in_memory' }> {
     const jobId = `recording:${data.tenantId}:${data.callId}:${data.providerRecordingId}`;
+    this.metrics.increment('queue.recording-processing.enqueued');
 
     if (this.isRedisAvailable) {
       try {
@@ -89,7 +135,6 @@ export class RecordingQueueService implements OnModuleInit {
       }
     }
 
-    // In-memory fallback
     const exists = this.inMemoryQueue.some((j) => j.id === jobId);
     if (exists) {
       this.logger.log(`Skipping duplicate in-memory recording job [${jobId}]`);

@@ -58,11 +58,23 @@ describe('Recording Worker Processing & SSRF Protection', () => {
       setInMemoryProcessor: jest.fn(),
     };
 
+    const mockMetrics = {
+      increment: jest.fn(),
+      recordLatency: jest.fn(),
+      gauge: jest.fn(),
+      getCounter: jest.fn(),
+      getCounterValue: jest.fn().mockReturnValue(0),
+      getHistogramStats: jest.fn(),
+      getAllMetrics: jest.fn(),
+      reset: jest.fn(),
+    };
+
     processor = new RecordingProcessor(
       mockPrisma as any,
       configService,
       mockStorage as any,
       mockQueue as any,
+      mockMetrics as any,
     );
   });
 

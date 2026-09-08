@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
+import { MetricsService } from '../../../common/services/metrics.service';
 
 export interface PostCallAnalysisJobData {
   callId: string;
@@ -16,6 +17,7 @@ export interface EnqueueAnalysisOptions {
 
 @Injectable()
 export class PostCallQueueService implements OnModuleInit {
+  static failedJobCount = 0;
   private readonly logger = new Logger(PostCallQueueService.name);
   public isRedisAvailable = false;
   private readonly inMemoryQueue: Array<{
@@ -25,10 +27,13 @@ export class PostCallQueueService implements OnModuleInit {
   }> = [];
   private inMemoryProcessor?: (data: PostCallAnalysisJobData) => Promise<void>;
   private isProcessingInMemory = false;
+  private failedJobs: Array<{ jobId: string; data: PostCallAnalysisJobData; error: string; timestamp: number }> = [];
+  private readonly MAX_FAILED_JOBS = 100;
 
   constructor(
     @InjectQueue('post-call-analysis')
     private readonly analysisQueue: Queue<PostCallAnalysisJobData>,
+    private readonly metrics: MetricsService,
   ) {}
 
   async onModuleInit() {
@@ -37,6 +42,7 @@ export class PostCallQueueService implements OnModuleInit {
       if (client && client.status === 'ready') {
         this.isRedisAvailable = true;
         this.logger.log('Bull queue [post-call-analysis] connected to Redis');
+        this.registerQueueEventListeners();
       } else {
         this.isRedisAvailable = false;
         this.logger.warn(
@@ -49,14 +55,53 @@ export class PostCallQueueService implements OnModuleInit {
     }
   }
 
+  private registerQueueEventListeners() {
+    this.analysisQueue.on('completed', (job) => {
+      this.metrics.increment('queue.post-call-analysis.completed');
+      this.logger.log(
+        JSON.stringify({ event: 'queue.job.completed', queue: 'post-call-analysis', jobId: job.id }),
+      );
+    });
+
+    this.analysisQueue.on('failed', (job, err) => {
+      this.metrics.increment('queue.post-call-analysis.failed');
+      this.addFailedJob(String(job.id), job.data, err.message);
+      this.logger.error(
+        JSON.stringify({
+          event: 'queue.job.failed',
+          queue: 'post-call-analysis',
+          jobId: job.id,
+          attempt: job.attemptsMade,
+          error: err.message,
+        }),
+      );
+    });
+
+    this.analysisQueue.on('stalled', (jobId) => {
+      this.metrics.increment('queue.post-call-analysis.stalled');
+      this.logger.warn(
+        JSON.stringify({ event: 'queue.job.stalled', queue: 'post-call-analysis', jobId }),
+      );
+    });
+  }
+
+  private addFailedJob(jobId: string, data: PostCallAnalysisJobData, error: string) {
+    this.failedJobs.push({ jobId, data, error, timestamp: Date.now() });
+    PostCallQueueService.failedJobCount += 1;
+    if (this.failedJobs.length > this.MAX_FAILED_JOBS) {
+      this.failedJobs = this.failedJobs.slice(-this.MAX_FAILED_JOBS);
+    }
+  }
+
+  getFailedJobs() {
+    return [...this.failedJobs];
+  }
+
   setInMemoryProcessor(fn: (data: PostCallAnalysisJobData) => Promise<void>) {
     this.inMemoryProcessor = fn;
     this.triggerInMemoryProcessing();
   }
 
-  /**
-   * Enqueues a post-call analysis job with deterministic compound idempotency key.
-   */
   async enqueueAnalysisJob(
     data: PostCallAnalysisJobData,
     options: EnqueueAnalysisOptions = {},
@@ -65,6 +110,7 @@ export class PostCallQueueService implements OnModuleInit {
       data.triggerSource === 'manual_retry'
         ? `analysis:${data.tenantId}:${data.callId}:${Date.now()}`
         : `analysis:${data.tenantId}:${data.callId}`;
+    this.metrics.increment('queue.post-call-analysis.enqueued');
 
     if (this.isRedisAvailable) {
       try {
@@ -88,7 +134,6 @@ export class PostCallQueueService implements OnModuleInit {
       }
     }
 
-    // In-memory fallback
     const exists = this.inMemoryQueue.some((j) => j.id === jobId);
     if (exists) {
       this.logger.log(`Skipping duplicate in-memory post-call analysis job [${jobId}]`);
