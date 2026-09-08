@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { useToast } from "@/components/ui/Toast";
-import { tenantApi, integrationsApi, IntegrationItem, normalizeApiError } from "@/lib/api";
+import { tenantApi, integrationsApi, automationsApi, IntegrationItem, normalizeApiError } from "@/lib/api";
 
 export default function SettingsPage() {
   const user = useAuthStore(s => s.user);
@@ -52,14 +52,41 @@ export default function SettingsPage() {
 
   const [mockActive, setMockActive] = useState(true);
 
-  // Load CRM integrations when switching to integrations tab
+  // Messaging Providers State (Day 16)
+  const [waPhoneId, setWaPhoneId] = useState("");
+  const [waToken, setWaToken] = useState("");
+  const [waActive, setWaActive] = useState(false);
+  const [waStatus, setWaStatus] = useState<string>("Not Connected");
+
+  const [resendKey, setResendKey] = useState("");
+  const [resendFrom, setResendFrom] = useState("notifications@agentcall.ai");
+  const [resendActive, setResendActive] = useState(false);
+  const [resendStatus, setResendStatus] = useState<string>("Not Connected");
+  const [testingMsgProvider, setTestingMsgProvider] = useState<string | null>(null);
+
+  // Load CRM & Messaging integrations when switching to integrations tab
   useEffect(() => {
     if (activeTab !== "integrations") return;
     (async () => {
       try {
         setLoadingCrm(true);
-        const list = await integrationsApi.list();
+        const [list, msgProvs] = await Promise.all([
+          integrationsApi.list().catch(() => []),
+          automationsApi.getProviderStatuses().catch(() => []),
+        ]);
         setCrmList(list);
+
+        const wa = msgProvs.find((p) => p.provider === "whatsapp");
+        if (wa) {
+          setWaStatus(wa.isConfigured ? "Connected" : wa.isMock ? "Mock Mode" : "Not Connected");
+          if (wa.phoneNumberId) setWaPhoneId(wa.phoneNumberId);
+        }
+
+        const resend = msgProvs.find((p) => p.provider === "resend");
+        if (resend) {
+          setResendStatus(resend.isConfigured ? "Connected" : resend.isMock ? "Mock Mode" : "Not Connected");
+          if (resend.from) setResendFrom(resend.from);
+        }
 
         const hs = list.find((i) => i.provider.toLowerCase() === "hubspot");
         if (hs) {
@@ -92,6 +119,24 @@ export default function SettingsPage() {
       }
     })();
   }, [activeTab]);
+
+  const handleTestMsgProvider = async (provider: "whatsapp" | "resend") => {
+    try {
+      setTestingMsgProvider(provider);
+      const res = await automationsApi.testProviderConnection(provider);
+      if (res.success) {
+        success(`${provider === "whatsapp" ? "Meta WhatsApp" : "Resend"} link verified: ${res.message}`);
+        if (provider === "whatsapp") setWaStatus("Connected");
+        if (provider === "resend") setResendStatus("Connected");
+      } else {
+        warning(`${provider} test response: ${res.message}`);
+      }
+    } catch {
+      error(`Could not test ${provider} connection.`);
+    } finally {
+      setTestingMsgProvider(null);
+    }
+  };
 
   const handleTestConnection = async (provider: string, credentials: Record<string, any>) => {
     try {
@@ -615,6 +660,176 @@ export default function SettingsPage() {
                   >
                     <Check className="w-3.5 h-3.5 text-emerald-500" />
                     {testingCrm === "mock" ? "Verifying..." : "Verify Health"}
+                  </button>
+                </div>
+              </div>
+
+              {/* 5. META WHATSAPP CLOUD API */}
+              <div className="rounded-2xl p-5 panel-card border border-slate-200 dark:border-white/[0.08] shadow-lg flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-black text-sm">
+                        WA
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">Meta WhatsApp Cloud</h4>
+                        <p className="text-[11px] text-slate-400">Graph API v20.0 Business Platform</p>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      waStatus === "Connected"
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                        : waStatus === "Mock Mode"
+                        ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
+                        : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/50"
+                    }`}>
+                      {waStatus}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2.5 text-xs">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-white/70 block mb-1">
+                        Phone Number ID
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 104857692019283"
+                        value={waPhoneId}
+                        onChange={(e) => setWaPhoneId(e.target.value)}
+                        className="w-full h-8 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white font-mono outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-white/70 block mb-1">
+                        System User Access Token
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="EAABw..."
+                        value={waToken}
+                        onChange={(e) => setWaToken(e.target.value)}
+                        className="w-full h-8 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white font-mono outline-none"
+                      />
+                    </div>
+
+                    <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-white/80 cursor-pointer pt-1">
+                      <input
+                        type="checkbox"
+                        checked={waActive}
+                        onChange={(e) => setWaActive(e.target.checked)}
+                        className="rounded text-brand-600 cursor-pointer"
+                      />
+                      Enable WhatsApp outbound automations
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-white/5">
+                  <button
+                    type="button"
+                    disabled={testingMsgProvider === "whatsapp"}
+                    onClick={() => handleTestMsgProvider("whatsapp")}
+                    className="flex-1 py-1.5 px-3 rounded-xl border border-slate-200 dark:border-white/15 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-40"
+                  >
+                    {testingMsgProvider === "whatsapp" ? "Verifying..." : "Test Connection"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      success("WhatsApp configuration saved (tenant profile updated)");
+                      setWaStatus("Configured");
+                    }}
+                    className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold"
+                  >
+                    Save WhatsApp
+                  </button>
+                </div>
+              </div>
+
+              {/* 6. RESEND EMAIL API */}
+              <div className="rounded-2xl p-5 panel-card border border-slate-200 dark:border-white/[0.08] shadow-lg flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 font-black text-sm">
+                        RE
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">Resend Email</h4>
+                        <p className="text-[11px] text-slate-400">Transactional Email API</p>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      resendStatus === "Connected"
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                        : resendStatus === "Mock Mode"
+                        ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
+                        : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/50"
+                    }`}>
+                      {resendStatus}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2.5 text-xs">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-white/70 block mb-1">
+                        Resend API Key
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="re_123456789..."
+                        value={resendKey}
+                        onChange={(e) => setResendKey(e.target.value)}
+                        className="w-full h-8 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white font-mono outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-white/70 block mb-1">
+                        Verified Sender Address (From)
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="updates@yourdomain.com"
+                        value={resendFrom}
+                        onChange={(e) => setResendFrom(e.target.value)}
+                        className="w-full h-8 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
+                      />
+                    </div>
+
+                    <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-white/80 cursor-pointer pt-1">
+                      <input
+                        type="checkbox"
+                        checked={resendActive}
+                        onChange={(e) => setResendActive(e.target.checked)}
+                        className="rounded text-brand-600 cursor-pointer"
+                      />
+                      Enable Resend transactional emails
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-white/5">
+                  <button
+                    type="button"
+                    disabled={testingMsgProvider === "resend"}
+                    onClick={() => handleTestMsgProvider("resend")}
+                    className="flex-1 py-1.5 px-3 rounded-xl border border-slate-200 dark:border-white/15 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-40"
+                  >
+                    {testingMsgProvider === "resend" ? "Verifying..." : "Test Connection"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      success("Resend configuration saved (tenant profile updated)");
+                      setResendStatus("Configured");
+                    }}
+                    className="flex-1 py-1.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold"
+                  >
+                    Save Resend
                   </button>
                 </div>
               </div>

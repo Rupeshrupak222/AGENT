@@ -940,14 +940,26 @@ export type AutomationTrigger =
   | "call_completed"
   | "call_missed"
   | "lead_qualified"
-  | "deal_closed";
+  | "deal_closed"
+  | "call_analysis_completed"
+  | "lead_disqualified"
+  | "appointment_detected"
+  | "campaign_lead_completed";
 
 export type AutomationAction =
   | "whatsapp"
   | "sms"
   | "email"
   | "webhook"
-  | "crm_update";
+  | "crm_update"
+  | "send_whatsapp"
+  | "send_email";
+
+export interface AutomationCondition {
+  field: string;
+  operator: "==" | "!=" | ">" | ">=" | "<" | "<=" | "in" | "contains" | "not_contains" | "exists";
+  value?: any;
+}
 
 export interface AutomationRule {
   id: string;
@@ -955,6 +967,8 @@ export interface AutomationRule {
   trigger: AutomationTrigger;
   action: AutomationAction;
   template?: string | null;
+  conditions?: AutomationCondition[];
+  actions?: Array<{ type: string; template?: string; subject?: string }>;
   status: "active" | "paused";
   executions: number;
   lastRunAt?: string | null;
@@ -967,7 +981,32 @@ export interface CreateAutomationRuleInput {
   trigger: AutomationTrigger;
   action: AutomationAction;
   template?: string;
+  conditions?: AutomationCondition[];
+  actions?: Array<{ type: string; template?: string; subject?: string }>;
   status?: "active" | "paused";
+}
+
+export interface AutomationLogItem {
+  id: string;
+  type: string;
+  template: string;
+  message: string;
+  status: "queued" | "sent" | "delivered" | "read" | "failed" | "skipped";
+  error?: string | null;
+  providerMessageId?: string | null;
+  attempts?: number;
+  createdAt: string;
+  sentAt?: string | null;
+  lead?: { id?: string; name?: string; phone?: string; email?: string } | null;
+}
+
+export interface ProviderStatusItem {
+  provider: "whatsapp" | "resend";
+  state: "not_connected" | "configured" | "connected" | "mock_mode" | "disabled";
+  isConfigured: boolean;
+  isMock: boolean;
+  from?: string;
+  phoneNumberId?: string;
 }
 
 export const automationsApi = {
@@ -1010,6 +1049,67 @@ export const automationsApi = {
 
   deleteRule: async (id: string): Promise<void> => {
     await apiClient.delete(`/automations/rules/${id}`);
+  },
+
+  getLogs: async (params?: {
+    page?: number;
+    limit?: number;
+    type?: string;
+    status?: string;
+  }): Promise<{ items: AutomationLogItem[]; total: number; page: number; limit: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: AutomationLogItem[]; total: number; page: number; limit: number }>>(
+      "/automations/logs",
+      { params }
+    );
+    return res.data.data;
+  },
+
+  dryRun: async (dto: {
+    trigger: string;
+    template?: string;
+    conditions?: AutomationCondition[];
+    leadId?: string;
+  }): Promise<{
+    success: boolean;
+    conditionsMet: boolean;
+    renderedMessage: string;
+    contextUsed: Record<string, any>;
+  }> => {
+    const res = await apiClient.post<ApiResponseWrapper<any>>(
+      "/automations/dry-run",
+      dto
+    );
+    return res.data.data;
+  },
+
+  testAction: async (dto: {
+    actionType: "send_whatsapp" | "send_email";
+    destination: string;
+    message?: string;
+    subject?: string;
+  }): Promise<{ success: boolean; message: string; jobId: string }> => {
+    const res = await apiClient.post<ApiResponseWrapper<any>>(
+      "/automations/test-action",
+      dto
+    );
+    return res.data.data;
+  },
+
+  getProviderStatuses: async (): Promise<ProviderStatusItem[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<ProviderStatusItem[]>>(
+      "/automations/providers/status"
+    );
+    return res.data.data;
+  },
+
+  testProviderConnection: async (
+    provider: "whatsapp" | "resend"
+  ): Promise<{ success: boolean; message: string; latencyMs?: number }> => {
+    const res = await apiClient.post<ApiResponseWrapper<any>>(
+      "/automations/providers/test",
+      { provider }
+    );
+    return res.data.data;
   },
 };
 

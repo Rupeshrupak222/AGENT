@@ -104,7 +104,9 @@ enum AutomationStatus {
   queued
   sent
   delivered
+  read
   failed
+  skipped
 }
 
 enum CampaignStatus {
@@ -153,6 +155,8 @@ enum IntegrationProvider {
   teams
   google_calendar
   outlook_calendar
+  whatsapp
+  resend
 }
 
 enum AppointmentStatus {
@@ -168,6 +172,10 @@ enum AutomationTrigger {
   call_missed
   lead_qualified
   deal_closed
+  call_analysis_completed
+  lead_disqualified
+  appointment_detected
+  campaign_lead_completed
 }
 
 enum AutomationAction {
@@ -176,6 +184,8 @@ enum AutomationAction {
   email
   webhook
   crm_update
+  send_whatsapp
+  send_email
 }
 
 enum AutomationRuleStatus {
@@ -539,13 +549,15 @@ model Activity {
 // ── Automation Log ─────────────────────────────────────────────
 
 model AutomationLog {
-  id        String           @id @default(cuid())
-  type      AutomationType
-  template  String
-  message   String           @db.Text
-  status    AutomationStatus @default(queued)
-  error     String?
-  metadata  Json?            @default("{}")
+  id                String           @id @default(cuid())
+  type              AutomationType
+  template          String
+  message           String           @db.Text
+  status            AutomationStatus @default(queued)
+  error             String?
+  metadata          Json?            @default("{}")
+  providerMessageId String?
+  attempts          Int              @default(0)
 
   tenantId  String
   tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -599,6 +611,8 @@ model AutomationRule {
   trigger    AutomationTrigger
   action     AutomationAction
   template   String?
+  conditions Json?                @default("[]")
+  actions    Json?                @default("[]")
   status     AutomationRuleStatus @default(active)
   executions Int                  @default(0)
   lastRunAt  DateTime?

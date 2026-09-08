@@ -107,6 +107,17 @@ export class HealthService {
     );
     checks.storage = { status: r2Configured ? 'configured' : 'not_configured' };
 
+    // Automation messaging status
+    const whatsappConfigured = Boolean(
+      this.configService.get<string>('WHATSAPP_ACCESS_TOKEN') &&
+        this.configService.get<string>('WHATSAPP_PHONE_NUMBER_ID'),
+    );
+    const resendConfigured = Boolean(this.configService.get<string>('RESEND_API_KEY'));
+    checks.automations = {
+      status: whatsappConfigured || resendConfigured ? 'configured' : 'mock_mode',
+      message: `whatsapp:${whatsappConfigured ? 'on' : 'mock'} resend:${resendConfigured ? 'on' : 'mock'}`,
+    };
+
     if (overallStatus === 'healthy' && checks.database.status !== 'ok') {
       overallStatus = 'degraded';
     }
@@ -128,6 +139,7 @@ export class HealthService {
       const { CrmQueueService } = await import('../integrations/services/crm-queue.service');
       const { CampaignQueueService } = await import('../campaigns/services/campaign-queue.service');
       const { RecordingQueueService } = await import('../telephony/services/recording-queue.service');
+      const { AutomationQueueService } = await import('../automations/services/automation-queue.service');
       queueStats = {
         'post-call-analysis': {
           failedJobs: PostCallQueueService.failedJobCount,
@@ -140,6 +152,9 @@ export class HealthService {
         },
         'recording-processing': {
           failedJobs: RecordingQueueService.failedJobCount,
+        },
+        'automation-actions': {
+          failedJobs: AutomationQueueService.failedJobCount,
         },
       };
     } catch {

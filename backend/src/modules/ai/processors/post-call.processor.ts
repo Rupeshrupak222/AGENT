@@ -12,6 +12,7 @@ import { CallsGateway } from '../../calls/calls.gateway';
 import { CrmQueueService } from '../../integrations/services/crm-queue.service';
 import { AutomationsService } from '../../automations/automations.service';
 import { MetricsService } from '../../../common/services/metrics.service';
+import { AutomationsService } from '../../automations/automations.service';
 
 @Injectable()
 @Processor('post-call-analysis')
@@ -311,13 +312,63 @@ export class PostCallProcessor implements OnModuleInit {
         }
       }
 
-      // 12. Post-Call Automation Messaging (WhatsApp / SMS / Email)
+      // 12. Post-Call Automation Messaging (WhatsApp / SMS / Resend Email)
       if (this.automationsService) {
         try {
+          // Backward-compatible trigger
           await this.automationsService.sendPostCallAutomation(tenantId, callId);
           this.logger.log(`[AUTOMATIONS_TRIGGERED] Executed post-call automation rules for call ${callId}`);
+
+          // Granular Day 16 Phase 3 Event Triggers
+          const apptDetails = result.appointment?.detected && result.appointment.details ? result.appointment.details : undefined;
+
+          await this.automationsService.triggerAutomation(tenantId, {
+            trigger: 'call_analysis_completed',
+            tenantId,
+            callId: call.id,
+            leadId: call.leadId || undefined,
+            data: {
+              lead: call.lead,
+              call,
+              analysis: result,
+              appointment: apptDetails,
+            },
+          });
+
+          if (result.appointment?.detected && apptDetails) {
+            await this.automationsService.triggerAutomation(tenantId, {
+              trigger: 'appointment_detected',
+              tenantId,
+              callId: call.id,
+              leadId: call.leadId || undefined,
+              data: {
+                lead: call.lead,
+                call,
+                analysis: result,
+                appointment: apptDetails,
+              },
+            });
+          }
+
+          if (result.qualification?.qualified) {
+            await this.automationsService.triggerAutomation(tenantId, {
+              trigger: 'lead_qualified',
+              tenantId,
+              callId: call.id,
+              leadId: call.leadId || undefined,
+              data: { lead: call.lead, call, analysis: result },
+            });
+          } else {
+            await this.automationsService.triggerAutomation(tenantId, {
+              trigger: 'lead_disqualified',
+              tenantId,
+              callId: call.id,
+              leadId: call.leadId || undefined,
+              data: { lead: call.lead, call, analysis: result },
+            });
+          }
         } catch (autoErr: any) {
-          this.logger.warn(`Failed to execute post-call automations for call [${callId}]: ${autoErr.message}`);
+          this.logger.warn(`Failed to trigger automations for call [${callId}]: ${autoErr.message}`);
         }
       }
 
