@@ -11,6 +11,7 @@ export interface AutomationJobData {
   triggerName: string;
   leadId?: string;
   callId?: string;
+  appointmentId?: string;
   actionType: 'send_whatsapp' | 'send_email' | 'whatsapp' | 'email';
   template?: string;
   subject?: string;
@@ -111,7 +112,7 @@ export class AutomationQueueService implements OnModuleInit {
    * Generates a deterministic job ID for deduplication and idempotency.
    */
   generateJobId(data: AutomationJobData): string {
-    const raw = `${data.tenantId}:${data.automationRuleId || 'direct'}:${data.triggerEventId}:${data.leadId || 'none'}:${data.actionType}`;
+    const raw = `${data.tenantId}:${data.automationRuleId || 'direct'}:${data.triggerEventId}:${data.leadId || 'none'}:${data.appointmentId || 'none'}:${data.actionType}`;
     return crypto.createHash('sha256').update(raw).digest('hex').substring(0, 24);
   }
 

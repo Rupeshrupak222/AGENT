@@ -32,10 +32,18 @@ export interface TemplateContext {
     [key: string]: any;
   };
   appointment?: {
-    date?: string | Date;
+    id?: string;
+    date?: string;
     time?: string;
+    startAt?: string;
+    endAt?: string;
+    timezone?: string;
     topic?: string;
+    service?: string;
     status?: string;
+    durationMinutes?: number;
+    location?: string;
+    bookingUrl?: string;
     [key: string]: any;
   };
   [key: string]: any;

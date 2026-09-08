@@ -80,6 +80,7 @@ class RealtimeSocketClient {
       "call:analysis",
       "calls:overview_status",
       "crm:sync:status",
+      "automation:action:executed",
     ];
 
     for (const evt of events) {

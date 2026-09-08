@@ -157,14 +157,18 @@ enum IntegrationProvider {
   outlook_calendar
   whatsapp
   resend
+  calcom
 }
 
 enum AppointmentStatus {
   scheduled
+  pending
   confirmed
   completed
   cancelled
   no_show
+  rescheduled
+  failed
 }
 
 enum AutomationTrigger {
@@ -176,6 +180,13 @@ enum AutomationTrigger {
   lead_disqualified
   appointment_detected
   campaign_lead_completed
+  appointment_booked
+  appointment_confirmed
+  appointment_rescheduled
+  appointment_cancelled
+  appointment_completed
+  appointment_no_show
+  appointment_reminder
 }
 
 enum AutomationAction {
@@ -595,11 +606,44 @@ model Appointment {
   leadId    String?
   agentId   String?
 
+  // ── Day 17: appointment scheduling (calendar provider layer) ──
+  title            String?
+  description      String?
+  timezone         String   @default("UTC")
+  calendarProvider String   @default("native") // native | calcom | google_calendar | outlook_calendar | mock
+  providerAppointmentId String?
+  providerEventId       String?
+  providerBookingUrl    String?
+  location              String?
+  attendeeEmail         String?
+  attendeePhone         String?
+  startAt               DateTime?
+  endAt                 DateTime?
+  metadata              Json     @default("{}")
+  source                String   @default("manual") // manual | ai | whatsapp | call
+  idempotencyKey        String?
+  callId                String?
+  campaignId            String?
+  confirmationSentAt    DateTime?
+  reminder24hSentAt     DateTime?
+  reminder1hSentAt      DateTime?
+  cancelledAt           DateTime?
+  cancellationReason    String?
+  rescheduledAt         DateTime?
+  rescheduleReason      String?
+  createdById           String?
+  createdByEmail        String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([tenantId, idempotencyKey])
   @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, startAt])
+  @@index([tenantId, providerAppointmentId])
   @@index([date])
+  @@index([leadId])
   @@map("Appointment")
 }
 

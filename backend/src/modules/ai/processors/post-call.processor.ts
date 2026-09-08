@@ -12,7 +12,6 @@ import { CallsGateway } from '../../calls/calls.gateway';
 import { CrmQueueService } from '../../integrations/services/crm-queue.service';
 import { AutomationsService } from '../../automations/automations.service';
 import { MetricsService } from '../../../common/services/metrics.service';
-import { AutomationsService } from '../../automations/automations.service';
 
 @Injectable()
 @Processor('post-call-analysis')

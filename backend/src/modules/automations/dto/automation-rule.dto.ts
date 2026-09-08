@@ -12,6 +12,13 @@ export enum AutomationTriggerEnum {
   LEAD_DISQUALIFIED = 'lead_disqualified',
   APPOINTMENT_DETECTED = 'appointment_detected',
   CAMPAIGN_LEAD_COMPLETED = 'campaign_lead_completed',
+  APPOINTMENT_BOOKED = 'appointment_booked',
+  APPOINTMENT_CONFIRMED = 'appointment_confirmed',
+  APPOINTMENT_RESCHEDULED = 'appointment_rescheduled',
+  APPOINTMENT_CANCELLED = 'appointment_cancelled',
+  APPOINTMENT_COMPLETED = 'appointment_completed',
+  APPOINTMENT_NO_SHOW = 'appointment_no_show',
+  APPOINTMENT_REMINDER = 'appointment_reminder',
 }
 
 export enum AutomationActionEnum {
