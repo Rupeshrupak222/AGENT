@@ -7,6 +7,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CloudflareR2StorageProvider } from '../../storage/providers/r2-storage.provider';
 import { buildRecordingObjectKey } from '../../storage/storage.interface';
 import { RecordingJobData, RecordingQueueService } from '../services/recording-queue.service';
+import { MetricsService } from '../../../common/services/metrics.service';
 
 @Injectable()
 @Processor('recording-processing')
@@ -14,7 +15,6 @@ export class RecordingProcessor implements OnModuleInit {
   private readonly logger = new Logger(RecordingProcessor.name);
   private readonly maxFileSizeBytes = 50 * 1024 * 1024; // 50MB limit
 
-  // Callback hook to post-call analysis pipeline when recording finishes
   private postCallAnalysisTrigger?: (callId: string, tenantId: string) => Promise<void>;
 
   constructor(
@@ -22,6 +22,7 @@ export class RecordingProcessor implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly storageProvider: CloudflareR2StorageProvider,
     private readonly queueService: RecordingQueueService,
+    private readonly metrics: MetricsService,
   ) {}
 
   onModuleInit() {
@@ -55,6 +56,7 @@ export class RecordingProcessor implements OnModuleInit {
     const urlValidation = this.validateProviderUrl(sourceUrl, provider);
     if (!urlValidation.isValid) {
       this.logger.error(`[RECORDING_SSRF_REJECTED] Invalid source URL: ${sourceUrl} (${urlValidation.reason})`);
+      this.metrics.increment('recordings.ssrf_rejected');
       await this.markRecordingFailed(recordingId, `SSRF_VALIDATION_FAILED: ${urlValidation.reason}`);
       return { success: false, reason: urlValidation.reason };
     }
@@ -128,6 +130,7 @@ export class RecordingProcessor implements OnModuleInit {
       });
 
       this.logger.log(`[RECORDING_UPLOADED] key=${objectKey} size=${uploadResult.size} bytes`);
+      this.metrics.increment('recordings.uploaded');
 
       // 6. Update CallRecording and Call in Database
       if (this.prisma.isConnected) {
@@ -161,6 +164,7 @@ export class RecordingProcessor implements OnModuleInit {
       return { success: true, objectKey };
     } catch (uploadErr: any) {
       this.logger.error(`[RECORDING_UPLOAD_FAILED] key=${objectKey}: ${uploadErr.message}`);
+      this.metrics.increment('recordings.failed');
       await this.markRecordingFailed(recordingId, `R2_UPLOAD_FAILED: ${uploadErr.message}`);
       // Telephony Call status is intentionally PRESERVED and not altered!
       return { success: false, reason: uploadErr.message };
@@ -180,15 +184,23 @@ export class RecordingProcessor implements OnModuleInit {
 
       const host = parsed.hostname.toLowerCase();
 
+      // Block IP literal addresses (SSRF defense against DNS rebinding and private IPs)
+      if (this.isIpLiteral(host)) {
+        return { isValid: false, reason: 'IP_LITERAL_BLOCKED' };
+      }
+
+      // Block localhost variants
+      if (host === 'localhost' || host === 'localhost.localdomain' || host.endsWith('.localhost')) {
+        return { isValid: false, reason: 'LOCALHOST_BLOCKED' };
+      }
+
       if (provider === 'twilio') {
         if (!host.endsWith('.twilio.com') && host !== 'api.twilio.com') {
           return { isValid: false, reason: 'INVALID_TWILIO_HOSTNAME' };
         }
       } else if (provider === 'mock' || provider === 'dev') {
-        // Dev allowed
         return { isValid: true };
       } else {
-        // Enforce trusted domains only
         if (!host.endsWith('.twilio.com') && !host.endsWith('.exotel.com')) {
           return { isValid: false, reason: 'UNTRUSTED_TELEPHONY_HOST' };
         }
@@ -198,6 +210,27 @@ export class RecordingProcessor implements OnModuleInit {
     } catch {
       return { isValid: false, reason: 'MALFORMED_URL' };
     }
+  }
+
+  private isIpLiteral(host: string): boolean {
+    // IPv4
+    if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) {
+      return true;
+    }
+    // IPv6 (with or without brackets)
+    if (/^\[?[0-9a-f:]+\]?$/.test(host) && host.includes(':')) {
+      return true;
+    }
+    // Common internal hostnames that resolve to private IPs
+    const internalHosts = [
+      'metadata.google.internal',
+      '169.254.169.254',
+      '0.0.0.0',
+    ];
+    if (internalHosts.includes(host)) {
+      return true;
+    }
+    return false;
   }
 
   private async markRecordingFailed(recordingId: string, errorMessage: string) {

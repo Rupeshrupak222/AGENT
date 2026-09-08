@@ -62,6 +62,35 @@ export class CrmSyncProcessor implements OnModuleInit {
       `[CRM_SYNC_PROCESSING] callId=${payload.callId} tenantId=${payload.tenantId} phone=${payload.phone}`,
     );
 
+    // Idempotency: Check if this sync was already completed successfully
+    try {
+      if (this.prisma.isConnected) {
+        const existingAudit = await this.prisma.auditLog.findFirst({
+          where: {
+            tenantId: payload.tenantId,
+            action: 'CRM_SYNC_SUCCESS',
+            resource: 'Call',
+            resourceId: payload.callId,
+          },
+        });
+
+        if (existingAudit) {
+          this.logger.log(
+            `[CRM_SYNC_IDEMPOTENT_SKIP] callId=${payload.callId} — sync already completed successfully`,
+          );
+          return [{
+            success: true,
+            provider: 'idempotent_skip',
+            actionTaken: 'skipped',
+            syncedFields: {},
+            syncedAt: new Date(),
+          }];
+        }
+      }
+    } catch {
+      // If idempotency check fails, proceed with sync (safe fallback)
+    }
+
     // 1. Fetch all active integrations for this tenant
     const activeIntegrations = await this.prisma.integration.findMany({
       where: {

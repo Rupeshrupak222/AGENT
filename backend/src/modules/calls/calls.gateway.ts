@@ -13,6 +13,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { MetricsService } from '../../common/services/metrics.service';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -27,6 +28,8 @@ interface AuthenticatedSocket extends Socket {
     credentials: true,
   },
   namespace: '/calls',
+  pingInterval: 25000,
+  pingTimeout: 10000,
 })
 export class CallsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -39,6 +42,7 @@ export class CallsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private config: ConfigService,
     private prisma: PrismaService,
     private auditService: AuditService,
+    private metrics: MetricsService,
   ) {}
 
   async handleConnection(client: AuthenticatedSocket) {
@@ -108,6 +112,7 @@ export class CallsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Join tenant room for scoped broadcasts
       client.join(`tenant:${user.tenantId}`);
 
+      this.metrics.increment('websocket.connections');
       this.logger.log(
         `Client connected: ${client.id} (user: ${user.id}, tenant: ${user.tenantId}, role: ${user.role})`,
       );
@@ -119,6 +124,7 @@ export class CallsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: AuthenticatedSocket) {
+    this.metrics.increment('websocket.disconnections');
     this.logger.log(
       `Client disconnected: ${client.id}` +
         (client.userId ? ` (user: ${client.userId}, tenant: ${client.tenantId})` : ''),

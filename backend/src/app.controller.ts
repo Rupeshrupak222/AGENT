@@ -12,15 +12,7 @@ export class AppController {
       version: '1.0.0',
       status: 'healthy',
       docs: '/api/v1/docs',
-    };
-  }
-
-  @Get('health')
-  @ApiOperation({ summary: 'Health Check Endpoint' })
-  getHealth() {
-    return {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
+      health: '/api/v1/health/ready',
     };
   }
 }

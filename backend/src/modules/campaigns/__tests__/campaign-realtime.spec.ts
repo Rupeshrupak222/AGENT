@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
+import { MetricsService } from '../../../common/services/metrics.service';
 
 describe('CallsGateway - Realtime Campaign & CRM Sync Operations', () => {
   let gateway: CallsGateway;
@@ -83,6 +84,13 @@ describe('CallsGateway - Realtime Campaign & CRM Sync Operations', () => {
           provide: AuditService,
           useValue: {
             log: jest.fn().mockResolvedValue(true),
+          },
+        },
+        {
+          provide: MetricsService,
+          useValue: {
+            increment: jest.fn(),
+            observeLatency: jest.fn(),
           },
         },
       ],

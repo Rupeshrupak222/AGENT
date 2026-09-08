@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
 import { BaseTelephonyProvider } from './base-telephony.provider';
 import {
   CreateOutboundCallRequest,
@@ -61,6 +62,9 @@ export class ExotelTelephonyProvider extends BaseTelephonyProvider {
         StatusCallback: req.statusCallbackUrl,
       });
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
       const response = await fetch(
         `https://${this.subdomain}/v1/Accounts/${this.sid}/Calls/connect.json`,
         {
@@ -70,8 +74,10 @@ export class ExotelTelephonyProvider extends BaseTelephonyProvider {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: params.toString(),
+          signal: controller.signal,
         },
       );
+      clearTimeout(timeoutId);
 
       const data = await response.json();
       if (!response.ok) {
@@ -142,12 +148,16 @@ export class ExotelTelephonyProvider extends BaseTelephonyProvider {
     }
 
     const authHeader = Buffer.from(`${this.apiKey}:${this.apiToken}`).toString('base64');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
     const res = await fetch(
       `https://${this.subdomain}/v1/Accounts/${this.sid}/Calls/${providerCallId}.json`,
       {
         headers: { Authorization: `Basic ${authHeader}` },
+        signal: controller.signal,
       },
     );
+    clearTimeout(timeoutId);
 
     if (!res.ok) {
       throw new Error(`Failed to fetch Exotel call ${providerCallId}`);
@@ -186,13 +196,58 @@ export class ExotelTelephonyProvider extends BaseTelephonyProvider {
       return { isValid: false, reason: 'PROVIDER_NOT_CONFIGURED' };
     }
 
-    // Exotel sends Authorization or basic token
-    const token = req.headers['x-exotel-signature'] || req.headers['authorization'];
-    if (!token) {
+    // Exotel sends Authorization header with Basic auth of api_key:api_token
+    const authHeader = req.headers['authorization'] as string;
+    if (!authHeader) {
       return { isValid: false, reason: 'MISSING_EXOTEL_SIGNATURE' };
     }
 
-    return { isValid: true };
+    try {
+      // Exotel sends Basic auth: base64(apiKey:apiToken)
+      if (authHeader.startsWith('Basic ')) {
+        const decoded = Buffer.from(authHeader.slice(6), 'base64').toString('utf-8');
+        const [providedKey, providedToken] = decoded.split(':');
+
+        if (!providedKey || !providedToken) {
+          return { isValid: false, reason: 'MALFORMED_AUTH_HEADER' };
+        }
+
+        // Timing-safe comparison of both apiKey and apiToken
+        const keyMatch = crypto.timingSafeEqual(
+          Buffer.from(providedKey),
+          Buffer.from(this.apiKey),
+        );
+        const tokenMatch = crypto.timingSafeEqual(
+          Buffer.from(providedToken),
+          Buffer.from(this.apiToken),
+        );
+
+        if (keyMatch && tokenMatch) {
+          return { isValid: true };
+        }
+
+        return { isValid: false, reason: 'CREDENTIAL_MISMATCH' };
+      }
+
+      // Fallback: check for bearer token matching apiToken
+      if (authHeader.startsWith('Bearer ')) {
+        const providedToken = authHeader.slice(7);
+        const tokenMatch = crypto.timingSafeEqual(
+          Buffer.from(providedToken),
+          Buffer.from(this.apiToken),
+        );
+
+        if (tokenMatch) {
+          return { isValid: true };
+        }
+
+        return { isValid: false, reason: 'TOKEN_MISMATCH' };
+      }
+
+      return { isValid: false, reason: 'UNSUPPORTED_AUTH_SCHEME' };
+    } catch (err: any) {
+      return { isValid: false, reason: `VALIDATION_ERROR: ${err.message}` };
+    }
   }
 
   private mapExotelStatus(exotelStatus: string): NormalizedCallStatus {

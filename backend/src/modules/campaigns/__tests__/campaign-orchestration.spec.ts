@@ -17,7 +17,18 @@ describe('Campaign Orchestration & Outbound Worker', () => {
       client: { status: 'offline' },
     };
 
-    queueService = new CampaignQueueService(mockBullQueue as any);
+    const mockMetrics = {
+      increment: jest.fn(),
+      recordLatency: jest.fn(),
+      gauge: jest.fn(),
+      getCounter: jest.fn(),
+      getCounterValue: jest.fn().mockReturnValue(0),
+      getHistogramStats: jest.fn(),
+      getAllMetrics: jest.fn(),
+      reset: jest.fn(),
+    };
+
+    queueService = new CampaignQueueService(mockBullQueue as any, mockMetrics as any);
 
     mockPrisma = {
       isConnected: true,

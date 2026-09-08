@@ -68,6 +68,9 @@ export class TwilioTelephonyProvider extends BaseTelephonyProvider {
       });
 
       const authHeader = Buffer.from(`${this.accountSid}:${this.authToken}`).toString('base64');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
       const response = await fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}/Calls.json`,
         {
@@ -77,8 +80,10 @@ export class TwilioTelephonyProvider extends BaseTelephonyProvider {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: params.toString(),
+          signal: controller.signal,
         },
       );
+      clearTimeout(timeoutId);
 
       const data = await response.json();
       if (!response.ok) {
@@ -153,12 +158,16 @@ export class TwilioTelephonyProvider extends BaseTelephonyProvider {
     }
 
     const authHeader = Buffer.from(`${this.accountSid}:${this.authToken}`).toString('base64');
+    const controller1 = new AbortController();
+    const tid1 = setTimeout(() => controller1.abort(), 10000);
     const res = await fetch(
       `https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}/Calls/${providerCallId}.json`,
       {
         headers: { Authorization: `Basic ${authHeader}` },
+        signal: controller1.signal,
       },
     );
+    clearTimeout(tid1);
 
     if (!res.ok) {
       throw new Error(`Failed to fetch Twilio call ${providerCallId}`);
@@ -180,6 +189,8 @@ export class TwilioTelephonyProvider extends BaseTelephonyProvider {
 
     const authHeader = Buffer.from(`${this.accountSid}:${this.authToken}`).toString('base64');
     const params = new URLSearchParams({ Status: 'completed' });
+    const controller2 = new AbortController();
+    const tid2 = setTimeout(() => controller2.abort(), 10000);
     const res = await fetch(
       `https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}/Calls/${providerCallId}.json`,
       {
@@ -189,8 +200,10 @@ export class TwilioTelephonyProvider extends BaseTelephonyProvider {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: params.toString(),
+        signal: controller2.signal,
       },
     );
+    clearTimeout(tid2);
 
     return res.ok;
   }
