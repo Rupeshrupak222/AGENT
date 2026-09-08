@@ -198,31 +198,31 @@ export function CompanyAdminView({
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl p-6 sm:p-7 border border-brand-500/30 shadow-2xl bg-gradient-to-r from-[#180306] via-[#120204] to-[#0c0102]"
+        className="relative overflow-hidden rounded-xl p-6 sm:p-7 border border-slate-800 shadow-lg bg-slate-950 dark:bg-slate-900"
       >
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "radial-gradient(ellipse 90% 70% at 20% 0%, rgba(212,32,39,0.22) 0%, rgba(18,2,4,0.95) 75%)",
+              "radial-gradient(ellipse 90% 70% at 20% 0%, rgba(37,99,235,0.14) 0%, rgba(15,23,42,0.95) 75%)",
           }}
         />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-start gap-4">
-            <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-brand-500 via-brand-600 to-rose-700 flex items-center justify-center p-3 shadow-lg shadow-brand-500/30 flex-shrink-0">
-              <Bot className="w-7 h-7 text-white fill-white" />
+            <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center p-2.5 shadow-sm shadow-blue-500/20 flex-shrink-0">
+              <Bot className="w-6 h-6 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                   {companyName} — Enterprise AI Workforce
                 </h2>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
                   🏢 Company Admin Console
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-white/60 mt-1.5 max-w-2xl leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-400 mt-1.5 max-w-2xl leading-relaxed">
                 Supervise autonomous voice employees, monitor real-time customer conversations, 
                 inspect lead qualification funnels, and track voice minute quota.
               </p>

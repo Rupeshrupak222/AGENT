@@ -17,8 +17,8 @@ const delays = ["0ms","90ms","180ms","270ms","360ms","270ms","180ms","90ms"];
 
 export function WaveAnimation({ bars=8, active=true, color, size="md", className }: WaveProps) {
   const { h, w, gap } = sizeMap[size];
-  // Default colour = #D42027
-  const barColor = color ?? "#D42027";
+  // Default colour = #2563eb (Linear / Stripe blue)
+  const barColor = color ?? "#2563eb";
   return (
     <div className={cn("flex items-center", gap, h, className)}>
       {Array.from({ length: bars }).map((_, i) => (

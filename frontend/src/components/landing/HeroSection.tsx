@@ -9,8 +9,6 @@ import { formatDuration } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api";
 
-const R = "#D42027";
-
 function LiveDashboard() {
   const [stats, setStats] = useState<{
     totalCalls: number;
@@ -61,26 +59,19 @@ function LiveDashboard() {
   const hasActive = stats.activeCallsList && stats.activeCallsList.length > 0;
 
   return (
-    <motion.div initial={{ opacity:0, scale:0.92 }} animate={{ opacity:1, scale:1 }}
-      transition={{ delay:0.4, duration:0.8, ease:"easeOut" }}
-      className="w-full max-w-[420px] mx-auto lg:mx-0"
+    <motion.div initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }}
+      transition={{ delay:0.2, duration:0.6, ease:"easeOut" }}
+      className="w-full max-w-[440px] mx-auto lg:mx-0"
     >
-      <div className="rounded-3xl p-5 sm:p-6 relative"
-        style={{
-          background:"#ffffff",
-          border:"1px solid rgba(0,0,0,0.09)",
-          boxShadow:"0 0 40px rgba(212,32,39,0.10), 0 24px 48px rgba(0,0,0,0.10)",
-        }}>
-
-        {/* Subtle top glow */}
-        <div className="absolute inset-0 rounded-3xl pointer-events-none"
-          style={{ background:"radial-gradient(ellipse at 50% 0%,rgba(212,32,39,0.05),transparent 60%)" }}/>
+      <div className="rounded-2xl p-5 sm:p-6 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-2xl relative overflow-hidden">
+        {/* Subtle highlight */}
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent pointer-events-none" />
 
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div>
-            <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-400">Live Call Center</p>
-            <p className="text-base font-bold text-gray-900 mt-0.5">Real-Time Telemetry</p>
+            <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-400">Live Telephony Hub</p>
+            <p className="text-base font-bold text-slate-900 dark:text-white mt-0.5">Real-Time Activity</p>
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -97,11 +88,10 @@ function LiveDashboard() {
             { label:"Completed",   value: loading ? "—" : stats.completedCalls.toLocaleString(), icon:<TrendingUp className="w-3.5 h-3.5"/> },
             { label:"AI Agents",   value: loading ? "—" : stats.totalAgents.toLocaleString(), icon:<Users className="w-3.5 h-3.5"/> },
           ].map(m=>(
-            <div key={m.label} className="rounded-xl p-2.5 text-center"
-              style={{ background:"rgba(212,32,39,0.06)", border:"1px solid rgba(212,32,39,0.14)" }}>
-              <div className="flex justify-center mb-1" style={{ color:R }}>{m.icon}</div>
-              <p className="text-base font-extrabold text-gray-900">{m.value}</p>
-              <p className="text-[10px] mt-0.5 text-gray-400">{m.label}</p>
+            <div key={m.label} className="rounded-xl p-2.5 text-center bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06]">
+              <div className="flex justify-center mb-1 text-blue-600 dark:text-blue-400">{m.icon}</div>
+              <p className="text-base font-extrabold text-slate-900 dark:text-white font-mono">{m.value}</p>
+              <p className="text-[10px] mt-0.5 text-slate-400 dark:text-slate-400">{m.label}</p>
             </div>
           ))}
         </div>
@@ -109,46 +99,44 @@ function LiveDashboard() {
         {/* Active calls feed */}
         <div className="space-y-2 mb-4">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-400">Live Telephony Feed</p>
-            <span className="text-[10px] text-gray-400 font-mono">Live DB Sync</span>
+            <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-400">Live Telephony Feed</p>
+            <span className="text-[10px] text-slate-400 font-mono">PostgreSQL Sync</span>
           </div>
 
           {hasActive ? (
             stats.activeCallsList.map(c=>(
-              <div key={c.id} className="flex items-center gap-3 p-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ background:"rgba(212,32,39,0.10)" }}>
-                  <PhoneCall className="w-3.5 h-3.5" style={{ color:R }}/>
+              <div key={c.id} className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20">
+                  <PhoneCall className="w-3.5 h-3.5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-gray-900 truncate">{c.lead}</p>
-                  <p className="text-[10px] text-gray-400">{c.agent}</p>
+                  <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">{c.lead}</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">{c.agent}</p>
                 </div>
-                <WaveAnimation active size="sm" bars={4} color="bg-emerald-500" />
+                <WaveAnimation active size="sm" bars={4} color="#2563eb" />
                 <div className="text-right flex-shrink-0">
-                  <p className="text-xs font-mono text-gray-500">{formatDuration(c.duration)}</p>
-                  <p className="text-[10px] text-green-600 font-semibold">{c.status}</p>
+                  <p className="text-xs font-mono text-slate-600 dark:text-slate-300">{formatDuration(c.duration)}</p>
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">{c.status}</p>
                 </div>
               </div>
             ))
           ) : (
-            <div className="py-4 px-3 rounded-xl text-center bg-gray-50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/5">
-              <p className="text-xs font-medium text-gray-600 dark:text-white/70">Autonomous Dispatch Ready</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">All AI Voice Employees online and standby</p>
+            <div className="py-4 px-3 rounded-xl text-center bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5">
+              <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Autonomous Dispatch Ready</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">All AI Voice Employees online and standby</p>
             </div>
           )}
         </div>
 
-        {/* Conv bar */}
-        <div className="pt-3 border-t border-gray-100">
+        {/* Automation rate bar */}
+        <div className="pt-3 border-t border-slate-100 dark:border-white/5">
           <div className="flex justify-between text-xs mb-1.5">
-            <span className="text-gray-400">Platform Automation Rate</span>
-            <span className="font-bold text-green-600">{stats.automationRate}%</span>
+            <span className="text-slate-400">Platform Automation Rate</span>
+            <span className="font-bold text-emerald-600 dark:text-emerald-400">{stats.automationRate}%</span>
           </div>
-          <div className="h-1.5 rounded-full overflow-hidden bg-gray-100">
-            <motion.div initial={{ width:0 }} animate={{ width:`${stats.automationRate}%` }} transition={{ delay:0.5, duration:1, ease:"easeOut" }}
-              className="h-full rounded-full"
-              style={{ background:`linear-gradient(90deg,${R},#ff6464)` }}
+          <div className="h-1.5 rounded-full overflow-hidden bg-slate-100 dark:bg-white/10">
+            <motion.div initial={{ width:0 }} animate={{ width:`${stats.automationRate}%` }} transition={{ delay:0.4, duration:0.8, ease:"easeOut" }}
+              className="h-full rounded-full bg-blue-600"
             />
           </div>
         </div>
@@ -162,75 +150,60 @@ export function HeroSection() {
     document.getElementById(id)?.scrollIntoView({ behavior:"smooth", block:"start" });
   }
   return (
-    <section id="hero" className="relative min-h-screen flex items-center pt-16 overflow-hidden bg-page"
-      style={{
-        backgroundImage:`radial-gradient(ellipse 85% 55% at 50% -15%,rgba(212,32,39,0.08),transparent),
-                   radial-gradient(ellipse 50% 40% at 85% 65%,rgba(180,20,26,0.04),transparent)`,
-      }}>
+    <section id="hero" className="relative min-h-[90vh] flex items-center pt-24 pb-16 overflow-hidden bg-page">
+      {/* Subtle modern enterprise grid pattern */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
+        style={{ backgroundImage:`linear-gradient(rgba(148,163,184,1) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,1) 1px,transparent 1px)`, backgroundSize:"48px 48px" }}/>
 
-      {/* Subtle grid pattern */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.025]"
-        style={{ backgroundImage:`linear-gradient(rgba(212,32,39,1) 1px,transparent 1px),linear-gradient(90deg,rgba(212,32,39,1) 1px,transparent 1px)`, backgroundSize:"55px 55px" }}/>
-
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 w-full">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
           {/* Copy */}
-          <div className="space-y-7 text-center lg:text-left">
-            <motion.div initial={{ opacity:0,y:-10 }} animate={{ opacity:1,y:0 }} transition={{ duration:0.5 }}
+          <div className="space-y-6 text-center lg:text-left">
+            <motion.div initial={{ opacity:0,y:-10 }} animate={{ opacity:1,y:0 }} transition={{ duration:0.4 }}
               className="flex justify-center lg:justify-start">
-              <Badge variant="red" dot className="text-sm py-1.5 px-4">
-                🚀 Now with ElevenLabs Voice AI — hyper-realistic agents
-              </Badge>
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />
+                Autonomous Voice Telephony Infrastructure
+              </span>
             </motion.div>
 
-            <motion.div initial={{ opacity:0,y:20 }} animate={{ opacity:1,y:0 }} transition={{ delay:0.1,duration:0.7 }}>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-gray-900 dark:text-white leading-[1.05] tracking-tight text-balance mb-4">
-                Hire AI Employees{" "}
-                <span className="gradient-text">That Work 24/7</span>
+            <motion.div initial={{ opacity:0,y:20 }} animate={{ opacity:1,y:0 }} transition={{ delay:0.1,duration:0.6 }}>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 dark:text-white leading-[1.08] tracking-tight text-balance mb-4">
+                Enterprise AI Telephony{" "}
+                <span className="text-blue-600 dark:text-blue-400">Engineered for Scale</span>
               </h1>
-              <p className="text-lg sm:text-xl leading-relaxed max-w-xl mx-auto lg:mx-0 text-gray-500 dark:text-white/60">
-                Deploy AI Telecallers, Recruiters, Receptionists and Sales Agents in minutes.
-                Reduce costs, increase conversions and automate operations.
+              <p className="text-base sm:text-lg leading-relaxed max-w-xl mx-auto lg:mx-0 text-slate-600 dark:text-slate-300">
+                Deploy autonomous voice employees that dial, converse, qualify leads, and synchronize with your CRM 24/7 with zero latency.
               </p>
             </motion.div>
 
-            <motion.div initial={{ opacity:0,y:20 }} animate={{ opacity:1,y:0 }} transition={{ delay:0.25,duration:0.6 }}
-              className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
+            <motion.div initial={{ opacity:0,y:20 }} animate={{ opacity:1,y:0 }} transition={{ delay:0.2,duration:0.5 }}
+              className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
               <Link href="/signup"
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-white font-semibold text-base group transition-all duration-200 active:scale-[0.97]"
-                style={{ background:`linear-gradient(135deg,${R} 0%,#9b1219 100%)`, boxShadow:"0 0 24px rgba(212,32,39,0.30), 0 4px 14px rgba(0,0,0,0.12)" }}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium text-sm bg-blue-600 hover:bg-blue-500 transition-all shadow-sm active:scale-[0.99]"
               >
                 Start Free Trial
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform"/>
+                <ArrowRight className="w-4 h-4"/>
               </Link>
               <button onClick={()=>scroll("how-it-works")}
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.97] text-gray-700 dark:text-white/70 border border-brand-500/30 bg-brand-500/5 hover:bg-brand-500/10 hover:border-brand-500/50"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium text-sm transition-all text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-white/15 bg-white dark:bg-white/[0.04] hover:bg-slate-50 dark:hover:bg-white/[0.08]"
               >
-                <Play className="w-4 h-4 fill-current text-brand-500" /> See How It Works
+                <Play className="w-4 h-4 text-slate-500 dark:text-slate-400" /> Documentation & Tour
               </button>
             </motion.div>
 
             {/* Social proof */}
-            <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.5 }}
-              className="flex items-center gap-5 justify-center lg:justify-start flex-wrap">
+            <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.4 }}
+              className="flex items-center gap-4 justify-center lg:justify-start flex-wrap pt-2">
               <div className="flex -space-x-2">
-                {[R,"#e53e3e","#c53030","#9b2c2c","#742a2a"].map((c,i)=>(
-                  <div key={i} className="w-8 h-8 rounded-full border-2 border-white dark:border-page" style={{ background:c }}/>
+                {["#2563eb","#3b82f6","#60a5fa","#475569","#64748b"].map((c,i)=>(
+                  <div key={i} className="w-7 h-7 rounded-full border-2 border-white dark:border-slate-900" style={{ background:c }}/>
                 ))}
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">1,000+ businesses</p>
-                <p className="text-xs text-gray-400 dark:text-white/40">already using AgentCall AI</p>
-              </div>
-              <div className="h-8 w-px hidden sm:block bg-gray-200 dark:bg-white/15"/>
-              <div className="flex items-center gap-1">
-                {[1,2,3,4,5].map(i=>(
-                  <svg key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                  </svg>
-                ))}
-                <span className="text-xs ml-1 text-gray-400">4.9/5</span>
+                <p className="text-xs font-semibold text-slate-900 dark:text-white">Production-Ready Telecom</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Integrated with Twilio, Exotel & WebSockets</p>
               </div>
             </motion.div>
           </div>

@@ -742,7 +742,7 @@ function CallsPageContent() {
           )}
 
           <button
-            onClick={fetchCallsData}
+            onClick={() => fetchCallsData(false)}
             className="self-start sm:self-auto inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-100 dark:hover:bg-white/[0.12] border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/80 transition-all shadow-sm"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-brand-500" : ""}`} />
@@ -760,7 +760,7 @@ function CallsPageContent() {
               <span>{error}</span>
             </div>
             <button
-              onClick={fetchCallsData}
+              onClick={() => fetchCallsData(false)}
               className="px-3 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 font-semibold text-xs transition-colors"
             >
               Retry

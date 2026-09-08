@@ -3,45 +3,42 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
-const R = "#D42027";
-
 export function CTASection() {
   return (
-    <section className="py-16 sm:py-24 relative overflow-hidden bg-page">
-      <div className="absolute inset-0 pointer-events-none"
-        style={{ background:"radial-gradient(ellipse 80% 60% at 50% 50%,rgba(212,32,39,0.05),transparent 65%)" }}/>
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center">
-        <motion.div initial={{ opacity:0,y:30 }} whileInView={{ opacity:1,y:0 }} viewport={{ once:true }}
-          className="space-y-8">
-          <div className="space-y-4">
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight text-balance">
-              Ready to Deploy Your{" "}<span className="gradient-text">AI Workforce?</span>
+    <section className="py-16 sm:py-24 relative overflow-hidden bg-surface border-t border-slate-200 dark:border-slate-800/80">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <motion.div initial={{ opacity:0,y:20 }} whileInView={{ opacity:1,y:0 }} viewport={{ once:true }}
+          className="rounded-2xl bg-slate-950 dark:bg-slate-900/90 border border-slate-800 p-8 sm:p-14 text-center shadow-xl relative overflow-hidden">
+          
+          <div className="relative z-10 space-y-6">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400"/>Production-Ready Telephony
+            </span>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight text-balance">
+              Deploy Your Voice Infrastructure Today
             </h2>
-            <p className="text-lg sm:text-xl max-w-xl mx-auto leading-relaxed text-gray-500 dark:text-white/60">
-              Join 1,000+ businesses that have replaced manual calling with AI agents.
-              14-day free trial, no credit card required.
+            <p className="text-base sm:text-lg max-w-xl mx-auto leading-relaxed text-slate-400">
+              Join forward-thinking enterprises automating outbound calls, recruitment screening, and customer support with sub-second latency.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <Link href="/signup"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white bg-blue-600 hover:bg-blue-500 font-medium text-sm transition-colors shadow-sm"
+              >
+                Start 14-Day Free Trial
+                <ArrowRight className="w-4 h-4"/>
+              </Link>
+              <Link href="/login"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium text-sm transition-colors text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700/80 border border-slate-700"
+              >
+                Sign In to Console
+              </Link>
+            </div>
+
+            <p className="text-xs text-slate-500 pt-2">
+              Setup in 5 minutes · No credit card required · SOC2 Type II & GDPR Compliant
             </p>
           </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/signup"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-9 py-4 rounded-xl text-white font-semibold text-base group transition-all duration-200 active:scale-[0.97]"
-              style={{ background:`linear-gradient(135deg,${R} 0%,#9b1219 100%)`, boxShadow:"0 0 32px rgba(212,32,39,0.30), 0 4px 16px rgba(0,0,0,0.10)" }}
-            >
-              Start Free Trial
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform"/>
-            </Link>
-            <Link href="/login"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-9 py-4 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.97] text-gray-700 dark:text-white/70 border border-brand-500/30 bg-brand-500/5 hover:bg-brand-500/10 hover:border-brand-500/50"
-            >
-              Sign In to Dashboard
-            </Link>
-          </div>
-
-          <p className="text-sm text-gray-400 dark:text-white/40">
-            Setup in 5 minutes · Cancel anytime · GDPR compliant · SOC2 ready
-          </p>
         </motion.div>
       </div>
     </section>

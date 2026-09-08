@@ -11,16 +11,16 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          50:  "#fef2f2",
-          100: "#fde2e3",
-          200: "#fcc9cb",
-          300: "#f5edee",
-          400: "#f46d72",
-          500: "#D42027",
-          600: "#bb1920",
-          700: "#9b1219",
-          800: "#811115",
-          900: "#6d1214",
+          50:  "#eff6ff",
+          100: "#dbeafe",
+          200: "#bfdbfe",
+          300: "#93c5fd",
+          400: "#60a5fa",
+          500: "#2563eb", // Linear/Stripe Precision Blue
+          600: "#1d4ed8",
+          700: "#1e40af",
+          800: "#1e3a8a",
+          900: "#172554",
         },
         surface: {
           DEFAULT: "var(--bg)",
@@ -58,15 +58,16 @@ const config: Config = {
         xl: "var(--radius-xl)",
       },
       boxShadow: {
-        brand:      "0 0 40px rgba(212,32,39,0.40)",
-        "brand-sm": "0 0 20px rgba(212,32,39,0.28)",
-        glow:       "0 0 60px rgba(212,32,39,0.55)",
+        brand:      "0 1px 3px 0 rgba(37, 99, 235, 0.15), 0 1px 2px -1px rgba(37, 99, 235, 0.15)",
+        "brand-sm": "0 1px 2px 0 rgba(37, 99, 235, 0.10)",
+        glow:       "0 4px 20px -2px rgba(37, 99, 235, 0.25)",
         xs:         "var(--shadow-sm)",
         sm:         "var(--shadow-sm)",
         md:         "var(--shadow-md)",
         lg:         "var(--shadow-lg)",
         xl:         "var(--shadow-xl)",
-        glass:      "0 8px 32px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)",
+        card:       "0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.08)",
+        glass:      "0 8px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08)",
       },
       animation: {
         wave:       "wave 1.4s ease-in-out infinite",

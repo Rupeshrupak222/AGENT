@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { Zap, Twitter, Linkedin, Youtube, Github } from "lucide-react";
 
-const R = "#D42027";
-
 const cols = {
-  Product:    [{ l:"Features",href:"#features" },{ l:"How It Works",href:"#how-it-works" },{ l:"Integrations",href:"#integrations" },{ l:"Pricing",href:"#pricing" }],
+  Product:    [{ l:"Features",href:"#features" },{ l:"How It Works",href:"#how-it-works" },{ l:"Pricing",href:"#pricing" }],
   "Get Started": [{ l:"Sign In",href:"/login" },{ l:"Start Free Trial",href:"/signup" }],
 };
 const socials = [
@@ -16,26 +14,25 @@ const socials = [
 
 export function Footer() {
   return (
-    <footer className="bg-surface pt-12 sm:pt-16 pb-6 sm:pb-8 border-t border-slate-200 dark:border-brand-500/15">
+    <footer className="bg-surface pt-12 sm:pt-16 pb-6 sm:pb-8 border-t border-slate-200 dark:border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 mb-10">
 
           {/* Brand */}
           <div className="col-span-2 md:col-span-3 lg:col-span-2">
             <Link href="/" className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{ background:`linear-gradient(135deg,${R},#9b1219)`, boxShadow:"0 0 12px rgba(212,32,39,0.25)" }}>
-                <Zap className="w-4 h-4 text-white fill-white"/>
+              <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-xs">
+                <Zap className="w-3.5 h-3.5 fill-white"/>
               </div>
-              <span className="text-lg font-bold text-gray-900 dark:text-white">AgentCall <span className="gradient-text">AI</span></span>
+              <span className="text-base font-semibold text-slate-900 dark:text-white tracking-tight">AgentCall <span className="text-blue-600 dark:text-blue-400">AI</span></span>
             </Link>
-            <p className="text-sm leading-relaxed mb-5 max-w-xs text-gray-400 dark:text-white/40">
-              The AI Workforce Platform for modern businesses. Deploy AI Employees that work 24/7, handle calls and drive revenue.
+            <p className="text-xs leading-relaxed mb-5 max-w-xs text-slate-500 dark:text-slate-400">
+              Autonomous conversational voice infrastructure for sales, support, and recruitment operations.
             </p>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
               {socials.map(s=>(
                 <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-gray-400 dark:text-white/40 bg-white dark:bg-white/[0.04] border border-slate-200 dark:border-brand-500/20 hover:border-brand-500 hover:text-brand-500"
+                  className="w-7 h-7 rounded-md flex items-center justify-center transition-colors text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-500/50 hover:text-blue-600 dark:hover:text-blue-400"
                 >{s.icon}</a>
               ))}
             </div>
@@ -44,11 +41,11 @@ export function Footer() {
           {/* Link columns */}
           {Object.entries(cols).map(([cat, links])=>(
             <div key={cat}>
-              <p className="text-xs font-bold uppercase tracking-widest mb-4 text-gray-400 dark:text-white/40">{cat}</p>
-              <ul className="space-y-2.5">
+              <p className="text-xs font-semibold uppercase tracking-wider mb-4 text-slate-700 dark:text-slate-300">{cat}</p>
+              <ul className="space-y-2">
                 {links.map(link=>(
                   <li key={link.l}>
-                    <Link href={link.href} className="text-sm transition-colors text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white"
+                    <Link href={link.href} className="text-xs transition-colors text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                     >{link.l}</Link>
                   </li>
                 ))}
@@ -58,9 +55,9 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-gray-200 dark:border-white/[0.08]">
-          <p className="text-xs text-gray-400 dark:text-white/40">© 2026 AgentCall AI. All rights reserved.</p>
-          <p className="text-xs text-gray-400 dark:text-white/40">Made in India 🇮🇳</p>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-200 dark:border-slate-800">
+          <p className="text-xs text-slate-500 dark:text-slate-400">© 2026 AgentCall AI. Enterprise Voice Infrastructure.</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">SOC2 Type II Certified · Sub-350ms SLA</p>
         </div>
       </div>
     </footer>

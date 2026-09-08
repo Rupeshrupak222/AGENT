@@ -34,7 +34,7 @@ export function Navbar() {
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         scrolled || mobileOpen
-          ? "bg-page/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-brand-500/15 shadow-sm dark:shadow-2xl"
+          ? "bg-page/85 backdrop-blur-md border-b border-slate-200/80 dark:border-white/[0.08] shadow-sm"
           : "bg-transparent border-b border-transparent"
       )}
     >
@@ -43,19 +43,19 @@ export function Navbar() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 bg-gradient-to-br from-brand-500 to-brand-700 shadow-md shadow-brand-500/30">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 bg-blue-600 shadow-sm shadow-blue-500/20">
               <Zap className="w-4 h-4 text-white fill-white" />
             </div>
-            <span className="text-lg font-bold text-slate-900 dark:text-white">
-              AgentCall <span className="gradient-text">AI</span>
+            <span className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
+              AgentCall <span className="text-blue-600 dark:text-blue-400">AI</span>
             </span>
           </Link>
 
           {/* Desktop links */}
-          <div className="hidden md:flex items-center gap-0.5">
+          <div className="hidden md:flex items-center gap-1">
             {navLinks.map(l => (
               <a key={l.label} href={l.href} onClick={e=>anchor(e,l.href)}
-                className="px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 cursor-pointer text-slate-600 dark:text-white/60 hover:bg-slate-100 dark:hover:bg-white/[0.06] hover:text-slate-900 dark:hover:text-white"
+                className="px-3.5 py-1.5 text-sm font-medium rounded-lg transition-all duration-150 cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-white"
               >
                 {l.label}
               </a>
@@ -65,11 +65,13 @@ export function Navbar() {
           {/* Desktop CTAs */}
           <div className="hidden md:flex items-center gap-3">
             <Link href="/login"
-              className="px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 text-brand-600 dark:text-white border border-brand-500/30 bg-brand-500/5 hover:bg-brand-500/10 hover:border-brand-500/50"
+              className="px-3.5 py-2 text-sm font-medium rounded-lg transition-all text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]"
             >
               Sign In
             </Link>
-            <Link href="/signup" className="btn-red text-sm px-5 py-2 h-9 rounded-xl">
+            <Link href="/signup"
+              className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-500 active:scale-[0.99] shadow-sm transition-all"
+            >
               Start Free Trial
             </Link>
           </div>
@@ -77,7 +79,7 @@ export function Navbar() {
           {/* Mobile hamburger */}
           <div className="flex md:hidden items-center gap-2">
             <button onClick={()=>setMobileOpen(!mobileOpen)}
-              className="p-2 rounded-xl transition-all text-slate-600 dark:text-white/70 hover:bg-slate-100 dark:hover:bg-white/[0.06]"
+              className="p-2 rounded-lg transition-all text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.06]"
             >
               {mobileOpen ? <X className="w-5 h-5"/> : <Menu className="w-5 h-5"/>}
             </button>
@@ -87,21 +89,21 @@ export function Navbar() {
 
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div className="bg-page backdrop-blur-xl border-b border-slate-200 dark:border-brand-500/15">
+        <div className="bg-page/95 backdrop-blur-xl border-b border-slate-200 dark:border-white/[0.08]">
           <div className="px-4 py-4 space-y-1">
             {navLinks.map(l=>(
               <a key={l.label} href={l.href} onClick={e=>anchor(e,l.href)}
-                className="block px-4 py-3 text-sm rounded-xl transition-all cursor-pointer text-slate-600 dark:text-white/60 hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-white"
+                className="block px-4 py-2.5 text-sm rounded-lg transition-all cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-white"
               >{l.label}</a>
             ))}
             <div className="pt-3 flex flex-col gap-2 border-t border-slate-200 dark:border-white/[0.08]">
               <Link href="/login" onClick={()=>setMobileOpen(false)}
-                className="w-full py-3 text-center text-sm font-semibold rounded-xl transition-all text-brand-600 dark:text-white border border-brand-500/30 bg-brand-500/5"
+                className="w-full py-2.5 text-center text-sm font-medium rounded-lg transition-all text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10"
               >
                 Sign In
               </Link>
               <Link href="/signup" onClick={()=>setMobileOpen(false)}
-                className="w-full py-3 text-center text-sm font-semibold text-white rounded-xl transition-all bg-gradient-to-br from-brand-500 to-brand-700 shadow-md shadow-brand-500/25"
+                className="w-full py-2.5 text-center text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-500 shadow-sm"
               >
                 Start Free Trial
               </Link>
