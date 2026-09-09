@@ -18,17 +18,23 @@ const integrations = [
 
 export function IntegrationsSection() {
   return (
-    <section id="integrations" className="py-16 sm:py-24 bg-surface border-t border-slate-200 dark:border-brand-500/15">
+    <section id="integrations" className="py-16 sm:py-24 border-t border-slate-200 dark:border-brand-500/15"
+      style={{
+        backgroundImage: "url('/integrations-bg.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "scroll"
+      }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div initial={{ opacity:0,y:20 }} whileInView={{ opacity:1,y:0 }} viewport={{ once:true }}
           className="text-center mb-12">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-5 bg-orange-500/10 text-orange-600 border border-orange-500/25">
             <span className="w-1.5 h-1.5 rounded-full bg-current"/>Integrations
           </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight">
-            Connects with <span className="gradient-text">Your Entire Stack</span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-4 tracking-tight" style={{ color: "#000" }}>
+            Connects with <span style={{ color: "#8B0000" }}>Your Entire Stack</span>
           </h2>
-          <p className="text-base sm:text-lg max-w-xl mx-auto text-gray-500 dark:text-white/60">
+          <p className="text-base sm:text-lg max-w-xl mx-auto" style={{ color: "#333" }}>
             Native integrations with the tools you already use. One-click setup, no engineering needed.
           </p>
         </motion.div>
@@ -38,13 +44,14 @@ export function IntegrationsSection() {
             <motion.div key={int.name}
               initial={{ opacity:0,scale:0.9 }} whileInView={{ opacity:1,scale:1 }}
               viewport={{ once:true }} transition={{ delay:i*0.05 }}
-              className="rounded-2xl p-3 sm:p-4 flex flex-col items-center gap-2 cursor-pointer transition-all duration-300 hover:-translate-y-1 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] shadow-sm hover:border-brand-500/25 hover:shadow-lg hover:shadow-brand-500/10"
+              className="rounded-2xl p-3 sm:p-4 flex flex-col items-center gap-2 cursor-pointer transition-all duration-300 hover:-translate-y-1 backdrop-filter backdrop-blur-md border border-white/20 shadow-sm hover:border-white/30 hover:shadow-lg"
+              style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
             >
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-xs font-bold"
                 style={{ background: int.color + "18", border:`1px solid ${int.color}33`, color:int.color }}>
                 {int.name.slice(0,2)}
               </div>
-              <p className="text-xs font-semibold text-gray-700 dark:text-white/75 text-center leading-tight">{int.name}</p>
+              <p className="text-xs font-semibold text-center leading-tight" style={{ color: "#000" }}>{int.name}</p>
               <span className="text-[9px] px-2 py-0.5 rounded-full font-medium bg-brand-500/10 text-brand-500 dark:text-brand-400 border border-brand-500/20">
                 {int.category}
               </span>

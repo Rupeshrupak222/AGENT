@@ -2,7 +2,6 @@
 // components, so each ships as its own lazy bundle (faster first paint).
 import { Navbar }             from "@/components/landing/Navbar";
 import { HeroSection }         from "@/components/landing/HeroSection";
-import { TrustSection }        from "@/components/landing/TrustSection";
 import { FeaturesSection }     from "@/components/landing/FeaturesSection";
 import { HowItWorksSection }   from "@/components/landing/HowItWorksSection";
 import { PricingSection }      from "@/components/landing/PricingSection";
@@ -15,7 +14,6 @@ export default function HomePage() {
     <main className="relative bg-page text-gray-900 dark:text-white min-h-screen overflow-x-hidden transition-colors duration-200">
       <Navbar />
       <HeroSection />
-      <TrustSection />
       <FeaturesSection />
       <HowItWorksSection />
       <PricingSection />
