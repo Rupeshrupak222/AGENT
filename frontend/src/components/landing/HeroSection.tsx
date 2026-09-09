@@ -10,7 +10,7 @@ export function HeroSection() {
     document.getElementById(id)?.scrollIntoView({ behavior:"smooth", block:"start" });
   }
   return (
-    <section id="hero" className="relative min-h-screen flex items-center pt-16 overflow-hidden"
+    <section id="hero" className="relative min-h-screen flex items-center pt-24 sm:pt-28 pb-16 overflow-hidden"
       style={{
         background: "#000",
       }}>
