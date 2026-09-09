@@ -14,7 +14,13 @@ const steps = [
 
 export function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="py-16 sm:py-24 relative overflow-hidden bg-surface">
+    <section id="how-it-works" className="py-16 sm:py-24 relative overflow-hidden bg-surface"
+      style={{
+        backgroundImage: "url('/howitworks-bg.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "scroll"
+      }}>
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full pointer-events-none"
         style={{ background:"radial-gradient(ellipse,rgba(212,32,39,0.04),transparent 70%)" }}/>
 
@@ -24,10 +30,10 @@ export function HowItWorksSection() {
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-5 bg-green-500/10 text-green-600 border border-green-500/25">
             <span className="w-1.5 h-1.5 rounded-full bg-current"/>Simple Workflow
           </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight">
-            Live in <span className="gradient-text">5 Steps</span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-4 tracking-tight" style={{ color: "#000" }}>
+            Live in <span style={{ color: "#8B0000" }}>5 Steps</span>
           </h2>
-          <p className="text-base sm:text-lg max-w-xl mx-auto text-gray-500 dark:text-white/60">
+          <p className="text-base sm:text-lg max-w-xl mx-auto" style={{ color: "#333" }}>
             From zero to a fully operational AI call center in under 30 minutes.
           </p>
         </motion.div>
@@ -52,8 +58,8 @@ export function HowItWorksSection() {
                     </span>
                   </div>
                 </div>
-                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">{s.title}</h3>
-                <p className="text-sm leading-relaxed text-gray-500 dark:text-white/60">{s.desc}</p>
+                <h3 className="text-base font-bold mb-2" style={{ color: "#000" }}>{s.title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: "#333" }}>{s.desc}</p>
               </motion.div>
             ))}
           </div>

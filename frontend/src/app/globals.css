@@ -15,23 +15,23 @@
   --brand-900: #6d1214;
 
   /* Surface */
-  --bg:           #f9fafb;
-  --bg-secondary: #ffffff;
-  --bg-card:      #ffffff;
-  --bg-sidebar:   #ffffff;
-  --bg-muted:     #f3f4f6;
-  --bg-hover:     #f9fafb;
+  --bg:           #E8E3DB;
+  --bg-secondary: #F5F0E8;
+  --bg-card:      #F5F0E8;
+  --bg-sidebar:   #F5F0E8;
+  --bg-muted:     #E8E3DB;
+  --bg-hover:     #E8E3DB;
   --bg-active:    rgba(212,32,39,0.06);
 
   /* Elevated surfaces */
-  --bg-page:     #ffffff;
-  --bg-dropdown: #ffffff;
-  --bg-input:    #ffffff;
-  --bg-modal:    #ffffff;
+  --bg-page:     #E8E3DB;
+  --bg-dropdown: #F5F0E8;
+  --bg-input:    #F5F0E8;
+  --bg-modal:    #F5F0E8;
 
   /* Card gradient (panel-card) */
-  --card-top:    #f8fafc;
-  --card-bottom: rgba(241,245,249,0.5);
+  --card-top:    #F5F0E8;
+  --card-bottom: rgba(245,240,232,0.5);
 
   /* Text */
   --text-primary:   #111827;

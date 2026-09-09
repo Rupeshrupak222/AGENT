@@ -28,19 +28,26 @@ const agents = [
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="py-16 sm:py-24 bg-page">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="features" className="py-16 sm:py-24 relative overflow-hidden"
+      style={{
+        backgroundImage: "url('/agents-bg.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "scroll",
+      }}>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
         {/* Header */}
         <motion.div initial={{ opacity:0,y:20 }} whileInView={{ opacity:1,y:0 }} viewport={{ once:true }}
           className="text-center mb-12 sm:mb-16">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-5 bg-brand-500/10 text-brand-500 dark:text-brand-400 border border-brand-500/20">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-5 bg-white/20 text-gray-800 border border-gray-400/30 backdrop-blur-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-current"/>AI Agent Types
           </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight">
-            One Platform,{" "}<span className="gradient-text">Every Agent You Need</span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-4 tracking-tight">
+            <span style={{ color: "#1a1a1a" }}>One Platform,</span>{" "}<span style={{ color: "#8B0000" }}>Every Agent You Need</span>
           </h2>
-          <p className="text-base sm:text-lg max-w-2xl mx-auto leading-relaxed text-gray-500 dark:text-white/60">
+          <p className="text-base sm:text-lg max-w-2xl mx-auto leading-relaxed" style={{ color: "#333333" }}>
             Deploy specialised AI employees for every business function. Each agent is trained, voice-cloned and optimised for its role.
           </p>
         </motion.div>
@@ -51,7 +58,14 @@ export function FeaturesSection() {
             <motion.div key={a.title}
               initial={{ opacity:0,y:30 }} whileInView={{ opacity:1,y:0 }}
               viewport={{ once:true }} transition={{ delay:i*0.08, duration:0.5 }}
-              className="rounded-2xl p-5 sm:p-6 group cursor-pointer transition-all duration-300 hover:-translate-y-1 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] shadow-sm hover:border-brand-500/30 hover:shadow-xl hover:shadow-brand-500/10"
+              className="rounded-3xl p-5 sm:p-6 group cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl backdrop-blur-md"
+              style={{
+                background: "rgba(255, 255, 255, 0.1)",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.15)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)"
+              }}
             >
               {/* Icon + badge */}
               <div className="flex items-start justify-between mb-5">
@@ -64,16 +78,16 @@ export function FeaturesSection() {
                   </span>
                 )}
               </div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{a.title}</h3>
-              <p className="text-sm leading-relaxed mb-4 text-gray-500 dark:text-white/60">{a.desc}</p>
+              <h3 className="text-lg font-bold mb-2" style={{ color: "#1a1a1a" }}>{a.title}</h3>
+              <p className="text-sm leading-relaxed mb-4" style={{ color: "#333333" }}>{a.desc}</p>
               <ul className="space-y-2 mb-5">
                 {a.features.map(f=>(
-                  <li key={f} className="flex items-center gap-2 text-sm text-gray-600 dark:text-white/65">
-                    <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0"/>{f}
+                  <li key={f} className="flex items-center gap-2 text-sm" style={{ color: "#444444" }}>
+                    <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0"/>{f}
                   </li>
                 ))}
               </ul>
-              <Link href="/signup" className="flex items-center gap-1.5 text-sm font-semibold transition-colors text-brand-500 dark:text-brand-400 hover:text-brand-600"
+              <Link href="/signup" className="flex items-center gap-1.5 text-sm font-semibold transition-colors hover:opacity-80" style={{ color: "#8B0000" }}
               >
                 Get started <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform"/>
               </Link>

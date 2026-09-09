@@ -21,7 +21,13 @@ const plans = [
 
 export function PricingSection() {
   return (
-    <section id="pricing" className="py-16 sm:py-24 relative bg-page">
+    <section id="pricing" className="py-16 sm:py-24 relative"
+      style={{
+        backgroundImage: "url('/pricing-bg.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "scroll"
+      }}>
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[250px] rounded-full pointer-events-none"
         style={{ background:"radial-gradient(ellipse,rgba(212,32,39,0.05),transparent 70%)" }}/>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
@@ -31,10 +37,10 @@ export function PricingSection() {
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-5 bg-brand-500/10 text-brand-500 dark:text-brand-400 border border-brand-500/20">
             <span className="w-1.5 h-1.5 rounded-full bg-current"/>Transparent Pricing
           </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight">
-            Plans for Every <span className="gradient-text">Stage of Growth</span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-4 tracking-tight" style={{ color: "#000" }}>
+            Plans for Every <span style={{ color: "#8B0000" }}>Stage of Growth</span>
           </h2>
-          <p className="text-base sm:text-lg max-w-xl mx-auto text-gray-500 dark:text-white/60">
+          <p className="text-base sm:text-lg max-w-xl mx-auto" style={{ color: "#333" }}>
             Start free, scale as you grow. No hidden fees, no per-minute charges on base plan.
           </p>
         </motion.div>
@@ -46,11 +52,14 @@ export function PricingSection() {
               viewport={{ once:true }} transition={{ delay:i*0.1 }}
               className={cn(
                 "relative rounded-2xl p-6 flex flex-col transition-all duration-300",
-                "bg-white dark:bg-white/[0.03]",
+                "backdrop-filter backdrop-blur-md",
                 p.popular
-                  ? "border-[1.5px] border-brand-500/40 shadow-[0_0_32px_rgba(212,32,39,0.12),0_8px_32px_rgba(0,0,0,0.08)]"
-                  : "border border-slate-200 dark:border-white/[0.08] shadow-sm"
+                  ? "border-[1.5px] border-white/30 shadow-[0_0_32px_rgba(212,32,39,0.12),0_8px_32px_rgba(0,0,0,0.08)]"
+                  : "border border-white/20 shadow-sm"
               )}
+              style={{
+                backgroundColor: p.popular ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.1)"
+              }}
             >
               {p.popular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -60,24 +69,24 @@ export function PricingSection() {
                 </div>
               )}
 
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 mt-2">{p.name}</h3>
-              <p className="text-xs mb-4 leading-relaxed text-gray-400 dark:text-white/40">{p.desc}</p>
+              <h3 className="text-lg font-bold mb-1 mt-2" style={{ color: "#000" }}>{p.name}</h3>
+              <p className="text-xs mb-4 leading-relaxed" style={{ color: "#333" }}>{p.desc}</p>
 
               <div className="mb-6">
                 {p.price ? (
                   <div className="flex items-end gap-1">
-                    <span className="text-sm text-gray-400 dark:text-white/40">₹</span>
-                    <span className="text-4xl font-extrabold text-gray-900 dark:text-white">{p.price.toLocaleString("en-IN")}</span>
-                    <span className="text-sm mb-1 text-gray-400 dark:text-white/40">/mo</span>
+                    <span className="text-sm" style={{ color: "#333" }}>₹</span>
+                    <span className="text-4xl font-extrabold" style={{ color: "#000" }}>{p.price.toLocaleString("en-IN")}</span>
+                    <span className="text-sm mb-1" style={{ color: "#333" }}>/mo</span>
                   </div>
                 ) : (
-                  <span className="text-3xl font-extrabold text-gray-900 dark:text-white">Custom</span>
+                  <span className="text-3xl font-extrabold" style={{ color: "#000" }}>Custom</span>
                 )}
               </div>
 
               <ul className="space-y-2.5 mb-8 flex-1">
                 {p.features.map(f=>(
-                  <li key={f} className="flex items-start gap-2 text-sm text-gray-600 dark:text-white/65">
+                  <li key={f} className="flex items-start gap-2 text-sm" style={{ color: "#333" }}>
                     <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5"/>{f}
                   </li>
                 ))}
@@ -95,7 +104,7 @@ export function PricingSection() {
           ))}
         </div>
 
-        <p className="text-center text-sm mt-8 text-gray-400 dark:text-white/40">
+        <p className="text-center text-sm mt-8" style={{ color: "#333" }}>
           All plans include 14-day free trial · No credit card required · Cancel anytime
         </p>
       </div>
