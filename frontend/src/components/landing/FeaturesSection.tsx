@@ -41,11 +41,12 @@ export function FeaturesSection() {
         {/* Header */}
         <motion.div initial={{ opacity:0,y:20 }} whileInView={{ opacity:1,y:0 }} viewport={{ once:true }}
           className="text-center mb-12 sm:mb-16">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-5 bg-white/20 text-gray-800 border border-gray-400/30 backdrop-blur-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-current"/>AI Agent Types
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold mb-5 border backdrop-blur-sm"
+            style={{ background: "#F5EDE4", color: "#6F4428", borderColor: "#DDB892" }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#8B5A2B" }}/>AI Agent Types
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-4 tracking-tight">
-            <span style={{ color: "#1a1a1a" }}>One Platform,</span>{" "}<span style={{ color: "#8B0000" }}>Every Agent You Need</span>
+            <span style={{ color: "#1a1a1a" }}>One Platform,</span>{" "}<span style={{ color: "#7F5539" }}>Every Agent You Need</span>
           </h2>
           <p className="text-base sm:text-lg max-w-2xl mx-auto leading-relaxed" style={{ color: "#333333" }}>
             Deploy specialised AI employees for every business function. Each agent is trained, voice-cloned and optimised for its role.
@@ -60,20 +61,24 @@ export function FeaturesSection() {
               viewport={{ once:true }} transition={{ delay:i*0.08, duration:0.5 }}
               className="rounded-3xl p-5 sm:p-6 group cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl backdrop-blur-md"
               style={{
-                background: "rgba(255, 255, 255, 0.1)",
-                border: "1px solid rgba(255, 255, 255, 0.2)",
-                boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.15)",
+                background: "rgba(255, 255, 255, 0.45)",
+                border: "1px solid rgba(221, 184, 146, 0.4)",
+                boxShadow: "0 8px 32px 0 rgba(140, 90, 50, 0.10)",
                 backdropFilter: "blur(8px)",
                 WebkitBackdropFilter: "blur(8px)"
               }}
             >
               {/* Icon + badge */}
               <div className="flex items-start justify-between mb-5">
-                <div className="p-3 rounded-2xl text-white bg-gradient-to-br from-brand-500 to-brand-700 shadow-md shadow-brand-500/25">
+                <div className="p-3 rounded-2xl text-white shadow-md shadow-[#8B5A2B]/25 transition-transform duration-200 group-hover:scale-105"
+                  style={{ background: "linear-gradient(135deg, #B08968 0%, #8B5A2B 50%, #6F4428 100%)" }}
+                >
                   {a.icon}
                 </div>
                 {a.badge && (
-                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-brand-500/10 text-brand-500 dark:text-brand-400 border border-brand-500/20">
+                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full border"
+                    style={{ background: "#F5EDE4", color: "#6F4428", borderColor: "#DDB892" }}
+                  >
                     {a.badge}
                   </span>
                 )}
@@ -83,11 +88,11 @@ export function FeaturesSection() {
               <ul className="space-y-2 mb-5">
                 {a.features.map(f=>(
                   <li key={f} className="flex items-center gap-2 text-sm" style={{ color: "#444444" }}>
-                    <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0"/>{f}
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0"/>{f}
                   </li>
                 ))}
               </ul>
-              <Link href="/signup" className="flex items-center gap-1.5 text-sm font-semibold transition-colors hover:opacity-80" style={{ color: "#8B0000" }}
+              <Link href="/signup" className="flex items-center gap-1.5 text-sm font-semibold transition-colors hover:opacity-80" style={{ color: "#7F5539" }}
               >
                 Get started <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform"/>
               </Link>

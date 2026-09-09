@@ -34,11 +34,12 @@ export function PricingSection() {
 
         <motion.div initial={{ opacity:0,y:20 }} whileInView={{ opacity:1,y:0 }} viewport={{ once:true }}
           className="text-center mb-12 sm:mb-16">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-5 bg-brand-500/10 text-brand-500 dark:text-brand-400 border border-brand-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-current"/>Transparent Pricing
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold mb-5 border backdrop-blur-sm"
+            style={{ background: "#F5EDE4", color: "#6F4428", borderColor: "#DDB892" }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#8B5A2B" }}/>Transparent Pricing
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-4 tracking-tight" style={{ color: "#000" }}>
-            Plans for Every <span style={{ color: "#8B0000" }}>Stage of Growth</span>
+            Plans for Every <span style={{ color: "#7F5539" }}>Stage of Growth</span>
           </h2>
           <p className="text-base sm:text-lg max-w-xl mx-auto" style={{ color: "#333" }}>
             Start free, scale as you grow. No hidden fees, no per-minute charges on base plan.
@@ -54,16 +55,18 @@ export function PricingSection() {
                 "relative rounded-2xl p-6 flex flex-col transition-all duration-300",
                 "backdrop-filter backdrop-blur-md",
                 p.popular
-                  ? "border-[1.5px] border-white/30 shadow-[0_0_32px_rgba(212,32,39,0.12),0_8px_32px_rgba(0,0,0,0.08)]"
+                  ? "border-[1.5px] border-[#B08968]/50 shadow-[0_0_32px_rgba(140,90,50,0.12),0_8px_32px_rgba(0,0,0,0.08)]"
                   : "border border-white/20 shadow-sm"
               )}
               style={{
-                backgroundColor: p.popular ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.1)"
+                backgroundColor: p.popular ? "rgba(255, 255, 255, 0.45)" : "rgba(255, 255, 255, 0.25)"
               }}
             >
               {p.popular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-br from-brand-500 to-brand-700 shadow-lg shadow-brand-500/35">
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold text-white shadow-lg shadow-[#8B5A2B]/30"
+                    style={{ background: "linear-gradient(135deg, #B08968 0%, #8B5A2B 50%, #6F4428 100%)" }}
+                  >
                     <Zap className="w-3 h-3 fill-white"/>Most Popular
                   </span>
                 </div>
@@ -87,18 +90,22 @@ export function PricingSection() {
               <ul className="space-y-2.5 mb-8 flex-1">
                 {p.features.map(f=>(
                   <li key={f} className="flex items-start gap-2 text-sm" style={{ color: "#333" }}>
-                    <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5"/>{f}
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5"/>{f}
                   </li>
                 ))}
               </ul>
 
               <Link href={p.href}
-                className={cn(
-                  "w-full py-3 rounded-xl text-sm font-semibold text-center transition-all duration-200 active:scale-[0.97]",
-                  p.popular
-                    ? "bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-lg shadow-brand-500/30 hover:brightness-110"
-                    : "border border-brand-500/30 text-brand-500 dark:text-brand-400 bg-brand-500/5 hover:bg-brand-500/10 hover:border-brand-500/50"
-                )}
+                className="w-full py-3 rounded-xl text-sm font-semibold text-center transition-all duration-200 active:scale-[0.97]"
+                style={p.popular ? {
+                  background: "linear-gradient(135deg, #B08968 0%, #8B5A2B 50%, #6F4428 100%)",
+                  color: "#fff",
+                  boxShadow: "0 4px 14px rgba(139, 90, 43, 0.25)"
+                } : {
+                  background: "#F5EDE4",
+                  color: "#6F4428",
+                  border: "1px solid #DDB892"
+                }}
               >{p.cta}</Link>
             </motion.div>
           ))}

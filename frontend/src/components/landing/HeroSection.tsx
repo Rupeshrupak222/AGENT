@@ -37,7 +37,7 @@ export function HeroSection() {
                   display: "block"
                 }}>Meet the AI Workforce</span>
                 <span style={{ 
-                  color: "#8B0000",
+                  color: "#7F5539",
                   display: "block"
                 }}>Built for the Way<br/>Business Moves Now</span>
               </h1>
@@ -50,7 +50,7 @@ export function HeroSection() {
               className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link href="/signup"
                 className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full text-white font-bold text-base group transition-all duration-200 active:scale-[0.97]"
-                style={{ background:"#A80D20", boxShadow:"0 0 24px rgba(212,32,39,0.30), 0 4px 14px rgba(0,0,0,0.12)" }}
+                style={{ background: "linear-gradient(135deg, #B08968 0%, #8B5A2B 50%, #6F4428 100%)", boxShadow:"0 0 24px rgba(139,90,43,0.30), 0 4px 14px rgba(0,0,0,0.12)" }}
               >
                 Start Free Trial
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform"/>
@@ -66,7 +66,7 @@ export function HeroSection() {
             <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.5 }}
               className="flex items-center gap-6 justify-center flex-wrap pt-4">
               <div className="flex -space-x-2">
-                {[R,"#e53e3e","#c53030","#9b2c2c","#742a2a"].map((c,i)=>(
+                {["#B08968","#9C6644","#8B5A2B","#6F4428","#522610"].map((c,i)=>(
                   <div key={i} className="w-10 h-10 rounded-full border-2 border-white" style={{ background:c }}/>
                 ))}
               </div>

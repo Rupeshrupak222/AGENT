@@ -26,7 +26,7 @@ export function CTASection() {
           className="space-y-8">
           <div className="space-y-4">
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-balance" style={{ color: "#000" }}>
-              Ready to Deploy Your{" "}<span style={{ color: "#8B0000" }}>AI Workforce?</span>
+              Ready to Deploy Your{" "}<span style={{ color: "#7F5539" }}>AI Workforce?</span>
             </h2>
             <p className="text-lg sm:text-xl max-w-xl mx-auto leading-relaxed" style={{ color: "#333" }}>
               Join 1,000+ businesses that have replaced manual calling with AI agents.
@@ -37,14 +37,14 @@ export function CTASection() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/signup"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-9 py-4 rounded-xl text-white font-semibold text-base group transition-all duration-200 active:scale-[0.97]"
-              style={{ background:`linear-gradient(135deg,${R} 0%,#9b1219 100%)`, boxShadow:"0 0 32px rgba(212,32,39,0.30), 0 4px 16px rgba(0,0,0,0.10)" }}
+              style={{ background: "linear-gradient(135deg, #B08968 0%, #8B5A2B 50%, #6F4428 100%)", boxShadow: "0 0 32px rgba(139, 90, 43, 0.30), 0 4px 16px rgba(0,0,0,0.10)" }}
             >
               Start Free Trial
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform"/>
             </Link>
             <Link href="/login"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-9 py-4 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.97] border border-brand-500/30 bg-brand-500/5 hover:bg-brand-500/10 hover:border-brand-500/50"
-              style={{ color: "#000" }}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-9 py-4 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.97] border"
+              style={{ background: "#F5EDE4", color: "#6F4428", borderColor: "#DDB892" }}
             >
               Sign In to Dashboard
             </Link>

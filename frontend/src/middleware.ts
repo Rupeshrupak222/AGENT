@@ -20,13 +20,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (isAuthRoute && hasSession) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard/overview";
-    url.searchParams.delete("next");
-    return NextResponse.redirect(url);
-  }
-
   return NextResponse.next();
 }
 

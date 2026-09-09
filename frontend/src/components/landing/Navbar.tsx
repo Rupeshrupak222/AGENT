@@ -38,11 +38,13 @@ export function Navbar() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 bg-gradient-to-br from-brand-500 to-brand-700 shadow-md shadow-brand-500/30">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 shadow-md shadow-[#8B5A2B]/30"
+              style={{ background: "linear-gradient(135deg, #B08968 0%, #8B5A2B 50%, #6F4428 100%)" }}
+            >
               <Zap className="w-4 h-4 text-white fill-white" />
             </div>
             <span className="text-lg font-bold text-black">
-              AgentCall <span style={{ color: "#8B0000" }}>AI</span>
+              AgentCall <span style={{ color: "#7F5539" }}>AI</span>
             </span>
           </Link>
 
@@ -96,7 +98,8 @@ export function Navbar() {
                 Sign In
               </Link>
               <Link href="/signup" onClick={()=>setMobileOpen(false)}
-                className="w-full py-3 text-center text-sm font-semibold text-white rounded-xl transition-all bg-gradient-to-br from-brand-500 to-brand-700 shadow-md shadow-brand-500/25"
+                className="w-full py-3 text-center text-sm font-semibold text-white rounded-xl transition-all shadow-md shadow-[#8B5A2B]/25"
+                style={{ background: "linear-gradient(135deg, #B08968 0%, #8B5A2B 50%, #6F4428 100%)" }}
               >
                 Start Free Trial
               </Link>

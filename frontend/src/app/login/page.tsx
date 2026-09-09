@@ -65,10 +65,12 @@ export default function LoginPage() {
 
         <div className="relative z-10 max-w-md w-full">
           <Link href="/" className="flex items-center gap-2.5 mb-14">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-xs">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-xs"
+              style={{ background: "linear-gradient(135deg, #B08968 0%, #8B5A2B 50%, #6F4428 100%)" }}
+            >
               <Zap className="w-4 h-4 fill-white"/>
             </div>
-            <span className="text-lg font-semibold text-white tracking-tight">AgentCall <span className="text-blue-400">AI</span></span>
+            <span className="text-lg font-semibold text-white tracking-tight">AgentCall <span style={{ color: "#B08968" }}>AI</span></span>
           </Link>
 
           <h2 className="text-3xl font-bold text-white leading-tight mb-4">
@@ -86,7 +88,9 @@ export default function LoginPage() {
             ].map((s,i)=>(
               <motion.div key={i} initial={{ opacity:0,x:-20 }} animate={{ opacity:1,x:0 }} transition={{ delay:0.2+i*0.1 }}
                 className="flex items-center gap-3 rounded-xl p-3.5 bg-slate-900/80 border border-slate-800">
-                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">{s.icon}</div>
+                <div className="p-2 rounded-lg border"
+                  style={{ background: "rgba(176, 137, 104, 0.15)", color: "#B08968", borderColor: "rgba(176, 137, 104, 0.3)" }}
+                >{s.icon}</div>
                 <span className="text-xs font-medium text-slate-400">{s.label}</span>
                 <span className="ml-auto text-base font-bold text-white font-mono">{s.value}</span>
               </motion.div>
@@ -114,10 +118,12 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 bg-slate-50 dark:bg-slate-950">
         {/* Mobile logo */}
         <Link href="/" className="flex items-center gap-2 mb-8 lg:hidden">
-          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-xs">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white shadow-xs"
+            style={{ background: "linear-gradient(135deg, #B08968 0%, #8B5A2B 50%, #6F4428 100%)" }}
+          >
             <Zap className="w-3.5 h-3.5 fill-white"/>
           </div>
-          <span className="text-base font-semibold text-slate-900 dark:text-white">AgentCall <span className="text-blue-600 dark:text-blue-400">AI</span></span>
+          <span className="text-base font-semibold text-slate-900 dark:text-white">AgentCall <span style={{ color: "#7F5539" }}>AI</span></span>
         </Link>
 
         <motion.div initial={{ opacity:0,y:16 }} animate={{ opacity:1,y:0 }} transition={{ duration:0.3 }}
@@ -192,7 +198,7 @@ export default function LoginPage() {
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-slate-400"/>
                 <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="name@company.com"
-                  className="w-full h-10 pl-9 pr-3 rounded-lg text-xs text-slate-900 dark:text-white placeholder:text-slate-400 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                  className="w-full h-10 pl-9 pr-3 rounded-lg text-xs text-slate-900 dark:text-white placeholder:text-slate-400 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 outline-none focus:border-[#9C6644] focus:ring-1 focus:ring-[#9C6644] transition-colors"
                 />
               </div>
             </div>
@@ -206,7 +212,7 @@ export default function LoginPage() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-slate-400"/>
                 <input type={showPwd?"text":"password"} required value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••"
-                  className="w-full h-10 pl-9 pr-9 rounded-lg text-xs text-slate-900 dark:text-white placeholder:text-slate-400 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                  className="w-full h-10 pl-9 pr-9 rounded-lg text-xs text-slate-900 dark:text-white placeholder:text-slate-400 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 outline-none focus:border-[#9C6644] focus:ring-1 focus:ring-[#9C6644] transition-colors"
                 />
                 <button
                   type="button"
@@ -221,7 +227,9 @@ export default function LoginPage() {
 
             {/* Submit */}
             <button type="submit" disabled={loading}
-              className="w-full h-10 rounded-lg text-white font-medium text-xs flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 transition-colors shadow-xs disabled:opacity-50 mt-2">
+              className="w-full h-10 rounded-lg text-white font-medium text-xs flex items-center justify-center gap-2 shadow-sm transition-all duration-200 active:scale-[0.99] disabled:opacity-50 mt-2"
+              style={{ background: "linear-gradient(135deg, #B08968 0%, #8B5A2B 50%, #6F4428 100%)", boxShadow: "0 4px 14px rgba(139, 90, 43, 0.25)" }}
+            >
               {loading ? (
                 <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
@@ -233,7 +241,7 @@ export default function LoginPage() {
 
           <p className="text-center text-xs mt-6 text-slate-500 dark:text-slate-400">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+            <Link href="/signup" className="font-semibold hover:underline" style={{ color: "#7F5539" }}>
               Create workspace
             </Link>
           </p>
