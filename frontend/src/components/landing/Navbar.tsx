@@ -36,13 +36,13 @@ export function Navbar() {
         className={cn(
           "pointer-events-auto w-full max-w-5xl h-14 sm:h-16 px-4 sm:px-6 rounded-full transition-all duration-300",
           "flex items-center justify-between",
-          "backdrop-blur-xl border",
+          "backdrop-blur-md border",
           scrolled
-            ? "bg-white/80 dark:bg-[#140b07]/80 border-white/60 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.10),inset_0_1px_1px_rgba(255,255,255,0.8)]"
-            : "bg-white/65 dark:bg-[#140b07]/60 border-white/50 dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.7)]"
+            ? "bg-white/15 dark:bg-white/[0.07] border-white/25 dark:border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.2)]"
+            : "bg-white/[0.04] dark:bg-white/[0.03] border-white/20 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.03),inset_0_1px_0_rgba(255,255,255,0.15)]"
         )}
         style={{
-          WebkitBackdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(10px)",
         }}
       >
         {/* Logo */}
@@ -53,7 +53,7 @@ export function Navbar() {
           >
             <Zap className="w-4 h-4 text-white fill-white" />
           </div>
-          <span className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+          <span className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
             AgentCall <span style={{ color: "#7F5539" }}>AI</span>
           </span>
         </Link>
@@ -65,7 +65,7 @@ export function Navbar() {
               key={l.label}
               href={l.href}
               onClick={(e) => anchor(e, l.href)}
-              className="px-4 py-1.5 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 cursor-pointer text-slate-700 hover:text-black dark:text-slate-200 dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+              className="px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 cursor-pointer text-slate-700 hover:text-black hover:bg-black/[0.04]"
             >
               {l.label}
             </a>
@@ -76,7 +76,7 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-2.5">
           <Link
             href="/login"
-            className="px-4 py-2 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 text-slate-800 dark:text-slate-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.08]"
+            className="px-4 py-2 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 text-slate-800 hover:text-black hover:bg-black/[0.04]"
           >
             Sign In
           </Link>
@@ -93,7 +93,7 @@ export function Navbar() {
         <div className="flex md:hidden items-center gap-1.5">
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="p-2 rounded-full transition-all text-slate-800 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10"
+            className="p-2 rounded-full transition-all text-slate-800 hover:bg-black/5"
             aria-label="Toggle menu"
           >
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -104,7 +104,7 @@ export function Navbar() {
       {/* Mobile drawer (iPhone rounded card) */}
       {mobileOpen && (
         <div
-          className="pointer-events-auto w-full max-w-sm mt-2 p-4 rounded-[28px] backdrop-blur-2xl bg-white/90 dark:bg-[#140b07]/90 border border-white/60 dark:border-white/10 shadow-2xl transition-all duration-300 space-y-1"
+          className="pointer-events-auto w-full max-w-sm mt-2 p-4 rounded-[28px] backdrop-blur-2xl bg-white/85 dark:bg-[#140b07]/85 border border-white/60 dark:border-white/15 shadow-2xl transition-all duration-300 space-y-1"
           style={{ WebkitBackdropFilter: "blur(24px)" }}
         >
           {navLinks.map((l) => (
@@ -112,7 +112,7 @@ export function Navbar() {
               key={l.label}
               href={l.href}
               onClick={(e) => anchor(e, l.href)}
-              className="block px-4 py-2.5 text-sm font-medium rounded-2xl transition-all cursor-pointer text-slate-800 dark:text-slate-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.06]"
+              className="block px-4 py-2.5 text-sm font-semibold rounded-2xl transition-all cursor-pointer text-slate-800 hover:text-black hover:bg-black/[0.05]"
             >
               {l.label}
             </a>
@@ -121,7 +121,7 @@ export function Navbar() {
             <Link
               href="/login"
               onClick={() => setMobileOpen(false)}
-              className="w-full py-2.5 text-center text-sm font-semibold rounded-full transition-all text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 hover:bg-black/5"
+              className="w-full py-2.5 text-center text-sm font-semibold rounded-full transition-all text-slate-800 border border-slate-300/80 hover:bg-black/5"
             >
               Sign In
             </Link>
