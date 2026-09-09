@@ -4,8 +4,31 @@ import { motion } from "framer-motion";
 import { Zap, Twitter, Linkedin, Youtube, Github } from "lucide-react";
 
 const cols = {
-  Product:    [{ l:"Features",href:"#features" },{ l:"How It Works",href:"#how-it-works" },{ l:"Pricing",href:"#pricing" }],
-  "Get Started": [{ l:"Sign In",href:"/login" },{ l:"Start Free Trial",href:"/signup" }],
+  Product: [
+    { l: "AI Agent Types", href: "#features" },
+    { l: "Voice Demo", href: "#demo" },
+    { l: "How It Works", href: "#how-it-works" },
+    { l: "ROI Calculator", href: "#calculator" },
+    { l: "Pricing Plans", href: "#pricing" },
+  ],
+  "Legal & Trust": [
+    { l: "Terms of Service", href: "/terms" },
+    { l: "Privacy Policy", href: "/privacy" },
+    { l: "Cookie Policy", href: "/cookies" },
+    { l: "Security & SOC2", href: "/terms#security" },
+    { l: "TRAI Compliance", href: "/terms" },
+  ],
+  Company: [
+    { l: "Contact Us", href: "/contact" },
+    { l: "Enterprise Sales", href: "/contact" },
+    { l: "Customer Stories", href: "#testimonials" },
+    { l: "FAQ", href: "#faq" },
+  ],
+  "Get Started": [
+    { l: "Sign In", href: "/login" },
+    { l: "Start Free Trial", href: "/signup" },
+    { l: "Talk to Sales", href: "#contact" },
+  ],
 };
 const socials = [
   { icon:<Twitter className="w-4 h-4"/>,  href:"https://twitter.com",  label:"Twitter" },
@@ -21,13 +44,7 @@ export function Footer() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.15 }}
       transition={{ duration: 0.6 }}
-      className="pt-12 sm:pt-16 pb-6 sm:pb-8 border-t border-[#DDB892]/60"
-      style={{
-        backgroundColor: "#EFE8DF",
-        backgroundImage: "url('/howitworks-bg.png')",
-        backgroundSize: "cover",
-        backgroundPosition: "center"
-      }}
+      className="pt-12 sm:pt-16 pb-6 sm:pb-8 border-t border-[#DDB892]/40 bg-white"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 mb-10">
@@ -47,7 +64,7 @@ export function Footer() {
             <div className="flex items-center gap-2">
               {socials.map(s=>(
                 <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label}
-                  className="w-7 h-7 rounded-md flex items-center justify-center transition-colors text-slate-600 bg-white/90 border border-[#DDB892]/50 hover:border-[#8B5A2B] hover:text-[#8B5A2B]"
+                  className="w-7 h-7 rounded-md flex items-center justify-center transition-colors text-slate-600 bg-slate-50 border border-slate-200 hover:border-[#8B5A2B] hover:text-[#8B5A2B]"
                 >{s.icon}</a>
               ))}
             </div>
@@ -70,9 +87,18 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-[#DDB892]/40">
-          <p className="text-xs text-slate-600">© 2026 AgentCall AI. Enterprise Voice Infrastructure.</p>
-          <p className="text-xs text-slate-600">SOC2 Type II Certified · Sub-350ms SLA</p>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-200 text-xs text-slate-600">
+          <p>© 2026 AgentCall AI Technologies Pvt. Ltd.</p>
+          <div className="flex items-center gap-3 text-xs font-medium">
+            <Link href="/terms" className="hover:text-slate-950 underline-offset-2 hover:underline transition-colors">Terms of Service</Link>
+            <span>·</span>
+            <Link href="/privacy" className="hover:text-slate-950 underline-offset-2 hover:underline transition-colors">Privacy Policy</Link>
+            <span>·</span>
+            <Link href="/cookies" className="hover:text-slate-950 underline-offset-2 hover:underline transition-colors">Cookies</Link>
+            <span>·</span>
+            <Link href="/contact" className="hover:text-slate-950 underline-offset-2 hover:underline transition-colors">Contact Us</Link>
+          </div>
+          <p>SOC2 Type II Certified · Sub-300ms SLA</p>
         </div>
       </div>
     </motion.footer>

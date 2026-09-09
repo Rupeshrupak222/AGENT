@@ -12,6 +12,7 @@ const navLinks = [
   { label: "Savings",      href: "#calculator"   },
   { label: "Pricing",      href: "#pricing"       },
   { label: "FAQ",          href: "#faq"           },
+  { label: "Contact",      href: "#contact"       },
 ];
 
 export function Navbar() {
@@ -66,7 +67,7 @@ export function Navbar() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className={cn(
-          "pointer-events-auto w-full max-w-5xl h-14 sm:h-16 px-4 sm:px-6 rounded-full transition-all duration-300",
+          "pointer-events-auto w-full max-w-6xl h-14 sm:h-16 px-3 sm:px-5 lg:px-6 rounded-full transition-all duration-300",
           "flex items-center justify-between",
           "backdrop-blur-md border",
           scrolled
@@ -80,24 +81,24 @@ export function Navbar() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shadow-sm shadow-[#8B5A2B]/30"
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shadow-sm shadow-[#8B5A2B]/30 flex-shrink-0"
             style={{ background: "linear-gradient(135deg, #B08968 0%, #8B5A2B 50%, #6F4428 100%)" }}
           >
             <Zap className="w-4 h-4 text-white fill-white" />
           </div>
-          <span className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
+          <span className="text-base sm:text-lg font-bold tracking-tight text-slate-900 whitespace-nowrap">
             AgentCall <span style={{ color: "#7F5539" }}>AI</span>
           </span>
         </Link>
 
         {/* Desktop links */}
-        <div className="hidden md:flex items-center gap-1">
+        <div className="hidden md:flex items-center gap-0.5 lg:gap-1">
           {navLinks.map((l) => (
             <a
               key={l.label}
               href={l.href}
               onClick={(e) => anchor(e, l.href)}
-              className="px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 cursor-pointer text-slate-700 hover:text-black hover:bg-black/[0.04]"
+              className="px-2.5 lg:px-3.5 py-1.5 text-xs lg:text-sm font-semibold rounded-full transition-all duration-200 cursor-pointer text-slate-700 hover:text-black hover:bg-black/[0.04] whitespace-nowrap flex-shrink-0"
             >
               {l.label}
             </a>
@@ -105,16 +106,16 @@ export function Navbar() {
         </div>
 
         {/* Desktop CTAs */}
-        <div className="hidden md:flex items-center gap-2.5">
+        <div className="hidden md:flex items-center gap-1.5 lg:gap-2.5 flex-shrink-0">
           <Link
             href="/login"
-            className="px-4 py-2 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 text-slate-800 hover:text-black hover:bg-black/[0.04]"
+            className="px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold rounded-full transition-all duration-200 text-slate-800 hover:text-black hover:bg-black/[0.04] whitespace-nowrap flex-shrink-0"
           >
             Sign In
           </Link>
           <Link
             href="/signup"
-            className="px-5 py-2 text-xs sm:text-sm font-semibold text-white rounded-full transition-all duration-200 shadow-sm shadow-[#8B5A2B]/30 hover:brightness-105 active:scale-[0.97]"
+            className="px-3.5 lg:px-5 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold text-white rounded-full transition-all duration-200 shadow-sm shadow-[#8B5A2B]/30 hover:brightness-105 active:scale-[0.97] whitespace-nowrap flex-shrink-0"
             style={{ background: "linear-gradient(135deg, #B08968 0%, #8B5A2B 50%, #6F4428 100%)" }}
           >
             Start Free Trial
