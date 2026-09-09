@@ -21,10 +21,10 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-3 lg:col-span-2">
             <Link href="/" className="flex items-center gap-2.5 mb-4">
-              <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-xs">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white shadow-xs">
                 <Zap className="w-3.5 h-3.5 fill-white"/>
               </div>
-              <span className="text-base font-semibold text-slate-900 dark:text-white tracking-tight">AgentCall <span className="text-blue-600 dark:text-blue-400">AI</span></span>
+              <span className="text-base font-semibold text-slate-900 dark:text-white tracking-tight">AgentCall <span className="text-brand-500">AI</span></span>
             </Link>
             <p className="text-xs leading-relaxed mb-5 max-w-xs text-slate-500 dark:text-slate-400">
               Autonomous conversational voice infrastructure for sales, support, and recruitment operations.
@@ -32,7 +32,7 @@ export function Footer() {
             <div className="flex items-center gap-2">
               {socials.map(s=>(
                 <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label}
-                  className="w-7 h-7 rounded-md flex items-center justify-center transition-colors text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-500/50 hover:text-blue-600 dark:hover:text-blue-400"
+                  className="w-7 h-7 rounded-md flex items-center justify-center transition-colors text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-brand-500/50 hover:text-brand-500"
                 >{s.icon}</a>
               ))}
             </div>

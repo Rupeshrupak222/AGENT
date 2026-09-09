@@ -11,16 +11,16 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          50:  "#eff6ff",
-          100: "#dbeafe",
-          200: "#bfdbfe",
-          300: "#93c5fd",
-          400: "#60a5fa",
-          500: "#2563eb", // Linear/Stripe Precision Blue
-          600: "#1d4ed8",
-          700: "#1e40af",
-          800: "#1e3a8a",
-          900: "#172554",
+          50:  "#fdf8f5",
+          100: "#f7ede3",
+          200: "#eddac8",
+          300: "#dfc0a2",
+          400: "#b38258",
+          500: "#7c3f1d", // Rich warm saddle/chocolate brown
+          600: "#673216",
+          700: "#522610",
+          800: "#3d1b0b",
+          900: "#281106",
         },
         surface: {
           DEFAULT: "var(--bg)",
@@ -58,9 +58,9 @@ const config: Config = {
         xl: "var(--radius-xl)",
       },
       boxShadow: {
-        brand:      "0 1px 3px 0 rgba(37, 99, 235, 0.15), 0 1px 2px -1px rgba(37, 99, 235, 0.15)",
-        "brand-sm": "0 1px 2px 0 rgba(37, 99, 235, 0.10)",
-        glow:       "0 4px 20px -2px rgba(37, 99, 235, 0.25)",
+        brand:      "0 1px 3px 0 rgba(124, 63, 29, 0.18), 0 1px 2px -1px rgba(124, 63, 29, 0.18)",
+        "brand-sm": "0 1px 2px 0 rgba(124, 63, 29, 0.12)",
+        glow:       "0 4px 20px -2px rgba(124, 63, 29, 0.30)",
         xs:         "var(--shadow-sm)",
         sm:         "var(--shadow-sm)",
         md:         "var(--shadow-md)",

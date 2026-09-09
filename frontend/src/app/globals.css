@@ -4,15 +4,15 @@
 
 /* ── Design System Tokens ───────────────────────────────────── */
 :root {
-  /* Brand */
-  --brand-50:  #fef2f2;
-  --brand-100: #fde2e3;
-  --brand-200: #fcc9cb;
-  --brand-400: #f46d72;
-  --brand-500: #D42027;
-  --brand-600: #bb1920;
-  --brand-700: #9b1219;
-  --brand-900: #6d1214;
+  /* Brand: Warm Chocolate / Espresso Brown */
+  --brand-50:  #fdf8f5;
+  --brand-100: #f7ede3;
+  --brand-200: #eddac8;
+  --brand-400: #b38258;
+  --brand-500: #7c3f1d;
+  --brand-600: #673216;
+  --brand-700: #522610;
+  --brand-900: #281106;
 
   /* Surface */
   --bg:           #E8E3DB;
