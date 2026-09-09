@@ -53,7 +53,7 @@ export function HowItWorksSection() {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.25 }}
+          viewport={{ once: true, amount: 0.25 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="text-center mb-12 sm:mb-16"
         >
@@ -74,7 +74,7 @@ export function HowItWorksSection() {
           <motion.div
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
-            viewport={{ once: false, amount: 0.3 }}
+            viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.9, ease: "easeInOut" }}
             className="absolute top-9 left-0 right-0 h-px hidden lg:block origin-left"
             style={{ background:"linear-gradient(90deg,transparent,rgba(176,137,104,0.6),rgba(176,137,104,0.6),transparent)" }}
@@ -84,7 +84,7 @@ export function HowItWorksSection() {
             variants={stepsContainerVariants}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: false, amount: 0.15 }}
+            viewport={{ once: true, amount: 0.15 }}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8"
           >
             {steps.map((s)=>(

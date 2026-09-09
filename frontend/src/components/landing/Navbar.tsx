@@ -32,7 +32,15 @@ export function Navbar() {
   function anchor(e: React.MouseEvent<HTMLAnchorElement>, href: string) {
     if (href.startsWith("#")) {
       e.preventDefault();
-      document.getElementById(href.slice(1))?.scrollIntoView({ behavior: "smooth", block: "start" });
+      const target = document.getElementById(href.slice(1));
+      if (target) {
+        const navOffset = 90;
+        const targetTop = target.getBoundingClientRect().top + window.scrollY - navOffset;
+        window.scrollTo({
+          top: targetTop,
+          behavior: "smooth"
+        });
+      }
       setMobileOpen(false);
     }
   }

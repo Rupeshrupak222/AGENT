@@ -50,7 +50,7 @@ export function CTASection() {
           variants={ctaContainerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: false, amount: 0.3 }}
+          viewport={{ once: true, amount: 0.3 }}
           className="space-y-8"
         >
           <motion.div variants={ctaItemVariants} className="space-y-4">

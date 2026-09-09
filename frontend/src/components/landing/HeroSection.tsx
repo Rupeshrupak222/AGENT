@@ -7,7 +7,15 @@ const R = "#D42027";
 
 export function HeroSection() {
   function scroll(id: string) {
-    document.getElementById(id)?.scrollIntoView({ behavior:"smooth", block:"start" });
+    const target = document.getElementById(id);
+    if (target) {
+      const navOffset = 90;
+      const targetTop = target.getBoundingClientRect().top + window.scrollY - navOffset;
+      window.scrollTo({
+        top: targetTop,
+        behavior: "smooth"
+      });
+    }
   }
   return (
     <section id="hero" className="relative min-h-screen flex items-center pt-24 sm:pt-28 pb-16 overflow-hidden"

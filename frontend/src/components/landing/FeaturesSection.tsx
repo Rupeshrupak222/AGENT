@@ -66,7 +66,7 @@ export function FeaturesSection() {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.25 }}
+          viewport={{ once: true, amount: 0.25 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="text-center mb-12 sm:mb-16"
         >
@@ -87,7 +87,7 @@ export function FeaturesSection() {
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: false, amount: 0.15 }}
+          viewport={{ once: true, amount: 0.15 }}
           className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
         >
           {agents.map((a)=>(

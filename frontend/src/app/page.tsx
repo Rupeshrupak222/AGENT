@@ -8,18 +8,21 @@ import { PricingSection }      from "@/components/landing/PricingSection";
 import { IntegrationsSection } from "@/components/landing/IntegrationsSection";
 import { CTASection }          from "@/components/landing/CTASection";
 import { Footer }              from "@/components/landing/Footer";
+import { SmoothScrollProvider } from "@/components/SmoothScrollProvider";
 
 export default function HomePage() {
   return (
-    <main className="relative bg-page text-gray-900 dark:text-white min-h-screen overflow-x-hidden transition-colors duration-200">
-      <Navbar />
-      <HeroSection />
-      <FeaturesSection />
-      <HowItWorksSection />
-      <PricingSection />
-      <IntegrationsSection />
-      <CTASection />
-      <Footer />
-    </main>
+    <SmoothScrollProvider>
+      <main className="relative bg-page text-gray-900 dark:text-white min-h-screen overflow-x-clip transition-colors duration-200">
+        <Navbar />
+        <HeroSection />
+        <FeaturesSection />
+        <HowItWorksSection />
+        <PricingSection />
+        <IntegrationsSection />
+        <CTASection />
+        <Footer />
+      </main>
+    </SmoothScrollProvider>
   );
 }
