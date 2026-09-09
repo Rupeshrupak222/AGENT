@@ -1,4 +1,6 @@
+"use client";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Zap, Twitter, Linkedin, Youtube, Github } from "lucide-react";
 
 const cols = {
@@ -14,7 +16,13 @@ const socials = [
 
 export function Footer() {
   return (
-    <footer className="bg-surface pt-12 sm:pt-16 pb-6 sm:pb-8 border-t border-slate-200 dark:border-slate-800">
+    <motion.footer
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: false, amount: 0.15 }}
+      transition={{ duration: 0.6 }}
+      className="bg-surface pt-12 sm:pt-16 pb-6 sm:pb-8 border-t border-slate-200 dark:border-slate-800"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 mb-10">
 
@@ -60,6 +68,6 @@ export function Footer() {
           <p className="text-xs text-slate-500 dark:text-slate-400">SOC2 Type II Certified · Sub-350ms SLA</p>
         </div>
       </div>
-    </footer>
+    </motion.footer>
   );
 }

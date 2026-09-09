@@ -19,6 +19,30 @@ const plans = [
     cta:"Contact Sales", href:"/contact" },
 ];
 
+const pricingContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.12,
+      delayChildren: 0.08,
+    },
+  },
+};
+
+const pricingCardVariants = {
+  hidden: { opacity: 0, y: 45, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.6,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
+};
+
 export function PricingSection() {
   return (
     <section id="pricing" className="py-16 sm:py-24 relative"
@@ -32,8 +56,13 @@ export function PricingSection() {
         style={{ background:"radial-gradient(ellipse,rgba(212,32,39,0.05),transparent 70%)" }}/>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
 
-        <motion.div initial={{ opacity:0,y:20 }} whileInView={{ opacity:1,y:0 }} viewport={{ once:true }}
-          className="text-center mb-12 sm:mb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: false, amount: 0.25 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="text-center mb-12 sm:mb-16"
+        >
           <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold mb-5 border backdrop-blur-sm"
             style={{ background: "#F5EDE4", color: "#6F4428", borderColor: "#DDB892" }}>
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#8B5A2B" }}/>Transparent Pricing
@@ -46,11 +75,17 @@ export function PricingSection() {
           </p>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-5">
-          {plans.map((p,i)=>(
+        <motion.div
+          variants={pricingContainerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: false, amount: 0.15 }}
+          className="grid sm:grid-cols-2 xl:grid-cols-4 gap-5"
+        >
+          {plans.map((p)=>(
             <motion.div key={p.id}
-              initial={{ opacity:0,y:30 }} whileInView={{ opacity:1,y:0 }}
-              viewport={{ once:true }} transition={{ delay:i*0.1 }}
+              variants={pricingCardVariants}
+              whileHover={{ y: -8, scale: p.popular ? 1.03 : 1.02, transition: { duration: 0.2 } }}
               className={cn(
                 "relative rounded-2xl p-6 flex flex-col transition-all duration-300",
                 "backdrop-filter backdrop-blur-md",
@@ -109,7 +144,7 @@ export function PricingSection() {
               >{p.cta}</Link>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         <p className="text-center text-sm mt-8" style={{ color: "#333" }}>
           All plans include 14-day free trial · No credit card required · Cancel anytime

@@ -30,7 +30,7 @@ export function HeroSection() {
         <div className="flex items-center justify-center">
           {/* Copy */}
           <div className="space-y-7 text-center max-w-2xl">
-            <motion.div initial={{ opacity:0,y:20 }} animate={{ opacity:1,y:0 }} transition={{ delay:0.1,duration:0.7 }}>
+            <motion.div initial={{ opacity:0,y:30 }} animate={{ opacity:1,y:0 }} transition={{ duration:0.8, ease:[0.22, 1, 0.36, 1] }}>
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-[1.1] tracking-tight text-balance mb-6">
                 <span style={{
                   color: "#000000",
@@ -46,10 +46,10 @@ export function HeroSection() {
               </p>
             </motion.div>
 
-            <motion.div initial={{ opacity:0,y:20 }} animate={{ opacity:1,y:0 }} transition={{ delay:0.25,duration:0.6 }}
+            <motion.div initial={{ opacity:0,y:25 }} animate={{ opacity:1,y:0 }} transition={{ delay:0.2, duration:0.6, ease:[0.22, 1, 0.36, 1] }}
               className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link href="/signup"
-                className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full text-white font-bold text-base group transition-all duration-200 active:scale-[0.97]"
+                className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full text-white font-bold text-base group transition-all duration-200 active:scale-[0.97] hover:brightness-105"
                 style={{ background: "linear-gradient(135deg, #B08968 0%, #8B5A2B 50%, #6F4428 100%)", boxShadow:"0 0 24px rgba(139,90,43,0.30), 0 4px 14px rgba(0,0,0,0.12)" }}
               >
                 Start Free Trial
@@ -63,7 +63,7 @@ export function HeroSection() {
             </motion.div>
 
             {/* Social proof */}
-            <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.5 }}
+            <motion.div initial={{ opacity:0,y:20 }} animate={{ opacity:1,y:0 }} transition={{ delay:0.4, duration:0.6, ease:[0.22, 1, 0.36, 1] }}
               className="flex items-center gap-6 justify-center flex-wrap pt-4">
               <div className="flex -space-x-2">
                 {["#B08968","#9C6644","#8B5A2B","#6F4428","#522610"].map((c,i)=>(

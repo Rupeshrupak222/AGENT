@@ -12,6 +12,31 @@ const steps = [
   { n:"05", icon:<BarChart3 className="w-6 h-6"/>, title:"Get Analytics",            desc:"Real-time dashboard shows conversions, sentiment scores, call quality and revenue generated." },
 ];
 
+const stepsContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.14,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const stepItemVariants = {
+  hidden: { opacity: 0, y: 45, scale: 0.9 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 120,
+      damping: 14,
+    },
+  },
+};
+
 export function HowItWorksSection() {
   return (
     <section id="how-it-works" className="py-16 sm:py-24 relative overflow-hidden bg-surface"
@@ -25,8 +50,13 @@ export function HowItWorksSection() {
         style={{ background:"radial-gradient(ellipse,rgba(212,32,39,0.04),transparent 70%)" }}/>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <motion.div initial={{ opacity:0,y:20 }} whileInView={{ opacity:1,y:0 }} viewport={{ once:true }}
-          className="text-center mb-12 sm:mb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: false, amount: 0.25 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="text-center mb-12 sm:mb-16"
+        >
           <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold mb-5 border backdrop-blur-sm"
             style={{ background: "#F5EDE4", color: "#6F4428", borderColor: "#DDB892" }}>
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#8B5A2B" }}/>Simple Workflow
@@ -41,15 +71,26 @@ export function HowItWorksSection() {
 
         {/* Connector line */}
         <div className="relative">
-          <div className="absolute top-9 left-0 right-0 h-px hidden lg:block"
-            style={{ background:"linear-gradient(90deg,transparent,rgba(176,137,104,0.4),rgba(176,137,104,0.4),transparent)" }}/>
+          <motion.div
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: false, amount: 0.3 }}
+            transition={{ duration: 0.9, ease: "easeInOut" }}
+            className="absolute top-9 left-0 right-0 h-px hidden lg:block origin-left"
+            style={{ background:"linear-gradient(90deg,transparent,rgba(176,137,104,0.6),rgba(176,137,104,0.6),transparent)" }}
+          />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
-            {steps.map((s,i)=>(
+          <motion.div
+            variants={stepsContainerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: false, amount: 0.15 }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8"
+          >
+            {steps.map((s)=>(
               <motion.div key={s.n}
-                initial={{ opacity:0,y:30 }} whileInView={{ opacity:1,y:0 }}
-                viewport={{ once:true }} transition={{ delay:i*0.12, duration:0.5 }}
-                className="relative text-center group"
+                variants={stepItemVariants}
+                className="relative text-center group cursor-pointer"
               >
                 <div className="flex justify-center mb-5">
                   <div className="relative w-20 h-20 rounded-2xl flex items-center justify-center text-white transition-transform duration-300 group-hover:scale-110 shadow-md shadow-[#8B5A2B]/25"
@@ -67,7 +108,7 @@ export function HowItWorksSection() {
                 <p className="text-sm leading-relaxed" style={{ color: "#333" }}>{s.desc}</p>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

@@ -16,6 +16,31 @@ const integrations = [
   { name:"Razorpay",        category:"Payments",  color:"#528FF0" },
 ];
 
+const integrationsContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.04,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+const integrationCardVariants = {
+  hidden: { opacity: 0, scale: 0.85, y: 20 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 160,
+      damping: 14,
+    },
+  },
+};
+
 export function IntegrationsSection() {
   return (
     <section id="integrations" className="py-16 sm:py-24 border-t border-slate-200 dark:border-brand-500/15"
@@ -26,8 +51,13 @@ export function IntegrationsSection() {
         backgroundAttachment: "scroll"
       }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div initial={{ opacity:0,y:20 }} whileInView={{ opacity:1,y:0 }} viewport={{ once:true }}
-          className="text-center mb-12">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: false, amount: 0.25 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="text-center mb-12"
+        >
           <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold mb-5 border backdrop-blur-sm"
             style={{ background: "#F5EDE4", color: "#6F4428", borderColor: "#DDB892" }}>
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#8B5A2B" }}/>Integrations & Ecosystem
@@ -40,12 +70,18 @@ export function IntegrationsSection() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4">
-          {integrations.map((int,i)=>(
+        <motion.div
+          variants={integrationsContainerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: false, amount: 0.15 }}
+          className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4"
+        >
+          {integrations.map((int)=>(
             <motion.div key={int.name}
-              initial={{ opacity:0,scale:0.9 }} whileInView={{ opacity:1,scale:1 }}
-              viewport={{ once:true }} transition={{ delay:i*0.05 }}
-              className="rounded-2xl p-3 sm:p-4 flex flex-col items-center gap-2 cursor-pointer transition-all duration-300 hover:-translate-y-1 backdrop-filter backdrop-blur-md shadow-sm hover:shadow-lg"
+              variants={integrationCardVariants}
+              whileHover={{ y: -6, scale: 1.05, transition: { duration: 0.2 } }}
+              className="rounded-2xl p-3 sm:p-4 flex flex-col items-center gap-2 cursor-pointer transition-all duration-300 backdrop-filter backdrop-blur-md shadow-sm hover:shadow-lg"
               style={{ backgroundColor: "rgba(255, 255, 255, 0.45)", border: "1px solid rgba(221, 184, 146, 0.4)" }}
             >
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-xs font-bold"
@@ -60,7 +96,7 @@ export function IntegrationsSection() {
               </span>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

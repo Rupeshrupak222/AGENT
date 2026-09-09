@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { motion, useScroll, useSpring } from "framer-motion";
 import { Menu, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +15,13 @@ const navLinks = [
 export function Navbar() {
   const [scrolled,   setScrolled]   = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20);
@@ -30,10 +38,24 @@ export function Navbar() {
   }
 
   return (
-    <header className="fixed top-3 sm:top-5 inset-x-0 z-50 flex flex-col items-center px-3 sm:px-6 pointer-events-none">
-      {/* iPhone Curved Glass Capsule */}
-      <nav
-        className={cn(
+    <>
+      {/* Scroll Progress Bar */}
+      <motion.div
+        className="fixed top-0 left-0 right-0 h-[3px] z-[100] origin-left pointer-events-none"
+        style={{
+          scaleX,
+          background: "linear-gradient(90deg, #B08968 0%, #8B5A2B 50%, #6F4428 100%)",
+          boxShadow: "0 0 10px rgba(139, 90, 43, 0.45)"
+        }}
+      />
+
+      <header className="fixed top-3 sm:top-5 inset-x-0 z-50 flex flex-col items-center px-3 sm:px-6 pointer-events-none">
+        {/* iPhone Curved Glass Capsule */}
+        <motion.nav
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className={cn(
           "pointer-events-auto w-full max-w-5xl h-14 sm:h-16 px-4 sm:px-6 rounded-full transition-all duration-300",
           "flex items-center justify-between",
           "backdrop-blur-md border",
@@ -99,7 +121,7 @@ export function Navbar() {
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
-      </nav>
+        </motion.nav>
 
       {/* Mobile drawer (iPhone rounded card) */}
       {mobileOpen && (
@@ -137,5 +159,6 @@ export function Navbar() {
         </div>
       )}
     </header>
+    </>
   );
 }
