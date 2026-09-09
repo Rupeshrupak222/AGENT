@@ -39,11 +39,12 @@ const stepItemVariants = {
 
 export function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="py-16 sm:py-24 relative overflow-hidden bg-surface"
+    <section id="how-it-works" className="py-16 sm:py-24 relative overflow-hidden"
       style={{
         backgroundImage: "url('/howitworks-bg.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
+        backgroundColor: "#F5F0E8",
         backgroundAttachment: "scroll"
       }}>
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full pointer-events-none"

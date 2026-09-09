@@ -57,6 +57,7 @@ export function FeaturesSection() {
         backgroundImage: "url('/agents-bg.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
+        backgroundColor: "#F5F0E8",
         backgroundAttachment: "scroll",
       }}>
 
@@ -94,13 +95,11 @@ export function FeaturesSection() {
             <motion.div key={a.title}
               variants={cardVariants}
               whileHover={{ y: -6, scale: 1.015, transition: { duration: 0.2 } }}
-              className="rounded-3xl p-5 sm:p-6 group cursor-pointer transition-all duration-300 hover:shadow-2xl backdrop-blur-md"
+              className="rounded-3xl p-5 sm:p-6 group cursor-pointer transition-all duration-300 hover:shadow-2xl"
               style={{
-                background: "rgba(255, 255, 255, 0.45)",
-                border: "1px solid rgba(221, 184, 146, 0.4)",
-                boxShadow: "0 8px 32px 0 rgba(140, 90, 50, 0.10)",
-                backdropFilter: "blur(8px)",
-                WebkitBackdropFilter: "blur(8px)"
+                background: "rgba(255, 255, 255, 0.75)",
+                border: "1px solid rgba(221, 184, 146, 0.5)",
+                boxShadow: "0 8px 32px 0 rgba(140, 90, 50, 0.08)",
               }}
             >
               {/* Icon + badge */}

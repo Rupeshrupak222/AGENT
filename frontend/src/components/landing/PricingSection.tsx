@@ -50,6 +50,7 @@ export function PricingSection() {
         backgroundImage: "url('/pricing-bg.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
+        backgroundColor: "#F5F0E8",
         backgroundAttachment: "scroll"
       }}>
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[250px] rounded-full pointer-events-none"
@@ -88,13 +89,12 @@ export function PricingSection() {
               whileHover={{ y: -8, scale: p.popular ? 1.03 : 1.02, transition: { duration: 0.2 } }}
               className={cn(
                 "relative rounded-2xl p-6 flex flex-col transition-all duration-300",
-                "backdrop-filter backdrop-blur-md",
                 p.popular
-                  ? "border-[1.5px] border-[#B08968]/50 shadow-[0_0_32px_rgba(140,90,50,0.12),0_8px_32px_rgba(0,0,0,0.08)]"
-                  : "border border-white/20 shadow-sm"
+                  ? "border-[1.5px] border-[#B08968]/60 shadow-[0_0_32px_rgba(140,90,50,0.12),0_8px_32px_rgba(0,0,0,0.08)]"
+                  : "border border-[#DDB892]/40 shadow-sm"
               )}
               style={{
-                backgroundColor: p.popular ? "rgba(255, 255, 255, 0.45)" : "rgba(255, 255, 255, 0.25)"
+                backgroundColor: p.popular ? "rgba(255, 255, 255, 0.85)" : "rgba(255, 255, 255, 0.70)"
               }}
             >
               {p.popular && (

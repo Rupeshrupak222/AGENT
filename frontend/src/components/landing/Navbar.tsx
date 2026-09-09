@@ -7,9 +7,11 @@ import { cn } from "@/lib/utils";
 
 const navLinks = [
   { label: "Features",     href: "#features"     },
+  { label: "Voice Demo",   href: "#demo"         },
   { label: "How It Works", href: "#how-it-works"  },
+  { label: "Savings",      href: "#calculator"   },
   { label: "Pricing",      href: "#pricing"       },
-  { label: "Integrations", href: "#integrations"  },
+  { label: "FAQ",          href: "#faq"           },
 ];
 
 export function Navbar() {
