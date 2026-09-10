@@ -7,6 +7,10 @@ import {
 import { motion } from "framer-motion";
 import { apiClient, tenantApi, TenantUsage } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PERMISSIONS } from "@/lib/permissions";
+import Link from "next/link";
+import { ShieldAlert } from "lucide-react";
 
 interface PlanConfig {
   name: string;
@@ -37,6 +41,8 @@ const PLANS_DISPLAY: Record<string, { desc: string; features: string[]; popular?
 };
 
 export default function BillingPage() {
+  const { can } = usePermissions();
+  const hasBillingAccess = can(PERMISSIONS.BILLING_VIEW);
   const [plans, setPlans] = useState<Record<string, PlanConfig>>({});
   const [subscription, setSubscription] = useState<any>(null);
   const [usage, setUsage] = useState<TenantUsage | null>(null);
@@ -47,6 +53,10 @@ export default function BillingPage() {
   const toast = useToast();
 
   const fetchBillingInfo = async () => {
+    if (!hasBillingAccess) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       setBillingError(null);
@@ -100,6 +110,28 @@ export default function BillingPage() {
   const planExpiresAt = subscription?.planExpiresAt
     ? new Date(subscription.planExpiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
     : null;
+
+  if (!hasBillingAccess) {
+    return (
+      <div className="p-8 max-w-2xl mx-auto my-12 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mx-auto mb-4">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Access Restricted</h2>
+        <p className="text-sm text-slate-500 dark:text-white/60 mt-2">
+          Billing, subscriptions, and financial invoices are restricted to Company Administrators and Super Administrators. Managers and operational staff do not have financial management privileges.
+        </p>
+        <div className="mt-6">
+          <Link
+            href="/dashboard/overview"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-all shadow-md"
+          >
+            Return to Dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">

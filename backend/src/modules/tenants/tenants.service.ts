@@ -69,4 +69,36 @@ export class TenantsService {
       data: { plan: plan as any },
     });
   }
+
+  async updateStatus(id: string, isActive: boolean) {
+    await this.findOne(id);
+    return this.prisma.tenant.update({
+      where: { id },
+      data: { isActive },
+    });
+  }
+
+  async getTenantDetails(id: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id },
+      include: {
+        users: {
+          select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
+          take: 10,
+          orderBy: { createdAt: 'desc' },
+        },
+        agents: {
+          where: { deletedAt: null },
+          select: { id: true, name: true, role: true, language: true, status: true, voiceId: true },
+          take: 10,
+          orderBy: { createdAt: 'desc' },
+        },
+        _count: {
+          select: { users: true, agents: true, calls: true, leads: true, campaigns: true },
+        },
+      },
+    });
+    if (!tenant) throw new NotFoundException('Tenant not found');
+    return tenant;
+  }
 }

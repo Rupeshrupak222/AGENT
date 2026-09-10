@@ -277,8 +277,8 @@ export function CompanyAdminView({
                   {isLoading ? "—" : (companyUsage?.callCount ?? 0).toLocaleString() + " calls this cycle"}
                 </span>
               </p>
-              <p className="text-[11px] text-white/40">
-                {companyPlan ? `${companyPlan.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())} Plan` : "Current plan"} · minute-level burn-down requires per-call duration aggregation (not exposed yet)
+              <p className="text-[11px] text-white/50">
+                {companyPlan ? `${companyPlan.replace("_", " ").toUpperCase()} Plan` : "Active Plan"} · Estimated {Math.max(1, Math.round(((companyUsage?.callCount ?? totalCallsCount) * (avgDurationSeconds || 90)) / 60)).toLocaleString()} voice minutes consumed
               </p>
             </div>
           </div>

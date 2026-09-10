@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -21,7 +21,7 @@ import { AudioFormatConverterService } from './services/audio-format-converter.s
   imports: [
     PrismaModule,
     ConfigModule,
-    AiModule,
+    forwardRef(() => AiModule),
     StorageModule,
     BullModule.registerQueue({
       name: 'recording-processing',

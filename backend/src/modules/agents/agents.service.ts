@@ -4,6 +4,8 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CreateAgentDto, UpdateAgentDto } from './dto/agent.dto';
+import { GroqAgentBrainService } from '../ai/brain/groq-agent-brain.service';
+import { EdgeTTSProvider } from '../ai/tts/edge-tts.provider';
 
 @Injectable()
 export class AgentsService {
@@ -12,6 +14,8 @@ export class AgentsService {
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
+    private brain: GroqAgentBrainService,
+    private tts: EdgeTTSProvider,
   ) {}
 
   async create(tenantId: string, userId: string, dto: CreateAgentDto) {
@@ -50,6 +54,24 @@ export class AgentsService {
       });
     } catch (err: any) {
       this.logger.warn(`Failed to query agents: ${err.message}`);
+      return [];
+    }
+  }
+
+  async findAllPlatform() {
+    try {
+      return await this.prisma.aIAgent.findMany({
+        where: { deletedAt: null },
+        include: {
+          tenant: {
+            select: { id: true, name: true, slug: true, plan: true },
+          },
+          _count: { select: { calls: true, campaigns: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (err: any) {
+      this.logger.warn(`Failed to query platform agents: ${err.message}`);
       return [];
     }
   }
@@ -194,5 +216,91 @@ export class AgentsService {
     });
 
     return newAgent;
+  }
+
+  /**
+   * Interactive voice & chat simulation turn for AI Agent Studio.
+   */
+  async testChat(
+    tenantId: string,
+    id: string,
+    userMessage: string,
+    history: Array<{ role: 'user' | 'assistant'; content: string }> = [],
+  ) {
+    const agent = await this.findOne(tenantId, id);
+    const t0 = Date.now();
+
+    // 1. Build conversational turn input conforming to AgentTurnInput
+    const conversationHistory = history.map((h, idx) => ({
+      speaker: (h.role === 'assistant' ? 'agent' : 'user') as 'agent' | 'user',
+      content: h.content,
+      timestamp: Date.now() - (history.length - idx) * 1000,
+    }));
+
+    // 2. Generate LLM response
+    const llmT0 = Date.now();
+    const brainTurn = await this.brain.generateResponse({
+      sessionId: `test-sim-${agent.id}`,
+      callId: `test-sim-${Date.now()}`,
+      context: {
+        tenantId,
+        agentId: agent.id,
+        businessGoal: agent.businessGoal || undefined,
+        openingScript: agent.openingScript || undefined,
+        qualificationRules: agent.qualificationRules || undefined,
+        knowledgeBase: agent.knowledgeBase || undefined,
+      },
+      userMessage,
+      history: conversationHistory,
+    });
+    const llmLatencyMs = Math.max(1, Date.now() - llmT0);
+    const replyText = brainTurn.responseText;
+
+    // 3. Generate Edge-TTS Speech Audio
+    const ttsT0 = Date.now();
+    let audioBase64: string | null = null;
+    try {
+      const voiceId = this.mapVoiceToEdgeTTS(agent.voiceId, agent.language);
+      const synthResult = await this.tts.synthesize(replyText, { voiceId });
+      if (synthResult.audioBuffer && synthResult.audioBuffer.length > 0) {
+        audioBase64 = `data:audio/mp3;base64,${synthResult.audioBuffer.toString('base64')}`;
+      }
+    } catch (ttsErr: any) {
+      this.logger.warn(`EdgeTTS synthesis warning in testChat: ${ttsErr.message}`);
+    }
+    const ttsLatencyMs = Math.max(1, Date.now() - ttsT0);
+    const totalLatencyMs = Math.max(1, Date.now() - t0);
+
+    return {
+      agentId: agent.id,
+      agentName: agent.name,
+      role: agent.role,
+      language: agent.language,
+      voiceId: agent.voiceId,
+      replyText,
+      audioBase64,
+      totalLatencyMs,
+      metrics: {
+        llmLatencyMs,
+        ttsLatencyMs,
+      },
+    };
+  }
+
+  private mapVoiceToEdgeTTS(voiceId?: string | null, language?: string | null): string {
+    const v = (voiceId || '').toLowerCase();
+    const l = (language || '').toLowerCase();
+
+    if (v.includes('priya') || l.includes('hindi') || l.includes('hinglish')) {
+      return 'hi-IN-SwaraNeural';
+    }
+    if (v.includes('arjun') || v.includes('ravi') || l.includes('marathi')) {
+      return 'hi-IN-MadhurNeural';
+    }
+    if (l.includes('tamil')) return 'ta-IN-PallaviNeural';
+    if (l.includes('telugu')) return 'te-IN-ShrutiNeural';
+    if (l.includes('bengali')) return 'bn-IN-TanishaaNeural';
+    if (l.includes('gujarati')) return 'gu-IN-DhwaniNeural';
+    return 'en-IN-NeerjaNeural';
   }
 }

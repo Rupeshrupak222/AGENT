@@ -17,6 +17,8 @@ import {
   AlertTriangle,
   X,
   Sparkles,
+  Mic,
+  Sliders,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/Card";
@@ -25,6 +27,8 @@ import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 import { WaveAnimation } from "@/components/ui/WaveAnimation";
+import { AgentVoiceSimulatorModal } from "@/components/agents/AgentVoiceSimulatorModal";
+import { EnterpriseAgentStudioModal } from "@/components/agents/EnterpriseAgentStudioModal";
 import {
   agentsApi,
   normalizeApiError,
@@ -457,9 +461,13 @@ function AgentBuilderModal({
 function AgentCardItem({
   agent,
   onRefresh,
+  onTestVoice,
+  onEdit,
 }: {
   agent: AgentItem;
   onRefresh: () => void;
+  onTestVoice: (agent: AgentItem) => void;
+  onEdit: (agent: AgentItem) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -558,6 +566,15 @@ function AgentCardItem({
               {menuOpen && (
                 <div className="absolute right-0 top-8 w-36 rounded-xl bg-dropdown border-slate-200 dark:border-white/10 shadow-xl z-20 overflow-hidden text-xs">
                   <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onEdit(agent);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/[0.02] dark:hover:bg-white/5 transition-colors"
+                  >
+                    <Sliders className="w-3.5 h-3.5 text-amber-400" /> Configure Studio
+                  </button>
+                  <button
                     onClick={handleDuplicate}
                     className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/[0.02] dark:hover:bg-white/5 transition-colors"
                   >
@@ -603,6 +620,14 @@ function AgentCardItem({
 
       {/* Actions */}
       <div className="flex gap-2 pt-2">
+        <button
+          type="button"
+          onClick={() => onTestVoice(agent)}
+          className="flex-1 text-xs py-2 px-3 rounded-xl font-bold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98]"
+        >
+          <Mic className="w-3.5 h-3.5 text-amber-400" />
+          Test Voice
+        </button>
         <Button
           variant={agent.status === "active" ? "secondary" : "primary"}
           size="sm"
@@ -639,7 +664,9 @@ export default function AgentsPage() {
   const [agents, setAgents] = useState<AgentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showBuilder, setShowBuilder] = useState(false);
+  const [studioOpen, setStudioOpen] = useState(false);
+  const [studioAgent, setStudioAgent] = useState<AgentItem | null>(null);
+  const [testingAgent, setTestingAgent] = useState<AgentItem | null>(null);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
 
@@ -695,7 +722,10 @@ export default function AgentsPage() {
             Refresh
           </button>
           <button
-            onClick={() => setShowBuilder(true)}
+            onClick={() => {
+              setStudioAgent(null);
+              setStudioOpen(true);
+            }}
             className="btn-red text-xs py-2 px-4 h-9 shadow-md shadow-brand-500/25 flex items-center gap-1.5"
           >
             <Plus className="w-4 h-4" />
@@ -792,7 +822,10 @@ export default function AgentsPage() {
               Deploy your first autonomous conversational agent to start qualifying prospects and handling live phone calls.
             </p>
             <button
-              onClick={() => setShowBuilder(true)}
+              onClick={() => {
+                setStudioAgent(null);
+                setStudioOpen(true);
+              }}
               className="btn-red text-xs py-2 px-4 shadow-md shadow-brand-500/20"
             >
               Build New Agent
@@ -805,12 +838,20 @@ export default function AgentsPage() {
                 key={agent.id}
                 agent={agent}
                 onRefresh={fetchAgents}
+                onTestVoice={(ag) => setTestingAgent(ag)}
+                onEdit={(ag) => {
+                  setStudioAgent(ag);
+                  setStudioOpen(true);
+                }}
               />
             ))}
 
             {/* Create New Agent Tile */}
             <button
-              onClick={() => setShowBuilder(true)}
+              onClick={() => {
+                setStudioAgent(null);
+                setStudioOpen(true);
+              }}
               className="rounded-2xl p-5 border-2 border-dashed border-slate-200 dark:border-white/15 hover:border-brand-500/50 hover:bg-brand-50/30 dark:hover:bg-brand-500/5 transition-all group flex flex-col items-center justify-center gap-3 min-h-[220px]"
             >
               <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/5 group-hover:bg-brand-100 dark:group-hover:bg-brand-500/20 border-slate-200 dark:border-white/10 flex items-center justify-center transition-all">
@@ -821,7 +862,7 @@ export default function AgentsPage() {
                   Create New Agent
                 </p>
                 <p className="text-xs text-slate-400 dark:text-white/30 mt-0.5">
-                  Autonomous conversational voice builder
+                  11-dimensional autonomous voice studio
                 </p>
               </div>
             </button>
@@ -829,12 +870,27 @@ export default function AgentsPage() {
         )}
       </div>
 
-      {/* Builder Modal */}
+      {/* Enterprise 11-Tab Agent Studio Modal */}
       <AnimatePresence>
-        {showBuilder && (
-          <AgentBuilderModal
-            onClose={() => setShowBuilder(false)}
+        {studioOpen && (
+          <EnterpriseAgentStudioModal
+            agent={studioAgent}
+            onClose={() => {
+              setStudioOpen(false);
+              setStudioAgent(null);
+            }}
             onSuccess={fetchAgents}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Voice Simulator Modal */}
+      <AnimatePresence>
+        {testingAgent && (
+          <AgentVoiceSimulatorModal
+            agent={testingAgent}
+            isOpen={Boolean(testingAgent)}
+            onClose={() => setTestingAgent(null)}
           />
         )}
       </AnimatePresence>

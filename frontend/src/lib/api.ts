@@ -382,6 +382,7 @@ export interface CallDetail extends CallItem {
   lead?: { id: string; name: string; phone: string; email?: string; company?: string };
   agent?: { id: string; name: string; role: string };
   transcript?: CallTranscript | null;
+  analysis?: CallAnalysisData | null;
 }
 
 export const callsApi = {
@@ -520,6 +521,13 @@ export interface AgentItem {
   openingScript?: string;
   qualificationRules?: string;
   knowledgeBase?: string;
+  settings?: Record<string, any>;
+  tenant?: {
+    id: string;
+    name: string;
+    slug: string;
+    plan?: string;
+  };
   createdAt?: string;
   _count?: {
     calls: number;
@@ -548,6 +556,11 @@ export interface CreateAgentInput {
 }
 
 export const agentsApi = {
+  listPlatform: async (): Promise<AgentItem[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<AgentItem[]>>("/agents/platform/all");
+    return res.data.data;
+  },
+
   list: async (filters?: {
     status?: string;
     role?: string;
@@ -596,7 +609,36 @@ export const agentsApi = {
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/agents/${id}`);
   },
+
+  testChat: async (
+    id: string,
+    payload: {
+      userMessage: string;
+      history?: Array<{ role: "user" | "assistant"; content: string }>;
+    }
+  ): Promise<TestChatResponse> => {
+    const res = await apiClient.post<ApiResponseWrapper<TestChatResponse>>(
+      `/agents/${id}/test-chat`,
+      payload
+    );
+    return res.data.data;
+  },
 };
+
+export interface TestChatResponse {
+  agentId: string;
+  agentName: string;
+  role: string;
+  language: string;
+  voiceId?: string | null;
+  replyText: string;
+  audioBase64?: string | null;
+  totalLatencyMs: number;
+  metrics: {
+    llmLatencyMs: number;
+    ttsLatencyMs: number;
+  };
+}
 
 // ── Leads API Contracts ───────────────────────────────────────────
 export interface LeadItem {
@@ -1351,13 +1393,34 @@ export interface TenantItem {
   slug?: string;
   plan?: string;
   status?: string;
+  isActive?: boolean;
   createdAt?: string;
   _count?: {
     users: number;
     agents: number;
     calls: number;
     leads: number;
+    campaigns?: number;
   };
+}
+
+export interface TenantDetailItem extends TenantItem {
+  users?: Array<{
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    isActive: boolean;
+    createdAt: string;
+  }>;
+  agents?: Array<{
+    id: string;
+    name: string;
+    role: string;
+    language: string;
+    status: string;
+    voiceId?: string | null;
+  }>;
 }
 
 export const tenantsApi = {
@@ -1371,6 +1434,14 @@ export const tenantsApi = {
   },
   updatePlan: async (id: string, plan: string): Promise<TenantItem> => {
     const res = await apiClient.patch<ApiResponseWrapper<TenantItem>>(`/tenants/${id}/plan`, { plan });
+    return res.data.data;
+  },
+  updateStatus: async (id: string, isActive: boolean): Promise<TenantItem> => {
+    const res = await apiClient.patch<ApiResponseWrapper<TenantItem>>(`/tenants/${id}/status`, { isActive });
+    return res.data.data;
+  },
+  getDetails: async (id: string): Promise<TenantDetailItem> => {
+    const res = await apiClient.get<ApiResponseWrapper<TenantDetailItem>>(`/tenants/${id}/details`);
     return res.data.data;
   },
   me: async (): Promise<TenantItem> => {

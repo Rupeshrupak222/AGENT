@@ -8,13 +8,15 @@ describe('Telephony Providers & Abstraction', () => {
   let configService: ConfigService;
   let twilioProvider: TwilioTelephonyProvider;
   let exotelProvider: ExotelTelephonyProvider;
+  let sandboxProvider: SandboxTelephonyProvider;
   let registry: TelephonyProviderRegistry;
 
   beforeEach(() => {
     configService = new ConfigService();
     twilioProvider = new TwilioTelephonyProvider(configService);
     exotelProvider = new ExotelTelephonyProvider(configService);
-    registry = new TelephonyProviderRegistry(configService, twilioProvider, exotelProvider, new SandboxTelephonyProvider());
+    sandboxProvider = new SandboxTelephonyProvider();
+    registry = new TelephonyProviderRegistry(configService, twilioProvider, exotelProvider, sandboxProvider);
   });
 
   describe('Provider Registry', () => {

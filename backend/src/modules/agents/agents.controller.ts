@@ -13,6 +13,7 @@ import { Permissions } from '../../common/decorators/permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import {
   AI_AGENT_VIEW, AI_AGENT_CREATE, AI_AGENT_UPDATE, AI_AGENT_DELETE,
+  PLATFORM_TENANT_MANAGE,
 } from '../../common/rbac/permissions';
 
 @ApiTags('agents')
@@ -27,6 +28,13 @@ export class AgentsController {
   @ApiOperation({ summary: 'Create a new AI agent' })
   create(@CurrentUser() user: any, @Body() dto: CreateAgentDto) {
     return this.agents.create(user.tenantId, user.id, dto);
+  }
+
+  @Get('platform/all')
+  @Permissions(PLATFORM_TENANT_MANAGE)
+  @ApiOperation({ summary: 'Super Admin: List all agents across platform' })
+  findAllPlatform() {
+    return this.agents.findAllPlatform();
   }
 
   @Get()
@@ -88,5 +96,17 @@ export class AgentsController {
   @ApiOperation({ summary: 'Soft-delete an agent' })
   remove(@CurrentUser() user: any, @Param('id') id: string) {
     return this.agents.remove(user.tenantId, id);
+  }
+
+  @Post(':id/test-chat')
+  @Permissions(AI_AGENT_VIEW)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Interactive test chat & voice simulation for agent' })
+  testChat(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() body: { userMessage: string; history?: Array<{ role: 'user' | 'assistant'; content: string }> },
+  ) {
+    return this.agents.testChat(user.tenantId, id, body?.userMessage || '', body?.history || []);
   }
 }

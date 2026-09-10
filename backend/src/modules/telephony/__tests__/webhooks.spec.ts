@@ -11,6 +11,7 @@ import { CallInsightsService } from '../services/call-insights.service';
 describe('Webhook Processing, State Machine & Idempotency', () => {
   let twilioProvider: TwilioTelephonyProvider;
   let exotelProvider: ExotelTelephonyProvider;
+  let sandboxProvider: SandboxTelephonyProvider;
   let registry: TelephonyProviderRegistry;
   let audioSessionService: AudioSessionService;
   let telephonyService: TelephonyService;
@@ -39,7 +40,8 @@ describe('Webhook Processing, State Machine & Idempotency', () => {
 
     twilioProvider = new TwilioTelephonyProvider(configService);
     exotelProvider = new ExotelTelephonyProvider(configService);
-    registry = new TelephonyProviderRegistry(configService, twilioProvider, exotelProvider, new SandboxTelephonyProvider());
+    sandboxProvider = new SandboxTelephonyProvider();
+    registry = new TelephonyProviderRegistry(configService, twilioProvider, exotelProvider, sandboxProvider);
     audioSessionService = new AudioSessionService();
 
     mockPrisma = {

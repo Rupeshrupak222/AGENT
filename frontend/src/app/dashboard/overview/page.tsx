@@ -26,8 +26,6 @@ import { realtimeSocket } from "@/lib/socket";
 import { SuperAdminView } from "./components/SuperAdminView";
 import { CompanyAdminView } from "./components/CompanyAdminView";
 import { ManagerView } from "./components/ManagerView";
-import { AgentView } from "./components/AgentView";
-import { ViewerView } from "./components/ViewerView";
 
 export default function OverviewPage() {
   const [period, setPeriod] = useState<"today" | "week" | "month">("week");
@@ -49,13 +47,11 @@ export default function OverviewPage() {
   const user = useAuthStore((s) => s.user);
   const tenant = useAuthStore((s) => s.tenant);
 
-  // Robust normalized role detection
+  // Robust normalized role detection (Top 3 Roles: Super Admin, Manager, Company Admin)
   const rawRole = (user?.role || "").toLowerCase().trim();
   const isSuperAdmin = rawRole === "super_admin" || rawRole === "superadmin" || rawRole === "owner";
   const isManager = rawRole === "manager" || rawRole === "supervisor";
-  const isAgent = rawRole === "agent" || rawRole === "telecaller" || rawRole === "caller" || rawRole === "sales";
-  const isViewer = rawRole === "viewer" || rawRole === "auditor" || rawRole === "observer";
-  const isCompanyAdmin = rawRole === "company_admin" || rawRole === "admin" || (!isSuperAdmin && !isManager && !isAgent && !isViewer);
+  const isCompanyAdmin = rawRole === "company_admin" || rawRole === "admin" || (!isSuperAdmin && !isManager);
 
   const fetchDashboardData = useCallback(
     async (isManualRefresh = false) => {
@@ -193,20 +189,11 @@ export default function OverviewPage() {
         </div>
       )}
 
-      {/* ── ROLE-SPECIFIC DASHBOARD RENDER ──────────────────── */}
+      {/* ── ROLE-SPECIFIC DASHBOARD RENDER (3 Primary Roles) ──────────────────── */}
       {isSuperAdmin ? (
         <SuperAdminView
           tenants={tenants}
           totalCalls={totalCallsCount}
-          isLoading={isLoading}
-          onRefresh={() => fetchDashboardData(true)}
-          isRefreshing={isRefreshing}
-        />
-      ) : isAgent ? (
-        <AgentView
-          agentName={user?.name || "Agent"}
-          totalCallsCount={totalCallsCount}
-          qualifiedLeadsCount={qualifiedLeadsCount}
           isLoading={isLoading}
           onRefresh={() => fetchDashboardData(true)}
           isRefreshing={isRefreshing}
@@ -218,20 +205,6 @@ export default function OverviewPage() {
           recentCalls={recentCalls}
           allAgents={allAgents}
           funnelData={funnelData}
-          isLoading={isLoading}
-          onRefresh={() => fetchDashboardData(true)}
-          isRefreshing={isRefreshing}
-        />
-      ) : isViewer ? (
-        <ViewerView
-          metrics={metrics}
-          callMetrics={callMetrics}
-          recentCalls={recentCalls}
-          allAgents={allAgents}
-          callTrends={callTrends}
-          funnelData={funnelData}
-          period={period}
-          setPeriod={setPeriod}
           isLoading={isLoading}
           onRefresh={() => fetchDashboardData(true)}
           isRefreshing={isRefreshing}
