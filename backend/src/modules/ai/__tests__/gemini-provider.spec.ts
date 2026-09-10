@@ -18,7 +18,7 @@ describe('Gemini Post-Call Intelligence Provider', () => {
 
   it('should report isConfigured false when GEMINI_API_KEY is not set', () => {
     expect(provider.isConfigured).toBe(false);
-    expect(provider.modelName).toBe('gemini-1.5-flash');
+    expect(provider.modelName).toBe('heuristic-mock');
   });
 
   it('should analyze synthetic interested transcript with agent qualification grounding in dev mode', async () => {

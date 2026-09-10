@@ -4,6 +4,7 @@ import { GroqAgentBrainService } from '../brain/groq-agent-brain.service';
 import { EdgeTTSProvider } from '../tts/edge-tts.provider';
 import { TranscriptEvent } from '../../telephony/interfaces/transcript-event.interface';
 import { AudioFormatConverterService } from '../../telephony/services/audio-format-converter.service';
+import { PostCallQueueService } from '../services/post-call-queue.service';
 
 describe('ConversationOrchestrator', () => {
   let orchestrator: ConversationOrchestrator;
@@ -11,6 +12,7 @@ describe('ConversationOrchestrator', () => {
   let mockBrain: Partial<GroqAgentBrainService>;
   let mockTTS: Partial<EdgeTTSProvider>;
   let mockPrisma: any;
+  let mockPostCallQueue: any;
 
   beforeEach(() => {
     mockSTT = {
@@ -46,6 +48,10 @@ describe('ConversationOrchestrator', () => {
       },
     };
 
+    mockPostCallQueue = {
+      enqueueAnalysis: jest.fn().mockResolvedValue({ jobId: 'job-1', queued: true }),
+    };
+
     const mockConverter = new AudioFormatConverterService();
 
     orchestrator = new ConversationOrchestrator(
@@ -54,6 +60,7 @@ describe('ConversationOrchestrator', () => {
       mockTTS as EdgeTTSProvider,
       mockPrisma as any,
       mockConverter,
+      mockPostCallQueue as any,
     );
   });
 

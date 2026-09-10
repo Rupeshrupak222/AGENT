@@ -181,7 +181,7 @@ async function buildContext(): Promise<Ctx> {
   const automations: any = makeAutomationStub();
   const errorFactory = new CalendarErrorFactory();
 
-  const service = new AppointmentService(prisma, makeAuditStub(), registry, queue, automations, errorFactory);
+  const service = new AppointmentService(prisma, makeAuditStub(), metrics, registry, queue, automations, errorFactory);
   const tools = new AppointmentAgentTools(service, prisma, errorFactory);
 
   const processor = new AppointmentReminderProcessor(prisma, metrics, queue, automations);
@@ -190,10 +190,28 @@ async function buildContext(): Promise<Ctx> {
   return { prisma, state, mockAdapter, queue, processor, automations, service, tools, errorFactory };
 }
 
+/* ── Helpers ─────────────────────────────────────────────────── */
+
+/** Return a Date that is `offsetDays` from now but lands on a weekday (Mon-Fri). */
+function weekdayOffset(offsetDays: number): Date {
+  const d = new Date(Date.now() + offsetDays * 24 * 60 * 60 * 1000);
+  while (d.getDay() === 0 || d.getDay() === 6) {
+    d.setTime(d.getTime() + 24 * 60 * 60 * 1000);
+  }
+  d.setUTCHours(0, 0, 0, 0);
+  return d;
+}
+
+/** Return a multi-day window that always covers at least one weekday. */
+function weekdayWindow(offsetDays: number, daysSpan = 7): { from: Date; to: Date } {
+  const from = weekdayOffset(offsetDays);
+  const to = new Date(from.getTime() + daysSpan * 24 * 60 * 60 * 1000);
+  return { from, to };
+}
+
 /* ── Helper: fetch the first available future slot ───────────── */
 async function nextSlot(ctx: Ctx, offsetDays = 1): Promise<any> {
-  const from = new Date(Date.now() + offsetDays * 24 * 60 * 60 * 1000);
-  from.setUTCHours(0, 0, 0, 0);
+  const from = weekdayOffset(offsetDays);
   const to = new Date(from.getTime() + 24 * 60 * 60 * 1000);
   const avail: any = await ctx.service.getAvailability('tenant-1', {
     from: from.toISOString(),
@@ -436,11 +454,10 @@ describe('DAY 17 — Appointment & Scheduling Test Suite', () => {
 
     it('reschedules, keeps it active, and marks rescheduled fields', async () => {
       const { id } = await booked();
-      const day3 = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
-      day3.setUTCHours(0, 0, 0, 0);
+      const { from, to } = weekdayWindow(3, 7);
       const avail: any = await ctx.service.getAvailability('tenant-1', {
-        from: day3.toISOString(),
-        to: new Date(day3.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+        from: from.toISOString(),
+        to: to.toISOString(),
         timezone: 'UTC',
         duration: 30,
       });
@@ -654,11 +671,10 @@ describe('DAY 17 — Appointment & Scheduling Test Suite', () => {
   // ── 5. AI TOOLS ─────────────────────────────────────────────
   describe('5. AI Scheduling Tools', () => {
     it('returns slots for checkCalendarAvailability', async () => {
-      const from = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
-      from.setUTCHours(0, 0, 0, 0);
+      const { from, to } = weekdayWindow(2, 7);
       const res: any = await ctx.tools.checkCalendarAvailability('tenant-1', {
         from: from.toISOString(),
-        to: new Date(from.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+        to: to.toISOString(),
         durationMinutes: 30,
       });
       expect(res.success).toBe(true);
@@ -666,9 +682,10 @@ describe('DAY 17 — Appointment & Scheduling Test Suite', () => {
     });
 
     it('books via bookAppointment and reports confirmation', async () => {
+      const { from, to } = weekdayWindow(2, 7);
       const avail: any = await ctx.tools.checkCalendarAvailability('tenant-1', {
-        from: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-        to: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        from: from.toISOString(),
+        to: to.toISOString(),
         durationMinutes: 30,
       });
       const res: any = await ctx.tools.bookAppointment('tenant-1', {
@@ -682,9 +699,10 @@ describe('DAY 17 — Appointment & Scheduling Test Suite', () => {
     });
 
     it('rejects the tool call when the slot is gone (no invented confirmation)', async () => {
+      const { from, to } = weekdayWindow(2, 7);
       const avail: any = await ctx.tools.checkCalendarAvailability('tenant-1', {
-        from: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-        to: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        from: from.toISOString(),
+        to: to.toISOString(),
         durationMinutes: 30,
       });
       const slot = avail.slots[0];

@@ -38,6 +38,11 @@ describe('Twilio Media Stream & Protocol Validation', () => {
               tenantId: 'tenant-1',
               agentId: 'agent-1',
             }),
+            getSession: jest.fn().mockReturnValue({
+              sessionId: 'sess-tw-101',
+              callId: 'CA_TEST_STREAM_1',
+              tenantId: 'tenant-1',
+            }),
             getSessionByCallId: jest.fn().mockReturnValue(null),
             recordInboundFrame: jest.fn(),
             recordOutboundFrame: jest.fn(),

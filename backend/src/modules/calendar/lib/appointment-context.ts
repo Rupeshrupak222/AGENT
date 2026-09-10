@@ -24,8 +24,9 @@ export function buildAppointmentContext(
   lead?: { name?: string; phone?: string; email?: string | null } | null,
 ): Record<string, any> {
   const timezone = appointment.timezone || 'UTC';
-  const startAt = appointment.startAt ?? new Date(appointment.date);
-  const endAt = appointment.endAt ?? new Date(startAt.getTime() + appointment.duration * 60000);
+  const duration = appointment.duration ?? 30;
+  const startAt = appointment.startAt ?? (appointment.date ? new Date(appointment.date) : new Date());
+  const endAt = appointment.endAt ?? new Date(startAt.getTime() + duration * 60000);
 
   const localDate = utcToZonedTime(timezone, startAt);
   const localStart = utcToZonedTime(timezone, startAt);
@@ -51,7 +52,7 @@ export function buildAppointmentContext(
     endAt: endAt.toISOString(),
     startLocal: isoLocal,
     dateIso: startAt.toISOString(),
-    durationMinutes: appointment.duration,
+    durationMinutes: duration,
     timezone,
     status: appointment.status,
     location: appointment.location ?? null,

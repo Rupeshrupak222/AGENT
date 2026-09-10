@@ -100,6 +100,7 @@ export default function CalendarPage() {
   const [rescheduleForm, setRescheduleForm] = useState({ date: "", time: "10:00", reason: "" });
   const [rescheduleSlots, setRescheduleSlots] = useState<AppointmentSlot[]>([]);
   const [rescheduleSlotsLoading, setRescheduleSlotsLoading] = useState(false);
+  const [rescheduleSlotsError, setRescheduleSlotsError] = useState<string | null>(null);
   const [selectedRescheduleSlot, setSelectedRescheduleSlot] = useState<string | null>(null);
   const [rescheduleSaving, setRescheduleSaving] = useState(false);
 
@@ -171,7 +172,7 @@ export default function CalendarPage() {
       rescheduleForm.date,
       rescheduleTarget.duration || 30,
       rescheduleTarget.timezone || DEFAULT_TIMEZONE,
-      setRescheduleSlots, setRescheduleSlotsLoading, () => { /* surfaced inline */ },
+      setRescheduleSlots, setRescheduleSlotsLoading, setRescheduleSlotsError,
     );
   }, [rescheduleTarget, rescheduleForm.date, fetchSlots]);
 
@@ -186,6 +187,7 @@ export default function CalendarPage() {
     });
     setSelectedRescheduleSlot(null);
     setRescheduleSlots([]);
+    setRescheduleSlotsError(null);
   };
 
   const handleCreate = async () => {
@@ -543,7 +545,7 @@ export default function CalendarPage() {
                                 : "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30"
                           }`}
                         >
-                          <Clock className="w-2.5 h-2.5" /> {c.kind} {c.kind === "24h" ? "msg" : "msg"}
+                          <Clock className="w-2.5 h-2.5" /> {c.kind} reminder
                         </span>
                       ))}
                     </div>
@@ -650,7 +652,13 @@ export default function CalendarPage() {
 
             <p className="text-xs font-semibold text-slate-500 dark:text-white/50 mt-4 mb-2">
               Live availability {rescheduleSlotsLoading && <Loader2 className="w-3 h-3 inline animate-spin" />}
+              {!rescheduleSlotsLoading && rescheduleSlots.length > 0 && `— ${rescheduleSlots.length} open slot${rescheduleSlots.length === 1 ? "" : "s"}`}
             </p>
+            {rescheduleSlotsError && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mb-2 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5" /> {rescheduleSlotsError}
+              </p>
+            )}
             {rescheduleSlots.length > 0 && (
               <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
                 {rescheduleSlots.map((s) => (

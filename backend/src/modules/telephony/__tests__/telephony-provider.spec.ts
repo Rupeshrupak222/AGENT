@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { TwilioTelephonyProvider } from '../providers/twilio.provider';
 import { ExotelTelephonyProvider } from '../providers/exotel.provider';
+import { SandboxTelephonyProvider } from '../providers/sandbox.provider';
 import { TelephonyProviderRegistry } from '../providers/provider-registry.service';
 
 describe('Telephony Providers & Abstraction', () => {
@@ -13,7 +14,7 @@ describe('Telephony Providers & Abstraction', () => {
     configService = new ConfigService();
     twilioProvider = new TwilioTelephonyProvider(configService);
     exotelProvider = new ExotelTelephonyProvider(configService);
-    registry = new TelephonyProviderRegistry(configService, twilioProvider, exotelProvider);
+    registry = new TelephonyProviderRegistry(configService, twilioProvider, exotelProvider, new SandboxTelephonyProvider());
   });
 
   describe('Provider Registry', () => {
@@ -36,7 +37,7 @@ describe('Telephony Providers & Abstraction', () => {
     it('should return default provider', () => {
       const def = registry.getDefaultProvider();
       expect(def).toBeDefined();
-      expect(def.name).toBe('twilio');
+      expect(def.name).toBe('sandbox');
     });
   });
 

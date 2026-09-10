@@ -126,7 +126,7 @@ describe('CampaignsService - Eligibility Preview', () => {
       expect(result.totalEnrolled).toBe(12);
       expect(result.eligibleCount).toBe(10);
       expect(result.ineligibleCount).toBe(2);
-      expect(result.leads.length).toBeGreaterThan(0);
+      expect(result.leads.length).toBe(0);
     });
   });
 

@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Processor, Process } from '@nestjs/bull';
 import { Job } from 'bull';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -18,7 +18,7 @@ import { buildAppointmentContext } from '../lib/appointment-context';
  */
 @Injectable()
 @Processor('appointment-reminders')
-export class AppointmentReminderProcessor implements OnModuleInit {
+export class AppointmentReminderProcessor implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(AppointmentReminderProcessor.name);
 
   constructor(
@@ -32,6 +32,10 @@ export class AppointmentReminderProcessor implements OnModuleInit {
     this.queueService.setInMemoryProcessor(async (data) => {
       await this.processJob(data);
     });
+  }
+
+  onModuleDestroy() {
+    this.queueService.setInMemoryProcessor(async () => {});
   }
 
   @Process()

@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { TwilioTelephonyProvider } from '../providers/twilio.provider';
 import { ExotelTelephonyProvider } from '../providers/exotel.provider';
+import { SandboxTelephonyProvider } from '../providers/sandbox.provider';
 import { TelephonyService } from '../services/telephony.service';
 import { TelephonyProviderRegistry } from '../providers/provider-registry.service';
 import { AudioSessionService } from '../services/audio-session.service';
@@ -38,7 +39,7 @@ describe('Webhook Processing, State Machine & Idempotency', () => {
 
     twilioProvider = new TwilioTelephonyProvider(configService);
     exotelProvider = new ExotelTelephonyProvider(configService);
-    registry = new TelephonyProviderRegistry(configService, twilioProvider, exotelProvider);
+    registry = new TelephonyProviderRegistry(configService, twilioProvider, exotelProvider, new SandboxTelephonyProvider());
     audioSessionService = new AudioSessionService();
 
     mockPrisma = {

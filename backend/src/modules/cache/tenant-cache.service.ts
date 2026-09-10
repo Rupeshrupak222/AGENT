@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 /**
@@ -9,14 +9,23 @@ import { ConfigService } from '@nestjs/config';
  * this service should be the ONLY interface for cache access.
  */
 @Injectable()
-export class TenantCacheService {
+export class TenantCacheService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TenantCacheService.name);
   private store = new Map<string, { value: any; expiresAt: number }>();
   private readonly prefix = 'tenant';
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
-  constructor(private config: ConfigService) {
-    // Periodic cleanup of expired entries
-    setInterval(() => this.cleanup(), 60_000);
+  constructor(private config: ConfigService) {}
+
+  onModuleInit() {
+    this.cleanupTimer = setInterval(() => this.cleanup(), 60_000);
+  }
+
+  onModuleDestroy() {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
   }
 
   /**

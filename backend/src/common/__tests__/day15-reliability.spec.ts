@@ -1,3 +1,12 @@
+jest.mock('ioredis', () => {
+  return jest.fn().mockImplementation(() => ({
+    connect: jest.fn().mockResolvedValue(undefined),
+    ping: jest.fn().mockResolvedValue('PONG'),
+    quit: jest.fn().mockResolvedValue(undefined),
+    on: jest.fn(),
+  }));
+});
+
 import { CircuitBreaker, CircuitState } from '../services/circuit-breaker';
 import { MetricsService } from '../services/metrics.service';
 import { redactSecrets, redactString } from '../utils/secret-redaction';

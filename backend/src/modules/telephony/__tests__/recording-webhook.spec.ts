@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 import { TelephonyService } from '../services/telephony.service';
 import { TwilioTelephonyProvider } from '../providers/twilio.provider';
 import { ExotelTelephonyProvider } from '../providers/exotel.provider';
+import { SandboxTelephonyProvider } from '../providers/sandbox.provider';
 import { TelephonyProviderRegistry } from '../providers/provider-registry.service';
 import { AudioSessionService } from '../services/audio-session.service';
 import { RecordingQueueService } from '../services/recording-queue.service';
@@ -38,7 +39,7 @@ describe('Recording Webhook Architecture & Idempotency', () => {
 
     twilioProvider = new TwilioTelephonyProvider(configService);
     exotelProvider = new ExotelTelephonyProvider(configService);
-    registry = new TelephonyProviderRegistry(configService, twilioProvider, exotelProvider);
+    registry = new TelephonyProviderRegistry(configService, twilioProvider, exotelProvider, new SandboxTelephonyProvider());
     audioSessionService = new AudioSessionService();
 
     mockQueueService = {

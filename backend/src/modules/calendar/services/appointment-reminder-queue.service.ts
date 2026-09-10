@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { MetricsService } from '../../../common/services/metrics.service';
@@ -28,7 +28,7 @@ function reminderJobId(appointmentId: string, kind: ReminderKind): string {
  * can reliably drop stale jobs.
  */
 @Injectable()
-export class AppointmentReminderQueueService implements OnModuleInit {
+export class AppointmentReminderQueueService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(AppointmentReminderQueueService.name);
   public isRedisAvailable = false;
 
@@ -81,6 +81,16 @@ export class AppointmentReminderQueueService implements OnModuleInit {
         JSON.stringify({ event: 'queue.job.stalled', queue: 'appointment-reminders', jobId }),
       );
     });
+  }
+
+  onModuleDestroy() {
+    for (const timer of this.inMemoryTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.inMemoryTimers.clear();
+    if (this.queue && typeof this.queue.removeAllListeners === 'function') {
+      this.queue.removeAllListeners();
+    }
   }
 
   setInMemoryProcessor(fn: (data: AppointmentReminderJobData) => Promise<void>) {

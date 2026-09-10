@@ -15,6 +15,9 @@ import {
   CalendarErrorCode,
   CalendarProviderException,
 } from './calendar-errors';
+import { validateExternalUrl } from '../../../common/utils/url-validator';
+
+const CALCOM_ALLOWED_HOSTS = [/\.cal\.com$/, /^cal\.com$/];
 
 interface CalComApiResponse<T> {
   status: 'success' | 'error';
@@ -63,9 +66,18 @@ export class CalComCalendarAdapter implements ICalendarProvider {
   private readonly logger = new Logger(CalComCalendarAdapter.name);
 
   private buildClient(credentials: CalendarCredentials): AxiosInstance {
-    const baseUrl = (credentials.apiUrl || process.env.CALCOM_API_URL || CALCOM_DEFAULT_API_URL).replace(/\/+$/, '');
+    const rawUrl = (credentials.apiUrl || process.env.CALCOM_API_URL || CALCOM_DEFAULT_API_URL).replace(/\/+$/, '');
+    const validation = validateExternalUrl(rawUrl, CALCOM_ALLOWED_HOSTS);
+    if (!validation.isValid) {
+      throw new CalendarProviderException(
+        CalendarErrorCode.AUTH_FAILED,
+        `Cal.com API URL rejected: ${validation.reason}`,
+        false,
+        `URL: ${rawUrl}, Reason: ${validation.reason}`,
+      );
+    }
     const client = axios.create({
-      baseURL: baseUrl,
+      baseURL: rawUrl,
       timeout: 10000,
       params: { apiKey: credentials.apiKey },
       headers: { 'Content-Type': 'application/json' },
@@ -74,6 +86,9 @@ export class CalComCalendarAdapter implements ICalendarProvider {
   }
 
   private toError(error: any): CalendarProviderException {
+    if (error instanceof CalendarProviderException) {
+      return error;
+    }
     const status = error?.response?.status as number | undefined;
     const message =
       error?.response?.data?.message ??

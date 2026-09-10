@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
+import { MetricsService } from '../../../common/services/metrics.service';
 import { AutomationsService } from '../../automations/automations.service';
 import { CalendarProviderRegistry } from '../providers/calendar-provider-registry.service';
 import { CalendarProviderException, CalendarErrorCode, CalendarErrorFactory } from '../providers/calendar-errors';
@@ -33,6 +34,7 @@ export class AppointmentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly metrics: MetricsService,
     private readonly providerRegistry: CalendarProviderRegistry,
     private readonly reminderQueue: AppointmentReminderQueueService,
     @Inject(forwardRef(() => AutomationsService))
@@ -56,8 +58,10 @@ export class AppointmentService {
     }
 
     const resolved = await this.providerRegistry.resolve(tenantId, query.provider ?? 'auto');
+    this.metrics.increment('appointment.availability.requested');
 
     let slots: any[] = [];
+    const started = Date.now();
     try {
       slots = await resolved.adapter.getAvailability(resolved.credentials, {
         startAt: from,
@@ -71,6 +75,7 @@ export class AppointmentService {
       });
     } catch (err: any) {
       const shape = err instanceof CalendarProviderException ? err.toShape() : this.errorFactory.toShape(err);
+      this.metrics.increment('appointment.availability.failed');
       if (shape.code === CalendarErrorCode.AUTH_FAILED) {
         return {
           provider: resolved.providerName,
@@ -81,8 +86,11 @@ export class AppointmentService {
           slots: [],
         };
       }
+      this.metrics.recordLatency('appointment.availability', Date.now() - started);
       throw this.errorFactory.toHttpException(shape);
     }
+
+    this.metrics.recordLatency('appointment.availability', Date.now() - started);
 
     // Overlap local commitments so we never advertise a double-booked slot.
     if (this.prisma.isConnected) {
@@ -156,6 +164,7 @@ export class AppointmentService {
   // ── Booking flow ─────────────────────────────────────────────
 
   async create(tenantId: string, userId: string, dto: ScheduleAppointmentDto) {
+    this.metrics.increment('appointment.created.attempted');
     const startAt = dto.startAt ? new Date(dto.startAt) : dto.date ? new Date(dto.date) : null;
     if (!startAt || isNaN(startAt.getTime())) {
       throw new BadRequestException('A valid startAt/date is required to book an appointment.');
@@ -177,6 +186,7 @@ export class AppointmentService {
       });
       if (existing) {
         this.logger.log(`Idempotent replay: returning existing appointment ${existing.id}`);
+        this.metrics.increment('appointment.created.idempotent');
         return { ...existing, idempotent: true };
       }
     }
@@ -298,12 +308,14 @@ export class AppointmentService {
       userId,
     });
 
+    this.metrics.increment(nativeOnly ? 'appointment.created.completed' : 'appointment.booked.completed');
     return appointment;
   }
 
   // ── Reschedule ───────────────────────────────────────────────
 
   async reschedule(tenantId: string, userId: string, id: string, dto: RescheduleAppointmentDto) {
+    this.metrics.increment('appointment.rescheduled.attempted');
     const existing = await this.findOneOrThrow(tenantId, id);
     if (existing.status === 'cancelled') {
       throw new BadRequestException('A cancelled appointment cannot be rescheduled.');
@@ -388,16 +400,19 @@ export class AppointmentService {
       userId,
     });
 
+    this.metrics.increment('appointment.rescheduled.completed');
     return updated;
   }
 
   // ── Cancel ───────────────────────────────────────────────────
 
   async cancel(tenantId: string, userId: string, id: string, dto: CancelAppointmentDto) {
+    this.metrics.increment('appointment.cancelled.attempted');
     const existing = await this.findOneOrThrow(tenantId, id);
 
     // Idempotent cancel — already cancelled returns as-is.
     if (existing.status === 'cancelled') {
+      this.metrics.increment('appointment.cancelled.idempotent');
       return { ...existing, alreadyCancelled: true };
     }
 
@@ -444,6 +459,7 @@ export class AppointmentService {
       userId,
     });
 
+    this.metrics.increment('appointment.cancelled.completed');
     return updated;
   }
 
