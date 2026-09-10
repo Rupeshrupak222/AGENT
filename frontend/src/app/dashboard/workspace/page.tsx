@@ -27,7 +27,7 @@ export default function WorkspacePage() {
   const [inviting, setInviting] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<any>("agent");
+  const [inviteRole, setInviteRole] = useState<any>("manager");
   const { success: toastSuccess, error: toastError } = useToast();
 
   const loadMembers = async () => {
@@ -211,9 +211,8 @@ export default function WorkspacePage() {
                   onChange={e => setInviteRole(e.target.value as any)}
                   className="w-full h-10 rounded-xl px-3 text-xs bg-input border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
                 >
+                  <option value="company_admin">Company Admin (Full workspace & billing access)</option>
                   <option value="manager">Manager (Can manage agents & campaigns)</option>
-                  <option value="agent">Agent (Can review calls & leads)</option>
-                  <option value="viewer">Viewer (Read-only analytics access)</option>
                 </select>
               </div>
 

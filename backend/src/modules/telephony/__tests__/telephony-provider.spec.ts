@@ -1,19 +1,22 @@
 import { ConfigService } from '@nestjs/config';
 import { TwilioTelephonyProvider } from '../providers/twilio.provider';
 import { ExotelTelephonyProvider } from '../providers/exotel.provider';
+import { SandboxTelephonyProvider } from '../providers/sandbox.provider';
 import { TelephonyProviderRegistry } from '../providers/provider-registry.service';
 
 describe('Telephony Providers & Abstraction', () => {
   let configService: ConfigService;
   let twilioProvider: TwilioTelephonyProvider;
   let exotelProvider: ExotelTelephonyProvider;
+  let sandboxProvider: SandboxTelephonyProvider;
   let registry: TelephonyProviderRegistry;
 
   beforeEach(() => {
     configService = new ConfigService();
     twilioProvider = new TwilioTelephonyProvider(configService);
     exotelProvider = new ExotelTelephonyProvider(configService);
-    registry = new TelephonyProviderRegistry(configService, twilioProvider, exotelProvider);
+    sandboxProvider = new SandboxTelephonyProvider();
+    registry = new TelephonyProviderRegistry(configService, twilioProvider, exotelProvider, sandboxProvider);
   });
 
   describe('Provider Registry', () => {

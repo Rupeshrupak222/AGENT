@@ -47,6 +47,9 @@ describe('ConversationOrchestrator', () => {
     };
 
     const mockConverter = new AudioFormatConverterService();
+    const mockPostCallQueue = {
+      enqueuePostCallJob: jest.fn().mockResolvedValue({ queued: true }),
+    };
 
     orchestrator = new ConversationOrchestrator(
       mockSTT as DeepgramSTTProvider,
@@ -54,6 +57,7 @@ describe('ConversationOrchestrator', () => {
       mockTTS as EdgeTTSProvider,
       mockPrisma as any,
       mockConverter,
+      mockPostCallQueue as any,
     );
   });
 

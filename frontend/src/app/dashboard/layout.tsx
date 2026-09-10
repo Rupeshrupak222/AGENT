@@ -27,6 +27,7 @@ import {
   ChevronRight,
   Shield,
   Target,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { bootstrapAuth, callsApi, CallItem } from "@/lib/api";
@@ -35,6 +36,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/components/ui/Toast";
 import { PERMISSIONS, Permission } from "@/lib/permissions";
 import { Badge } from "@/components/ui/Badge";
+import { CommandPalette } from "@/components/ui/CommandPalette";
 
 interface NavItem {
   icon: any;
@@ -48,9 +50,10 @@ const ALL_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Platform Admin",
     items: [
-      { icon: Building2, label: "Client Tenants", href: "/dashboard/workspace", permission: PERMISSIONS.PLATFORM_TENANT_MANAGE, badge: "Master" },
-      { icon: Mic2, label: "AI Speech Stack", href: "/dashboard/voices", permission: PERMISSIONS.PLATFORM_AI_PROVIDERS },
-      { icon: BarChart3, label: "Global Gateways", href: "/dashboard/analytics", permission: PERMISSIONS.PLATFORM_TELEPHONY },
+      { icon: Building2, label: "Client Tenants", href: "/dashboard/overview?tab=tenants", permission: PERMISSIONS.PLATFORM_TENANT_MANAGE, badge: "Master" },
+      { icon: Mic2, label: "AI Speech Stack", href: "/dashboard/overview?tab=gateways", permission: PERMISSIONS.PLATFORM_AI_PROVIDERS },
+      { icon: BarChart3, label: "Global Gateways", href: "/dashboard/overview?tab=gateways", permission: PERMISSIONS.PLATFORM_TELEPHONY },
+      { icon: Shield, label: "Security & Audit", href: "/dashboard/overview?tab=broadcast", permission: PERMISSIONS.PLATFORM_AUDIT },
     ],
   },
   {
@@ -281,11 +284,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const [recentCalls, setRecentCalls] = useState<CallItem[]>([]);
   const [notifError, setNotifError] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setCommandOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   // Session revalidation on mount: verify persisted token via /auth/me
@@ -574,18 +586,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     👔 Operations Lead
                   </span>
                 )}
-                {((user?.role || "").toLowerCase() === "agent" || (user?.role || "").toLowerCase().includes("caller") || (user?.role || "").toLowerCase().includes("sales")) && (
-                  <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 shadow-sm shadow-emerald-500/20">
-                    <Phone className="w-3 h-3 text-emerald-400" />
-                    🎧 Calling Agent
-                  </span>
-                )}
-                {((user?.role || "").toLowerCase() === "viewer" || (user?.role || "").toLowerCase().includes("audit")) && (
-                  <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 shadow-sm shadow-cyan-500/20">
-                    <Shield className="w-3 h-3 text-cyan-400" />
-                    👁️ Viewer (Auditor)
-                  </span>
-                )}
+
               </div>
               <p className="text-xs hidden sm:block text-slate-500 dark:text-white/40">
                 {new Date().toLocaleDateString("en-IN", {
@@ -598,6 +599,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Quick Command Search Button */}
+            <button
+              onClick={() => setCommandOpen(true)}
+              aria-label="Open Command Search"
+              className="hidden md:flex items-center gap-2 px-3 h-9 rounded-xl bg-slate-100/70 dark:bg-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.08] border border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/50 text-xs transition-all shadow-xs"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline font-medium">Quick search...</span>
+              <kbd className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-white/70">
+                ⌘K
+              </kbd>
+            </button>
+
             {/* Notifications */}
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
@@ -764,6 +778,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
+
+      {/* Global Command Palette */}
+      <CommandPalette
+        isOpen={commandOpen}
+        onClose={() => setCommandOpen(false)}
+      />
     </div>
   );
 }

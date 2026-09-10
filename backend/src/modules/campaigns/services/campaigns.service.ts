@@ -413,6 +413,7 @@ export class CampaignsService implements OnModuleInit {
     this.callsGateway?.broadcastCampaignStatus(campaignId, tenantId, {
       status: CampaignStatus.CANCELLED,
     });
+    return { status: CampaignStatus.CANCELLED };
   }
 
   // ── 12. Campaign Metrics ────────────────────────────────────

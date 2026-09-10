@@ -34,6 +34,18 @@ export class TenantsController {
     return this.svc.updatePlan(id, plan);
   }
 
+  @Patch(':id/status')
+  @Permissions(PLATFORM_TENANT_MANAGE)
+  updateStatus(@Param('id') id: string, @Body('isActive') isActive: boolean) {
+    return this.svc.updateStatus(id, isActive);
+  }
+
+  @Get(':id/details')
+  @Permissions(PLATFORM_TENANT_MANAGE)
+  getDetails(@Param('id') id: string) {
+    return this.svc.getTenantDetails(id);
+  }
+
   @Get('me')
   @Permissions(TENANT_VIEW)
   me(@CurrentUser() u: any) {
