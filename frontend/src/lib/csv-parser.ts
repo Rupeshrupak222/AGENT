@@ -59,16 +59,24 @@ export function isValidPhoneFormat(phone: string): boolean {
 }
 
 /**
- * Normalizes phone number with optional leading +
+ * India-first default country code used when a 10-digit number is supplied
+ * without an explicit country code prefix.
  */
-export function normalizePhone(raw: string): string {
+export const DEFAULT_COUNTRY_CODE = "+91";
+export const DEFAULT_COUNTRY_CODE_LENGTH = 10;
+
+/**
+ * Normalizes phone number with optional leading +
+ * Local 10-digit numbers are prefixed with the India-first default code.
+ */
+export function normalizePhone(raw: string, countryCode: string = DEFAULT_COUNTRY_CODE): string {
   const digits = raw.replace(/[^\d+]/g, "");
   if (!digits) return "";
   if (digits.startsWith("+")) {
     return `+${digits.slice(1).replace(/\+/g, "")}`;
   }
-  // If 10 digits without country code, default to E.164 +1 or standard + format
-  return digits.length === 10 ? `+1${digits}` : `+${digits}`;
+  // If 10 digits without country code, default to E.164 +91 (India-first)
+  return digits.length === DEFAULT_COUNTRY_CODE_LENGTH ? `${countryCode}${digits}` : `+${digits}`;
 }
 
 /**

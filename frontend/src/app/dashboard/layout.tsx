@@ -46,6 +46,7 @@ import { useToast } from "@/components/ui/Toast";
 import { PERMISSIONS, Permission } from "@/lib/permissions";
 import { Badge } from "@/components/ui/Badge";
 import { CommandPalette } from "@/components/ui/CommandPalette";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 interface NavItem {
   icon: any;
@@ -930,7 +931,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Page */}
         <main className="flex-1 overflow-y-auto bg-page transition-colors duration-200">
-          {children}
+          <ErrorBoundary onReset={() => router.replace(pathname)}>{children}</ErrorBoundary>
         </main>
       </div>
 
