@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { useToast } from "@/components/ui/Toast";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PERMISSIONS } from "@/lib/permissions";
 import { tenantApi, integrationsApi, automationsApi, appointmentsApi, IntegrationItem, CalendarProviderStatus, normalizeApiError } from "@/lib/api";
 
 export default function SettingsPage() {
@@ -23,6 +25,7 @@ export default function SettingsPage() {
   const tenant = useAuthStore(s => s.tenant);
   const updateTenant = useAuthStore(s => s.updateTenant);
   const { success, error, warning } = useToast();
+  const { can } = usePermissions();
   const [activeTab, setActiveTab] = useState<"general" | "api_keys" | "telephony" | "security" | "integrations">("general");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -278,6 +281,19 @@ export default function SettingsPage() {
       setSaving(false);
     }
   };
+
+  if (!can(PERMISSIONS.WORKSPACE_MANAGE)) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+        <div className="rounded-2xl p-8 text-center bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08]">
+          <p className="text-sm font-semibold text-slate-900 dark:text-white">Access Restricted</p>
+          <p className="text-xs text-slate-500 dark:text-white/50 mt-1">
+            You do not have permission to manage workspace settings.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-8">

@@ -31,6 +31,20 @@ export class AnalyticsController {
     return this.svc.getDashboardMetrics(u.tenantId, range);
   }
 
+  @Get('company-dashboard')
+  @Permissions(ANALYTICS_VIEW)
+  @ApiOperation({ summary: 'Company Admin operational dashboard (KPIs, trends, outcomes, agent & team performance, campaigns, alerts)' })
+  companyDashboard(
+    @CurrentUser() u: any,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('prevFrom') prevFrom?: string,
+    @Query('prevTo') prevTo?: string,
+    @Query('granularity') granularity?: string,
+  ) {
+    return this.svc.getCompanyDashboard(u.tenantId, { from, to, prevFrom, prevTo, granularity: granularity as any });
+  }
+
   @Get('call-trend')
   @Permissions(ANALYTICS_VIEW)
   @ApiOperation({ summary: 'Daily call volume trend' })

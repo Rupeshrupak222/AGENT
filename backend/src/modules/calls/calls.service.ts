@@ -113,21 +113,46 @@ export class CallsService implements OnModuleInit {
   }
 
   async findAll(tenantId: string, query: {
-    status?: string; agentId?: string; leadId?: string;
+    status?: string; agentId?: string; leadId?: string; direction?: string;
+    outcome?: string; campaignId?: string; search?: string;
+    from?: string; to?: string;
+    sortBy?: string; sortOrder?: 'asc' | 'desc';
     page?: number; limit?: number;
   }) {
     try {
       const pageNum  = Math.max(1, Number(query?.page) || 1);
       const limitNum = Math.max(1, Math.min(100, Number(query?.limit) || 20));
       const skip  = (pageNum - 1) * limitNum;
-      const where: any = { tenantId, ...(query?.status  && { status:  query.status }),
-                                      ...(query?.agentId && { agentId: query.agentId }),
-                                      ...(query?.leadId  && { leadId:  query.leadId }) };
+      const where: any = { tenantId, ...(query?.status     && { status:     query.status }),
+                                      ...(query?.agentId    && { agentId:    query.agentId }),
+                                      ...(query?.leadId     && { leadId:     query.leadId }),
+                                      ...(query?.direction  && { direction:  query.direction }),
+                                      ...(query?.outcome    && { outcome:    query.outcome }),
+                                      ...(query?.campaignId && { campaignId: query.campaignId }) };
+
+      if (query?.from || query?.to) {
+        const startedAt: any = {};
+        if (query.from) { const from = new Date(query.from); if (!isNaN(from.getTime())) startedAt.gte = from; }
+        if (query.to)   { const to   = new Date(query.to);   if (!isNaN(to.getTime()))   startedAt.lte = to; }
+        if (Object.keys(startedAt).length) where.startedAt = startedAt;
+      }
+
+      if (query?.search?.trim()) {
+        const term = query.search.trim();
+        where.OR = [
+          { phone: { contains: term, mode: 'insensitive' } },
+          { lead:  { name: { contains: term, mode: 'insensitive' } } },
+        ];
+      }
+
+      const ORDER_COLUMNS: Record<string, string> = { startedAt: 'startedAt', duration: 'duration', status: 'status' };
+      const sortBy = ORDER_COLUMNS[query?.sortBy ?? 'startedAt'] ?? 'startedAt';
+      const orderDir = query?.sortOrder === 'asc' ? 'asc' : 'desc';
 
       const [items, total] = await Promise.all([
         this.prisma.call.findMany({
           where, skip, take: limitNum,
-          orderBy: { startedAt: 'desc' },
+          orderBy: { [sortBy]: orderDir } as any,
           include: {
             lead:  { select: { id: true, name: true, phone: true } },
             agent: { select: { id: true, name: true, role:  true } },

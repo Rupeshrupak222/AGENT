@@ -236,6 +236,8 @@ model Tenant {
   auditLogs     AuditLog[]
   recordings    CallRecording[]
   analyses      CallAnalysis[]
+  phoneNumbers  PhoneNumber[]
+  knowledgeSources KnowledgeSource[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -265,6 +267,7 @@ model User {
   createdAgents   AIAgent[]      @relation("AgentCreatedBy")
   assignedLeads   Lead[]         @relation("LeadAssignedTo")
   auditLogs       AuditLog[]
+  createdKnowledgeSources KnowledgeSource[] @relation("KnowledgeCreatedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -300,6 +303,8 @@ model AIAgent {
   calls       Call[]
   campaigns   Campaign[]
   leads       Lead[]       @relation("LeadAssignedAgent")
+  phoneNumbers PhoneNumber[] @relation("PhoneNumberAssignedAgent")
+  knowledgeSources KnowledgeSource[] @relation("KnowledgeSourceAgent")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -752,6 +757,58 @@ model Webhook {
 
   @@index([tenantId])
   @@map("Webhook")
+}
+
+// ── Phone Number (company telephony inventory) ──────────────
+model PhoneNumber {
+  id           String   @id @default(cuid())
+  number       String
+  provider     String   @default("twilio") // twilio | exotel | sandbox
+  label        String?
+  isInbound    Boolean  @default(true)
+  isOutbound   Boolean  @default(true)
+  status       String   @default("available") // available | assigned | inactive
+  metadata     Json?    @default("{}")
+
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  assignedAgentId String?
+  assignedAgent   AIAgent? @relation("PhoneNumberAssignedAgent", fields: [assignedAgentId], references: [id])
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([tenantId, number])
+  @@index([tenantId])
+  @@map("PhoneNumber")
+}
+
+// ── Knowledge Source (company knowledge base) ──────────────
+model KnowledgeSource {
+  id           String   @id @default(cuid())
+  name         String
+  type         String   @default("manual") // manual | pdf | docx | txt | url | faq
+  content      String?  @db.Text
+  sourceUrl    String?
+  status       String   @default("ready") // ready | processing | failed | outdated
+  tags         String[] @default([])
+  lastIndexedAt DateTime?
+  errorMessage String?
+  agentId      String?
+  agent        AIAgent? @relation("KnowledgeSourceAgent", fields: [agentId], references: [id])
+
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdById  String?
+  createdBy    User?    @relation("KnowledgeCreatedBy", fields: [createdById], references: [id])
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+  @@map("KnowledgeSource")
 }
 
 // ── Audit Log ──────────────────────────────────────────────────

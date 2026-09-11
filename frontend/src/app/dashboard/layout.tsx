@@ -28,6 +28,15 @@ import {
   Shield,
   Target,
   Search,
+  BookOpen,
+  Gauge,
+  Plug,
+  Receipt,
+  ShieldCheck,
+  Contact,
+  LifeBuoy,
+  PhoneIncoming,
+  Workflow,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { bootstrapAuth, callsApi, CallItem } from "@/lib/api";
@@ -86,6 +95,106 @@ const ALL_GROUPS: { label: string; items: NavItem[] }[] = [
   },
 ];
 
+// Manager gets a dedicated operational information architecture.
+const MANAGER_GROUPS: { label: string; items: NavItem[] }[] = [
+  {
+    label: "Workspace",
+    items: [
+      { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard/overview", permission: PERMISSIONS.TEAM_VIEW },
+      { icon: Bot, label: "My AI Agents", href: "/dashboard/agents", permission: PERMISSIONS.AI_AGENT_VIEW },
+      { icon: Phone, label: "Call Center", href: "/dashboard/calls", permission: PERMISSIONS.CALL_VIEW },
+      { icon: Users, label: "Contacts", href: "/dashboard/crm", permission: PERMISSIONS.LEAD_VIEW },
+      { icon: Target, label: "Campaigns", href: "/dashboard/campaigns", permission: PERMISSIONS.CAMPAIGN_VIEW },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      { icon: Calendar, label: "Calendar", href: "/dashboard/calendar", permission: PERMISSIONS.CALENDAR_VIEW },
+      { icon: Workflow, label: "Automations", href: "/dashboard/automations", permission: PERMISSIONS.AUTOMATION_VIEW },
+    ],
+  },
+  {
+    label: "Team",
+    items: [
+      { icon: Contact, label: "My Team", href: "/dashboard/team", permission: PERMISSIONS.TEAM_VIEW },
+    ],
+  },
+  {
+    label: "Knowledge",
+    items: [
+      { icon: BookOpen, label: "Knowledge Base", href: "/dashboard/knowledge", permission: PERMISSIONS.AI_KNOWLEDGE_MANAGE },
+      { icon: Mic2, label: "Voices", href: "/dashboard/voices", permission: PERMISSIONS.AI_VOICE_MANAGE },
+    ],
+  },
+  {
+    label: "Insights",
+    items: [
+      { icon: BarChart3, label: "Analytics", href: "/dashboard/analytics", permission: PERMISSIONS.ANALYTICS_VIEW },
+      { icon: Gauge, label: "Usage", href: "/dashboard/usage", permission: PERMISSIONS.TENANT_VIEW },
+    ],
+  },
+  {
+    label: "Support",
+    items: [
+      { icon: Bell, label: "Notifications", href: "/dashboard/notifications", permission: PERMISSIONS.TEAM_VIEW },
+      { icon: ShieldCheck, label: "Audit Activity", href: "/dashboard/audit", permission: PERMISSIONS.AUDIT_LOG_VIEW },
+    ],
+  },
+];
+
+// Company Admin gets a dedicated information architecture.
+const COMPANY_ADMIN_GROUPS: { label: string; items: NavItem[] }[] = [
+  {
+    label: "Workspace",
+    items: [
+      { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard/overview", permission: PERMISSIONS.TEAM_VIEW },
+      { icon: Bot, label: "AI Agents", href: "/dashboard/agents", permission: PERMISSIONS.AI_AGENT_VIEW },
+      { icon: Phone, label: "Calls", href: "/dashboard/calls", permission: PERMISSIONS.CALL_VIEW },
+      { icon: Users, label: "Contacts", href: "/dashboard/crm", permission: PERMISSIONS.LEAD_VIEW },
+      { icon: Target, label: "Campaigns", href: "/dashboard/campaigns", permission: PERMISSIONS.CAMPAIGN_VIEW },
+      { icon: Calendar, label: "Calendar", href: "/dashboard/calendar", permission: PERMISSIONS.CALENDAR_VIEW },
+      { icon: Workflow, label: "Automations", href: "/dashboard/automations", permission: PERMISSIONS.AUTOMATION_VIEW },
+    ],
+  },
+  {
+    label: "Resources",
+    items: [
+      { icon: PhoneIncoming, label: "Phone Numbers", href: "/dashboard/numbers", permission: PERMISSIONS.TELEPHONY_MANAGE },
+      { icon: BookOpen, label: "Knowledge Base", href: "/dashboard/knowledge", permission: PERMISSIONS.AI_KNOWLEDGE_MANAGE },
+      { icon: Plug, label: "Integrations", href: "/dashboard/integrations", permission: PERMISSIONS.INTEGRATIONS_MANAGE },
+    ],
+  },
+  {
+    label: "Insights",
+    items: [
+      { icon: BarChart3, label: "Analytics", href: "/dashboard/analytics", permission: PERMISSIONS.ANALYTICS_VIEW },
+      { icon: Gauge, label: "Usage", href: "/dashboard/usage", permission: PERMISSIONS.TENANT_VIEW },
+    ],
+  },
+  {
+    label: "Team",
+    items: [
+      { icon: Contact, label: "Team", href: "/dashboard/team", permission: PERMISSIONS.TEAM_VIEW },
+    ],
+  },
+  {
+    label: "Billing",
+    items: [
+      { icon: CreditCard, label: "Billing", href: "/dashboard/billing", permission: PERMISSIONS.BILLING_VIEW },
+    ],
+  },
+  {
+    label: "Administration",
+    items: [
+      { icon: Settings, label: "Company Settings", href: "/dashboard/settings", permission: PERMISSIONS.TEAM_VIEW },
+      { icon: ShieldCheck, label: "Audit Activity", href: "/dashboard/audit", permission: PERMISSIONS.AUDIT_LOG_VIEW },
+      { icon: LifeBuoy, label: "Support", href: "/dashboard/settings", permission: PERMISSIONS.TEAM_VIEW },
+      { icon: Bell, label: "Notifications", href: "/dashboard/notifications", permission: PERMISSIONS.TEAM_VIEW },
+    ],
+  },
+];
+
 const NOTIF_STATUS_STYLE: Record<CallItem["status"], string> = {
   queued: "bg-slate-400",
   ringing: "bg-amber-400",
@@ -124,11 +233,18 @@ function SidebarContent({
 
   // Filter navigation groups based on permissions
   const groups = useMemo(() => {
-    return ALL_GROUPS.map((g) => ({
+    const role = (user?.role || "").toLowerCase();
+    const source =
+      role === "company_admin"
+        ? COMPANY_ADMIN_GROUPS
+        : role === "manager"
+          ? MANAGER_GROUPS
+          : ALL_GROUPS;
+    return source.map((g) => ({
       ...g,
       items: g.items.filter((item) => can(item.permission)),
     })).filter((g) => g.items.length > 0);
-  }, [can]);
+  }, [can, user?.role]);
 
   return (
     <div className="flex flex-col h-full bg-surface-sidebar border-r border-line dark:border-brand-500/15 transition-colors duration-200">
@@ -427,6 +543,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const pageLabel = pathname.split("/").pop()?.replace(/-/g, " ") || "Dashboard";
 
+  const role = (user?.role || "").toLowerCase();
+  const isCompanyAdmin = role === "company_admin";
+  const navSource = isCompanyAdmin
+    ? COMPANY_ADMIN_GROUPS
+    : role === "manager"
+      ? MANAGER_GROUPS
+      : ALL_GROUPS;
+
+  let navGroup: string | null = null;
+  let navItem: string = pageLabel;
+  for (const g of navSource) {
+    const item = g.items.find((i) => pathname === i.href || pathname.startsWith(i.href + "/"));
+    if (item) {
+      navGroup = g.label;
+      navItem = item.label;
+      break;
+    }
+  }
+  const navInfo = { group: navGroup, label: navItem };
+
   // Super Admin platform panel has its own layout shell (AdminLayout);
   // render admin routes without the regular dashboard chrome to avoid a double sidebar.
   const isAdminRoute = pathname.startsWith("/dashboard/admin");
@@ -564,7 +700,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight capitalize truncate">
-                  {pageLabel}
+                  {navInfo.label}
                 </h1>
                 {((user?.role || "").toLowerCase().includes("super") || (user?.role || "").toLowerCase() === "owner") && (
                   <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/40 shadow-sm shadow-amber-500/20">
@@ -586,13 +722,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )}
 
               </div>
-              <p className="text-xs hidden sm:block text-slate-500 dark:text-white/40">
-                {new Date().toLocaleDateString("en-IN", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                })}
-              </p>
+              {isCompanyAdmin ? (
+                <ol className="hidden sm:flex items-center gap-1.5 text-xs capitalize text-slate-500 dark:text-white/40">
+                  <li>
+                    <Link href="/dashboard/overview" className="hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
+                      Home
+                    </Link>
+                  </li>
+                  {navInfo.group && (
+                    <>
+                      <li className="text-slate-400 dark:text-white/20">/</li>
+                      <li>{navInfo.group}</li>
+                    </>
+                  )}
+                  <li className="text-slate-400 dark:text-white/20">/</li>
+                  <li className="text-slate-800 dark:text-white/80 font-medium">{navInfo.label}</li>
+                </ol>
+              ) : (
+                <p className="text-xs hidden sm:block text-slate-500 dark:text-white/40">
+                  {new Date().toLocaleDateString("en-IN", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })}
+                </p>
+              )}
             </div>
           </div>
 
@@ -622,6 +776,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-slate-100/70 dark:bg-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.08] border border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/60"
               >
                 <Bell className="w-4 h-4" />
+                {recentCalls.some((c) => c.status === "failed" || c.status === "missed") && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-[#0c0102]" />
+                )}
               </button>
               <AnimatePresence>
                 {notifOpen && (

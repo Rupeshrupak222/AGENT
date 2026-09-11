@@ -395,6 +395,14 @@ export const callsApi = {
     status?: string;
     agentId?: string;
     leadId?: string;
+    direction?: string;
+    outcome?: string;
+    campaignId?: string;
+    search?: string;
+    from?: string;
+    to?: string;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
     page?: number;
     limit?: number;
   }): Promise<CallsListResponse> => {
@@ -837,10 +845,22 @@ export interface TenantRecord {
 }
 
 export interface TenantUsage {
+  plan: string;
+  planName: string;
   agentCount: number;
-  callCount: number;
-  leadCount: number;
   userCount: number;
+  leadCount: number;
+  campaignCount: number;
+  appointmentCount: number;
+  callCount: number;
+  analysisCount: number;
+  minutesUsed: number;
+  limits: { agents: number; members: number; calls: number };
+  usage: {
+    agents:  { used: number; limit: number; unlimited: boolean; pct: number | null };
+    members: { used: number; limit: number; unlimited: boolean; pct: number | null };
+    calls:   { used: number; limit: number; unlimited: boolean; pct: number | null };
+  };
 }
 
 export const tenantApi = {
@@ -1960,6 +1980,291 @@ export const platformApi = {
   updateSettings: async (data: Partial<PlatformSettingsData>): Promise<PlatformSettingsData> => {
     const res = await apiClient.patch<ApiResponseWrapper<PlatformSettingsData>>('/platform/settings', data);
     return res.data.data;
+  },
+};
+
+// ── Company Admin Dashboard API ───────────────────────────────────
+export type DashboardGranularity = "hour" | "day" | "week" | "month";
+
+export interface CompanyDashboardKpis {
+  totalCalls: number;
+  connectedCalls: number;
+  missedCalls: number;
+  failedCalls: number;
+  transferredCalls: number;
+  inboundCalls: number;
+  outboundCalls: number;
+  avgDuration: number;
+  totalMinutes: number;
+  connectRate: number;
+  qualifiedLeads: number;
+  appointments: number;
+  closedWon: number;
+  appointmentRate: number;
+  conversionRate: number;
+  avgSentiment: number;
+  aiAnalyses: number;
+}
+
+export interface CompanyDashboardTimeSeriesPoint {
+  bucket: string;
+  totalCalls: number;
+  connectedCalls: number;
+  missedCalls: number;
+  failedCalls: number;
+  avgSentiment: number;
+  totalMinutes: number;
+}
+
+export interface CompanyDashboardOutcome {
+  outcome: string;
+  count: number;
+  pct: number;
+}
+
+export interface CompanyAgentPerformance {
+  id: string;
+  name: string;
+  role: string;
+  status: string;
+  managerId: string | null;
+  managerName: string | null;
+  totalCalls: number;
+  connectedCalls: number;
+  missedCalls: number;
+  failedCalls: number;
+  qualifiedLeads: number;
+  connectRate: number;
+  avgDuration: number;
+  avgSentiment: number;
+  avgQuality: number;
+}
+
+export interface CompanyTeamPerformance {
+  id: string;
+  name: string;
+  agentCount: number;
+  totalCalls: number;
+  connectedCalls: number;
+  qualifiedLeads: number;
+  missedCalls: number;
+  failedCalls: number;
+  connectRate: number;
+}
+
+export interface CompanyActiveCampaign {
+  id: string;
+  name: string;
+  status: string;
+  agentId: string;
+  agentName: string;
+  scheduledAt: string | null;
+  createdAt: string;
+  progress: Record<string, number>;
+  total: number;
+  completed: number;
+  failed: number;
+  pending: number;
+}
+
+export interface CompanyAlert {
+  id: string;
+  type: string;
+  severity: "critical" | "warning" | "info";
+  title: string;
+  message: string;
+  createdAt: string;
+}
+
+export interface CompanyDashboardData {
+  period: { from: string; to: string; label: string };
+  comparison: { from: string; to: string; label: string };
+  granularity: DashboardGranularity;
+  kpis: { current: CompanyDashboardKpis; previous: CompanyDashboardKpis };
+  facts: { activeAgents: number; teamMembers: number };
+  timeSeries: CompanyDashboardTimeSeriesPoint[];
+  outcomes: CompanyDashboardOutcome[];
+  agentPerformance: CompanyAgentPerformance[];
+  teamPerformance: CompanyTeamPerformance[];
+  activeCampaigns: CompanyActiveCampaign[];
+  alerts: CompanyAlert[];
+  generatedAt: string;
+}
+
+export const companyDashboardApi = {
+  get: async (params?: {
+    from?: string;
+    to?: string;
+    prevFrom?: string;
+    prevTo?: string;
+    granularity?: DashboardGranularity;
+  }): Promise<CompanyDashboardData> => {
+    const res = await apiClient.get<ApiResponseWrapper<CompanyDashboardData>>(
+      "/analytics/company-dashboard",
+      { params }
+    );
+    return res.data.data;
+  },
+};
+
+// ── Company Usage API ─────────────────────────────────────────────
+export const companyUsageApi = {
+  get: (): Promise<TenantUsage> => tenantApi.usage(),
+};
+
+// ── Company Audit API ─────────────────────────────────────────────
+export interface CompanyAuditLogItem {
+  id: string;
+  action: string;
+  resource: string;
+  resourceId?: string | null;
+  details?: Record<string, any> | null;
+  ipAddress?: string | null;
+  createdAt: string;
+  user?: { id: string; name: string; email: string } | null;
+}
+
+export const auditApi = {
+  list: async (params?: {
+    action?: string;
+    resource?: string;
+    userId?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ items: CompanyAuditLogItem[]; total: number; page: number; limit: number; pages: number }> => {
+    const res = await apiClient.get<
+      ApiResponseWrapper<{ items: CompanyAuditLogItem[]; total: number; page: number; limit: number; pages: number }>
+    >("/audit/logs", { params });
+    return res.data.data;
+  },
+};
+
+// ── Phone Numbers API ─────────────────────────────────────────────
+export interface PhoneNumberItem {
+  id: string;
+  number: string;
+  provider: string;
+  label: string | null;
+  isInbound: boolean;
+  isOutbound: boolean;
+  status: "available" | "assigned" | "inactive" | string;
+  tenantId: string;
+  assignedAgentId: string | null;
+  assignedAgent?: { id: string; name: string; role: string; status?: string } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const numbersApi = {
+  list: async (params?: {
+    status?: string;
+    provider?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ items: PhoneNumberItem[]; total: number; page: number; limit: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: PhoneNumberItem[]; total: number; page: number; limit: number }>>(
+      "/phone-numbers",
+      { params }
+    );
+    return res.data.data;
+  },
+
+  create: async (dto: {
+    number: string;
+    provider?: string;
+    label?: string;
+    isInbound?: boolean;
+    isOutbound?: boolean;
+    status?: string;
+  }): Promise<PhoneNumberItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<PhoneNumberItem>>("/phone-numbers", dto);
+    return res.data.data;
+  },
+
+  update: async (id: string, dto: {
+    provider?: string;
+    label?: string;
+    isInbound?: boolean;
+    isOutbound?: boolean;
+    status?: string;
+    assignedAgentId?: string | null;
+  }): Promise<PhoneNumberItem> => {
+    const res = await apiClient.patch<ApiResponseWrapper<PhoneNumberItem>>(`/phone-numbers/${id}`, dto);
+    return res.data.data;
+  },
+
+  remove: async (id: string): Promise<void> => {
+    await apiClient.delete(`/phone-numbers/${id}`);
+  },
+};
+
+// ── Knowledge Base API ────────────────────────────────────────────
+export interface KnowledgeSourceItem {
+  id: string;
+  name: string;
+  type: string;
+  content?: string | null;
+  sourceUrl?: string | null;
+  status: "ready" | "processing" | "failed" | "outdated" | string;
+  tags: string[];
+  lastIndexedAt?: string | null;
+  errorMessage?: string | null;
+  agentId?: string | null;
+  agent?: { id: string; name: string; role: string } | null;
+  createdBy?: { id: string; name: string; email: string } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const knowledgeApi = {
+  list: async (params?: {
+    search?: string;
+    type?: string;
+    status?: string;
+    agentId?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ items: KnowledgeSourceItem[]; total: number; page: number; limit: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: KnowledgeSourceItem[]; total: number; page: number; limit: number }>>(
+      "/knowledge-base",
+      { params }
+    );
+    return res.data.data;
+  },
+
+  get: async (id: string): Promise<KnowledgeSourceItem> => {
+    const res = await apiClient.get<ApiResponseWrapper<KnowledgeSourceItem>>(`/knowledge-base/${id}`);
+    return res.data.data;
+  },
+
+  create: async (dto: {
+    name: string;
+    type?: string;
+    content?: string;
+    sourceUrl?: string;
+    tags?: string[];
+    agentId?: string;
+  }): Promise<KnowledgeSourceItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<KnowledgeSourceItem>>("/knowledge-base", dto);
+    return res.data.data;
+  },
+
+  update: async (id: string, dto: {
+    name?: string;
+    type?: string;
+    content?: string;
+    sourceUrl?: string;
+    tags?: string[];
+    status?: string;
+    agentId?: string | null;
+  }): Promise<KnowledgeSourceItem> => {
+    const res = await apiClient.patch<ApiResponseWrapper<KnowledgeSourceItem>>(`/knowledge-base/${id}`, dto);
+    return res.data.data;
+  },
+
+  remove: async (id: string): Promise<void> => {
+    await apiClient.delete(`/knowledge-base/${id}`);
   },
 };
 

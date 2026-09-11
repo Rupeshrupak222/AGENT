@@ -73,7 +73,8 @@ export class UsersService {
       tenantId,
     });
 
-    return { ...user, tempPassword: tempPwd };
+    const { password: _pw, ...safe } = user;
+    return { ...safe, tempPassword: tempPwd };
   }
 
   /**
@@ -121,7 +122,8 @@ export class UsersService {
       userId: performedBy,
     });
 
-    return result;
+    const { password: _pw, ...safe } = result as any;
+    return safe;
   }
 
   /**
@@ -168,7 +170,8 @@ export class UsersService {
       userId: performedBy,
     });
 
-    return result;
+    const { password: _pw, ...safe } = result as any;
+    return safe;
   }
 
   /**
