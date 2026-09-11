@@ -10,11 +10,6 @@ generator client {
   output          = "../backend/node_modules/.prisma/client"
 }
 
-generator backendClient {
-  provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearch", "fullTextIndex"]
-  output          = "../backend/node_modules/.prisma/client"
-}
 
 datasource db {
   provider = "postgresql"
