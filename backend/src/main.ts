@@ -7,6 +7,7 @@ import { AppModule }              from './app.module';
 import { HttpExceptionFilter }    from './common/filters/http-exception.filter';
 import { TransformInterceptor }   from './common/interceptors/transform.interceptor';
 import { LoggingInterceptor }     from './common/interceptors/logging.interceptor';
+import { MetricsService }        from './common/services/metrics.service';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import { SecurityHeadersMiddleware } from './common/middleware/security-headers.middleware';
 import { validateEnvironment }    from './common/utils/env-validation';
@@ -56,8 +57,9 @@ async function bootstrap() {
     }),
   );
   app.useGlobalFilters(new HttpExceptionFilter());
+  const metrics = app.get(MetricsService);
   app.useGlobalInterceptors(
-    new LoggingInterceptor(),
+    new LoggingInterceptor(metrics),
     new TransformInterceptor(),
   );
 

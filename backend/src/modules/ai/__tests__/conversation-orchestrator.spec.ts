@@ -50,12 +50,10 @@ describe('ConversationOrchestrator', () => {
 
     mockPostCallQueue = {
       enqueueAnalysis: jest.fn().mockResolvedValue({ jobId: 'job-1', queued: true }),
+      enqueuePostCallJob: jest.fn().mockResolvedValue({ queued: true }),
     };
 
     const mockConverter = new AudioFormatConverterService();
-    const mockPostCallQueue = {
-      enqueuePostCallJob: jest.fn().mockResolvedValue({ queued: true }),
-    };
 
     orchestrator = new ConversationOrchestrator(
       mockSTT as DeepgramSTTProvider,

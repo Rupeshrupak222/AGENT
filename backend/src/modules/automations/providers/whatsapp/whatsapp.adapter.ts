@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import * as crypto from 'crypto';
 import axios, { AxiosError } from 'axios';
 import {
@@ -9,12 +9,15 @@ import {
   WhatsAppInboundMessage,
 } from '../../interfaces/message-provider.interface';
 import { WhatsAppCredentials, MetaWhatsAppPayload, MetaWhatsAppResponse } from './whatsapp.interface';
+import { MetricsService } from '../../../../common/services/metrics.service';
 
 @Injectable()
 export class MetaWhatsAppAdapter {
   private readonly logger = new Logger(MetaWhatsAppAdapter.name);
   private readonly GRAPH_API_VERSION = 'v20.0';
   private readonly BASE_URL = 'https://graph.facebook.com';
+
+  constructor(@Optional() private readonly metrics?: MetricsService) {}
 
   /**
    * Send WhatsApp message via Meta Cloud API.
@@ -95,6 +98,7 @@ export class MetaWhatsAppAdapter {
 
       const messageId = response.data?.messages?.[0]?.id;
       this.logger.log(`WhatsApp message sent successfully: ${messageId} -> ${cleanPhone}`);
+      this.metrics?.increment('whatsapp.sent');
 
       return {
         success: true,
@@ -114,6 +118,11 @@ export class MetaWhatsAppAdapter {
       const isRateLimited = status === 429 || errorData?.code === 80007;
       const isAuthError = status === 401 || errorData?.code === 190;
       const isRetryable = isRateLimited || (status !== undefined && status >= 500) || axiosErr.code === 'ECONNABORTED';
+
+      if (isRateLimited) {
+        this.metrics?.increment('whatsapp.rate_limited');
+      }
+      this.metrics?.increment('whatsapp.failed');
 
       this.logger.error(
         `WhatsApp dispatch failed (status ${status}, code ${errorData?.code}): ${errorMessage}`,

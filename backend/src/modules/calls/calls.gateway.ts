@@ -250,6 +250,34 @@ export class CallsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return { event: 'left:campaign', status: 'ok', campaignId: data?.campaignId };
   }
 
+  // ── Appointment Room Handlers (tenant-isolated) ──────────────────
+
+  @SubscribeMessage('join:appointments')
+  handleJoinAppointments(@ConnectedSocket() client: AuthenticatedSocket) {
+    if (!client.tenantId) {
+      return { event: 'error', message: 'Not authenticated' };
+    }
+    client.join(`appointments:${client.tenantId}`);
+    this.logger.log(`Client ${client.id} joined appointments room for tenant: ${client.tenantId}`);
+    return { event: 'joined:appointments', status: 'ok', tenantId: client.tenantId };
+  }
+
+  @SubscribeMessage('leave:appointments')
+  handleLeaveAppointments(@ConnectedSocket() client: AuthenticatedSocket) {
+    if (client.tenantId) {
+      client.leave(`appointments:${client.tenantId}`);
+      this.logger.log(`Client ${client.id} left appointments room for tenant: ${client.tenantId}`);
+    }
+    return { event: 'left:appointments', status: 'ok' };
+  }
+
+  broadcastAppointmentUpdate(tenantId: string, event: string, payload: any) {
+    if (!this.server) return;
+    const body = { event, ...payload, timestamp: new Date().toISOString() };
+    this.server.to(`appointments:${tenantId}`).emit(event, body);
+    this.server.to(`tenant:${tenantId}`).emit(event, body);
+  }
+
   // ── Broadcasters (tenant-scoped) ─────────────────────────────────
 
   broadcastCallStatus(callId: string, tenantId: string, status: string, details?: any) {

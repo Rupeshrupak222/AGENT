@@ -33,6 +33,18 @@ const SENSITIVE_KEY_NAMES = new Set([
   'R2_SECRET_ACCESS_KEY',
   'EXOTEL_API_TOKEN',
   'RAZORPAY_KEY_SECRET',
+  'CALCOM_API_KEY',
+  'calcomApiKey',
+  'RESEND_API_KEY',
+  'resendApiKey',
+  'WHATSAPP_ACCESS_TOKEN',
+  'whatsappAccessToken',
+  'WHATSAPP_APP_SECRET',
+  'META_ACCESS_TOKEN',
+  'clientSecret',
+  'client_secret',
+  'privateKey',
+  'private_key',
 ]);
 
 const MASKED = '***REDACTED***';
@@ -42,7 +54,7 @@ export function redactSecrets(obj: any, depth = 0): any {
   if (obj === null || obj === undefined) return obj;
 
   if (typeof obj === 'string') {
-    return obj;
+    return redactString(obj);
   }
 
   if (typeof obj !== 'object') return obj;
@@ -59,6 +71,8 @@ export function redactSecrets(obj: any, depth = 0): any {
       redacted[key] = MASKED;
     } else if (typeof value === 'object' && value !== null) {
       redacted[key] = redactSecrets(value, depth + 1);
+    } else if (typeof value === 'string') {
+      redacted[key] = redactString(value);
     } else {
       redacted[key] = value;
     }
@@ -74,5 +88,6 @@ export function redactString(str: string): string {
   }
   result = result.replace(/(Bearer\s+)[A-Za-z0-9._\-]+/gi, '$1' + MASKED);
   result = result.replace(/Basic\s+[A-Za-z0-9+/=]+/gi, 'Basic ' + MASKED);
+  result = result.replace(/([?&](?:apiKey|api_key|token|access_token|secret)=)[^&\s]+/gi, '$1' + MASKED);
   return result;
 }

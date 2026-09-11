@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -43,5 +43,14 @@ export class HealthController {
   @ApiResponse({ status: 200, description: 'Live platform call and agent stats' })
   async getPublicStats() {
     return this.healthService.getPublicLiveStats();
+  }
+
+  @Get('metrics')
+  @Public()
+  @ApiOperation({ summary: 'Prometheus metrics scrape endpoint' })
+  @ApiResponse({ status: 200, description: 'Prometheus-formatted metrics' })
+  getMetrics(@Res({ passthrough: true }) res: any) {
+    res.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+    return this.healthService.getPrometheusMetrics();
   }
 }
