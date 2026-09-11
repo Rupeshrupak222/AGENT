@@ -58,6 +58,12 @@ export function AgentVoiceSimulatorModal({
   } | null>(null);
   const [speechError, setSpeechError] = useState<string | null>(null);
 
+  const [handsFree, setHandsFree] = useState(false);
+  const handsFreeRef = useRef(false);
+  useEffect(() => {
+    handsFreeRef.current = handsFree;
+  }, [handsFree]);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recognitionRef = useRef<any>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
@@ -74,6 +80,9 @@ export function AgentVoiceSimulatorModal({
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
+      }
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
       }
       if (recognitionRef.current) {
         recognitionRef.current.stop();
@@ -101,7 +110,7 @@ export function AgentVoiceSimulatorModal({
           {
             id: "initial-greeting",
             role: "assistant",
-            content: `Hello! I am ${agent.name}. How can I help you today?`,
+            content: `Hello! I am ${agent.name}. How can I assist you today?`,
             timestamp: new Date(),
           },
         ]);
@@ -111,6 +120,7 @@ export function AgentVoiceSimulatorModal({
 
   // Initialize Speech Recognition if supported
   const startSpeechRecognition = useCallback(() => {
+    if (typeof window === "undefined") return;
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
@@ -130,10 +140,10 @@ export function AgentVoiceSimulatorModal({
       const lang = (agent?.language || "english").toLowerCase();
       if (lang.includes("hindi") || lang.includes("hinglish")) {
         recognition.lang = "hi-IN";
-      } else if (lang.includes("tamil")) {
-        recognition.lang = "ta-IN";
       } else if (lang.includes("telugu")) {
         recognition.lang = "te-IN";
+      } else if (lang.includes("tamil")) {
+        recognition.lang = "ta-IN";
       } else if (lang.includes("bengali")) {
         recognition.lang = "bn-IN";
       } else if (lang.includes("gujarati")) {
@@ -149,11 +159,13 @@ export function AgentVoiceSimulatorModal({
         setSpeechError(null);
       };
 
+      let finalRecognized = "";
       recognition.onresult = (event: any) => {
         let transcript = "";
         for (let i = event.resultIndex; i < event.results.length; i++) {
           transcript += event.results[i][0].transcript;
         }
+        finalRecognized = transcript;
         setInputText(transcript);
       };
 
@@ -169,6 +181,10 @@ export function AgentVoiceSimulatorModal({
 
       recognition.onend = () => {
         setIsRecording(false);
+        // In hands-free mode, if we captured text, automatically submit turn
+        if (handsFreeRef.current && finalRecognized.trim()) {
+          handleSendTurn(finalRecognized.trim());
+        }
       };
 
       recognitionRef.current = recognition;
@@ -188,33 +204,88 @@ export function AgentVoiceSimulatorModal({
     setIsRecording(false);
   };
 
-  const playAgentAudio = (audioBase64?: string | null) => {
-    if (!audioBase64 || isMuted) return;
+  const playAgentAudio = (audioBase64?: string | null, textContent?: string) => {
+    if (isMuted) return;
 
-    try {
-      if (audioRef.current) {
-        audioRef.current.pause();
+    // 1. If audioBase64 provided by server TTS
+    if (audioBase64) {
+      try {
+        if (audioRef.current) {
+          audioRef.current.pause();
+        }
+
+        const audio = new Audio(audioBase64);
+        audioRef.current = audio;
+        setIsPlayingAudio(true);
+
+        audio.onended = () => {
+          setIsPlayingAudio(false);
+          if (handsFreeRef.current) {
+            setTimeout(() => startSpeechRecognition(), 400);
+          }
+        };
+        audio.onerror = (e) => {
+          console.warn("Audio playback error:", e);
+          setIsPlayingAudio(false);
+        };
+
+        audio.play().catch((err) => {
+          console.warn("Audio auto-play prevented:", err);
+          setIsPlayingAudio(false);
+        });
+        return;
+      } catch (err) {
+        console.warn("Failed to play audio:", err);
+        setIsPlayingAudio(false);
       }
+    }
 
-      const audio = new Audio(audioBase64);
-      audioRef.current = audio;
-      setIsPlayingAudio(true);
+    // 2. High-Fidelity Web SpeechSynthesis fallback
+    if (textContent && typeof window !== "undefined" && "speechSynthesis" in window) {
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(textContent);
+        const lang = (agent?.language || "english").toLowerCase();
 
-      audio.onended = () => {
-        setIsPlayingAudio(false);
-      };
-      audio.onerror = (e) => {
-        console.warn("Audio playback error:", e);
-        setIsPlayingAudio(false);
-      };
+        if (lang.includes("hindi") || lang.includes("hinglish")) {
+          utterance.lang = "hi-IN";
+        } else if (lang.includes("telugu")) {
+          utterance.lang = "te-IN";
+        } else if (lang.includes("tamil")) {
+          utterance.lang = "ta-IN";
+        } else {
+          utterance.lang = "en-IN";
+        }
 
-      audio.play().catch((err) => {
-        console.warn("Audio auto-play prevented:", err);
+        // Voice matching if available
+        const voices = window.speechSynthesis.getVoices();
+        const matchedVoice = voices.find((v) =>
+          v.lang.toLowerCase().startsWith(utterance.lang.slice(0, 2).toLowerCase())
+        );
+        if (matchedVoice) {
+          utterance.voice = matchedVoice;
+        }
+
+        utterance.rate = 1.02;
+        utterance.pitch = 1.0;
+
+        utterance.onstart = () => setIsPlayingAudio(true);
+        utterance.onend = () => {
+          setIsPlayingAudio(false);
+          if (handsFreeRef.current) {
+            setTimeout(() => startSpeechRecognition(), 400);
+          }
+        };
+        utterance.onerror = (e) => {
+          console.warn("Speech synthesis error:", e);
+          setIsPlayingAudio(false);
+        };
+
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        console.warn("SpeechSynthesis error:", e);
         setIsPlayingAudio(false);
-      });
-    } catch (err) {
-      console.warn("Failed to play audio:", err);
-      setIsPlayingAudio(false);
+      }
     }
   };
 
@@ -222,6 +293,9 @@ export function AgentVoiceSimulatorModal({
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
+    }
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
     }
     setIsPlayingAudio(false);
   };
@@ -272,10 +346,8 @@ export function AgentVoiceSimulatorModal({
         ttsMs: res.metrics?.ttsLatencyMs || 0,
       });
 
-      // Play synthesized audio
-      if (res.audioBase64) {
-        playAgentAudio(res.audioBase64);
-      }
+      // Play synthesized audio (Edge-TTS base64 or browser SpeechSynthesis)
+      playAgentAudio(res.audioBase64, res.replyText);
     } catch (err) {
       toastError(normalizeApiError(err));
       const errorMsg: ChatMessage = {
@@ -304,15 +376,19 @@ export function AgentVoiceSimulatorModal({
           timestamp: new Date(),
         },
       ]);
+      // Also speak the initial greeting if not muted
+      playAgentAudio(null, agent.openingScript);
     } else {
+      const greeting = `Hello! I am ${agent?.name || "AI Agent"}. How can I assist you?`;
       setMessages([
         {
           id: `initial-greeting-${Date.now()}`,
           role: "assistant",
-          content: `Hello! I am ${agent?.name || "AI Agent"}. How can I assist you?`,
+          content: greeting,
           timestamp: new Date(),
         },
       ]);
+      playAgentAudio(null, greeting);
     }
     success("Conversation restarted.");
   };
@@ -333,12 +409,41 @@ export function AgentVoiceSimulatorModal({
 
   if (!isOpen || !agent) return null;
 
-  const quickPrompts = [
-    "What services do you offer?",
-    "How much does your solution cost?",
-    "I would like to schedule a product demo.",
-    "I'm not interested right now.",
-  ];
+  // Dynamic language & role-specific prompt chips
+  const agentName = agent.name.toLowerCase();
+  const agentLang = (agent.language || "english").toLowerCase();
+
+  let quickPrompts: string[] = [];
+  if (agentName.includes("adyapan") || agent.role.includes("counselor") || agentName.includes("edutech")) {
+    quickPrompts = [
+      "Tell me about Full Stack AI Masterclass",
+      "What is the course fee and EMI plan?",
+      "Book a free counseling demo class",
+      "Do you provide placement guarantee?",
+      "Can I get the ADYAPAN15 discount code?",
+    ];
+  } else if (agentLang.includes("hindi") || agentLang.includes("hinglish")) {
+    quickPrompts = [
+      "मुझे कोर्स की फीस और सिलेबस बताएं",
+      "क्या वीकेंड पर लाइव क्लास होती है?",
+      "डेमो क्लास कैसे बुक करूँ?",
+      "कोर्स के बाद प्लेसमेंट सपोर्ट कैसा है?",
+    ];
+  } else if (agentLang.includes("telugu")) {
+    quickPrompts = [
+      "కోర్సు ఫీజు మరియు డ్యూరేషన్ ఎంత?",
+      "డెమో క్లాస్ ఎప్పుడు షెడ్యూల్ చేయవచ్చు?",
+      "ప్లేస్‌మెంట్ అసిస్టెన్స్ ఇస్తారా?",
+      "వీకెండ్ బ్యాచ్ అందుబాటులో ఉందా?",
+    ];
+  } else {
+    quickPrompts = [
+      "What courses & enterprise solutions do you offer?",
+      "How much does your full program cost?",
+      "I'd like to schedule a 1-on-1 counseling demo",
+      "Can you explain your 0% EMI financing options?",
+    ];
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md">
@@ -373,12 +478,34 @@ export function AgentVoiceSimulatorModal({
               </div>
               <p className="text-xs text-white/50 mt-0.5 flex items-center gap-1.5">
                 <Radio className="w-3 h-3 text-emerald-400" />
-                Live In-Browser Voice Tester · Edge-TTS Neural Synthesis
+                Live Two-Way Voice Simulator · Multi-lingual Speech-to-Speech
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-1.5">
+            {/* Hands-Free Voice Conversation Mode Toggle */}
+            <button
+              onClick={() => {
+                const next = !handsFree;
+                setHandsFree(next);
+                if (next) {
+                  success("Hands-free continuous conversation mode enabled!");
+                  startSpeechRecognition();
+                } else {
+                  stopSpeechRecognition();
+                }
+              }}
+              title={handsFree ? "Disable Hands-Free Mode" : "Enable Hands-Free Voice Mode"}
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                handsFree
+                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm shadow-emerald-500/20 animate-pulse"
+                  : "bg-white/[0.06] text-white/60 hover:text-white border border-white/10"
+              }`}
+            >
+              <Mic className={`w-3.5 h-3.5 ${handsFree ? "text-emerald-300" : ""}`} />
+              <span className="hidden sm:inline">Hands-Free</span>
+            </button>
             <button
               onClick={() => setIsMuted(!isMuted)}
               title={isMuted ? "Unmute Audio" : "Mute Audio"}

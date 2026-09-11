@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Plus,
   Bot,
@@ -607,10 +607,26 @@ function AgentCardItem({
         </div>
 
         {/* Language & Voice */}
-        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-white/40 mb-4">
+        <div className="flex items-center justify-between text-xs mb-4">
           <div className="flex items-center gap-1.5">
-            <Globe2 className="w-3.5 h-3.5" />
-            <span>{langLabels[agent.language] || agent.language}</span>
+            {agent.language === "telugu" ? (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30">
+                <span>🇮🇳</span> Telugu · తెలుగు
+              </span>
+            ) : agent.language === "hindi" ? (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30">
+                <span>🇮🇳</span> Hindi · हिन्दी
+              </span>
+            ) : agent.language === "english" ? (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/15 text-blue-600 dark:text-blue-300 border border-blue-500/30">
+                <span>🇬🇧</span> English
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-white/70">
+                <Globe2 className="w-3 h-3" />
+                {langLabels[agent.language] || agent.language}
+              </span>
+            )}
           </div>
           {agent.status === "active" && (
             <WaveAnimation active size="sm" bars={4} color="bg-brand-500" />
@@ -668,6 +684,7 @@ export default function AgentsPage() {
   const [studioAgent, setStudioAgent] = useState<AgentItem | null>(null);
   const [testingAgent, setTestingAgent] = useState<AgentItem | null>(null);
   const [filter, setFilter] = useState("all");
+  const [languageFilter, setLanguageFilter] = useState("all");
   const [search, setSearch] = useState("");
 
   const fetchAgents = useCallback(async () => {
@@ -689,12 +706,28 @@ export default function AgentsPage() {
     fetchAgents();
   }, [fetchAgents]);
 
+  const languageCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: agents.length, english: 0, hindi: 0, telugu: 0 };
+    agents.forEach((a) => {
+      const l = (a.language || "").toLowerCase();
+      if (l === "english" || l === "hindi" || l === "telugu") {
+        counts[l] = (counts[l] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [agents]);
+
   const filtered = agents.filter((a) => {
+    const lang = (a.language || "").toLowerCase();
+    const matchLang = languageFilter === "all" || lang === languageFilter;
+    if (!matchLang) return false;
+
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return (
       a.name.toLowerCase().includes(q) ||
-      (a.role || "").toLowerCase().includes(q)
+      (a.role || "").toLowerCase().includes(q) ||
+      (a.businessGoal || "").toLowerCase().includes(q)
     );
   });
 
@@ -774,31 +807,60 @@ export default function AgentsPage() {
         </div>
 
         {/* Filters & Search Toolbar */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-1 bg-slate-100/70 dark:bg-white/[0.08]/70 dark:bg-white/5 rounded-xl p-1">
-            {["all", "active", "paused", "draft", "archived"].map((f) => (
+        <div className="space-y-3">
+          {/* Language Selection Tabs */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider text-[10px]">Language:</span>
+            {[
+              { id: "all", label: "All Languages", flag: "🌐", count: languageCounts.all },
+              { id: "english", label: "English", flag: "🇬🇧", count: languageCounts.english },
+              { id: "hindi", label: "Hindi", flag: "🇮🇳", count: languageCounts.hindi },
+              { id: "telugu", label: "Telugu (తెలుగు)", flag: "🇮🇳", count: languageCounts.telugu },
+            ].map((lang) => (
               <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
-                  filter === f
-                    ? "bg-brand-600 text-white shadow-sm"
-                    : "text-slate-500 dark:text-white/50 hover:text-slate-900 dark:hover:text-white"
+                key={lang.id}
+                onClick={() => setLanguageFilter(lang.id)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                  languageFilter === lang.id
+                    ? "bg-brand-500/15 text-brand-600 dark:text-brand-400 border-brand-500/30 shadow-sm"
+                    : "bg-slate-100 dark:bg-white/[0.04] text-slate-600 dark:text-white/60 border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20"
                 }`}
               >
-                {f}
+                <span>{lang.flag}</span>
+                <span>{lang.label}</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/5 dark:bg-white/10 font-mono">
+                  {lang.count}
+                </span>
               </button>
             ))}
           </div>
 
-          <div className="flex-1 min-w-[200px] max-w-xs relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by agent name or role..."
-              className="w-full h-9 pl-9 pr-3 rounded-xl text-xs bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/30 outline-none focus:border-brand-500"
-            />
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-1 bg-slate-100/70 dark:bg-white/[0.08]/70 dark:bg-white/5 rounded-xl p-1">
+              {["all", "active", "paused", "draft", "archived"].map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
+                    filter === f
+                      ? "bg-brand-600 text-white shadow-sm"
+                      : "text-slate-500 dark:text-white/50 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex-1 min-w-[200px] max-w-xs relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by agent name, role, goal..."
+                className="w-full h-9 pl-9 pr-3 rounded-xl text-xs bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/30 outline-none focus:border-brand-500"
+              />
+            </div>
           </div>
         </div>
 

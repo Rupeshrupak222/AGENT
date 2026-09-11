@@ -14,6 +14,7 @@ import {
   Bot,
   Phone,
   Search,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -72,8 +73,24 @@ export default function NumbersPage() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const [showGuide, setShowGuide] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
   const { success, error: toastError } = useToast();
   const canManage = can(PERMISSIONS.TELEPHONY_MANAGE);
+
+  const handleCopy = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    success("Copied to clipboard!");
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const domain = typeof window !== "undefined" ? window.location.origin : "https://api.agentcall.ai";
+  const twilioInboundWebhook = `${domain}/api/v1/telephony/webhooks/incoming/twilio`;
+  const twilioStatusWebhook = `${domain}/api/v1/telephony/webhooks/status/twilio`;
+  const exotelInboundWebhook = `${domain}/api/v1/telephony/webhooks/incoming/exotel`;
+  const exotelStatusWebhook = `${domain}/api/v1/telephony/webhooks/status/exotel`;
 
   const load = useCallback(
     async (manual = false) => {
@@ -152,7 +169,7 @@ export default function NumbersPage() {
         });
         success("Phone number updated.");
       } else {
-        await numbersApi.create({
+        const created = await numbersApi.create({
           number: form.number.trim(),
           provider: form.provider,
           label: form.label.trim() || undefined,
@@ -160,6 +177,12 @@ export default function NumbersPage() {
           isOutbound: form.isOutbound,
           status: form.status,
         });
+        if (form.assignedAgentId) {
+          await numbersApi.update(created.id, {
+            assignedAgentId: form.assignedAgentId,
+            status: "assigned",
+          });
+        }
         success("Phone number added to inventory.");
       }
       setShowForm(false);
@@ -207,7 +230,14 @@ export default function NumbersPage() {
             Company telephony inventory — numbers your AI agents dial from and answer on.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setShowGuide(true)}
+            className="inline-flex items-center gap-2 h-10 px-3.5 rounded-xl text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-700 dark:text-amber-300 transition-colors"
+          >
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            Provider Webhooks Guide
+          </button>
           <button
             onClick={() => load(true)}
             disabled={refreshing}
@@ -339,6 +369,108 @@ export default function NumbersPage() {
         </div>
       )}
 
+      {/* Provider Webhook & Telephony Gateway Guide Modal */}
+      {showGuide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-2xl bg-white dark:bg-[#140b08] border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="p-5 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-500" />
+                  Telephony Gateway & Webhooks Guide
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-white/50 mt-0.5">
+                  How to configure real phone numbers from Twilio and Exotel to route to your AI agents.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowGuide(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 overflow-y-auto space-y-6 text-xs text-slate-600 dark:text-white/70">
+              {/* Option 1: Exotel (India) */}
+              <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                    🇮🇳 Exotel Telephony (India DLT & Virtual Numbers)
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-200">
+                    Recommended for India
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-white/70 leading-relaxed">
+                  Best for calling in India (+91) with zero latency and full compliance. Get a Virtual Number (VN) from Exotel, then set the passthru applet URL:
+                </p>
+                <div className="space-y-1.5 font-mono text-[11px]">
+                  <div className="text-[10px] text-slate-400 uppercase font-bold">Voice Incoming Webhook URL:</div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10">
+                    <span className="flex-1 truncate text-slate-800 dark:text-amber-300">{exotelInboundWebhook}</span>
+                    <button
+                      onClick={() => handleCopy(exotelInboundWebhook, "exotel-inbound")}
+                      className="px-2 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-800 dark:text-amber-200 text-[10px] font-sans font-bold"
+                    >
+                      {copiedKey === "exotel-inbound" ? "Copied!" : "Copy"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Option 2: Twilio (Global / US) */}
+              <div className="p-4 rounded-xl border border-sky-500/30 bg-sky-500/5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                    🌐 Twilio Telephony (US & Global Numbers)
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-800 dark:text-sky-200">
+                    Global PSTN
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-white/70 leading-relaxed">
+                  In Twilio Console &gt; Phone Numbers &gt; Configure &gt; A Call Comes In &gt; Select <strong>Webhook (HTTP POST)</strong> and paste:
+                </p>
+                <div className="space-y-1.5 font-mono text-[11px]">
+                  <div className="text-[10px] text-slate-400 uppercase font-bold">TwiML Inbound Webhook:</div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10">
+                    <span className="flex-1 truncate text-slate-800 dark:text-sky-300">{twilioInboundWebhook}</span>
+                    <button
+                      onClick={() => handleCopy(twilioInboundWebhook, "twilio-inbound")}
+                      className="px-2 py-1 rounded bg-sky-500/20 hover:bg-sky-500/30 text-sky-800 dark:text-sky-200 text-[10px] font-sans font-bold"
+                    >
+                      {copiedKey === "twilio-inbound" ? "Copied!" : "Copy"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step by step instructions */}
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 space-y-2">
+                <h4 className="font-bold text-slate-900 dark:text-white">Connecting Phone Numbers to Agents:</h4>
+                <ol className="list-decimal pl-4 space-y-1.5 text-xs text-slate-600 dark:text-white/60">
+                  <li>Click <strong>&quot;Add Number&quot;</strong> in the top right.</li>
+                  <li>Enter your number (e.g. <code>+91 80 4712 3456</code> or <code>+1 415 555 2671</code>).</li>
+                  <li>Select your provider (<strong>Twilio</strong>, <strong>Exotel</strong>, or <strong>Sandbox</strong>).</li>
+                  <li>Assign your AI Agent (e.g., <strong>Adyapan AI</strong> for Edutech course counseling, <strong>Priya</strong> for Hindi inquiries, or <strong>Srinivas</strong> for Telugu).</li>
+                  <li>Save! All calls to that number will instantly trigger real-time AI autonomous voice conversations.</li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20 flex justify-end">
+              <button
+                onClick={() => setShowGuide(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-slate-900 dark:bg-white/20 hover:bg-slate-800 dark:hover:bg-white/30"
+              >
+                Got It, Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Create / edit modal */}
       {showForm && canManage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -404,22 +536,20 @@ export default function NumbersPage() {
                 </select>
               </div>
 
-              {form.id && (
-                <div>
-                  <label htmlFor="num-agent" className="block text-xs font-semibold text-slate-500 dark:text-white/50 mb-1.5">Assign to Agent</label>
-                  <select
-                    id="num-agent"
-                    value={form.assignedAgentId}
-                    onChange={(e) => setForm({ ...form, assignedAgentId: e.target.value })}
-                    className="w-full h-10 rounded-xl px-3 text-sm bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500"
-                  >
-                    <option value="">Unassigned</option>
-                    {agents.map((a) => (
-                      <option key={a.id} value={a.id}>{a.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              <div>
+                <label htmlFor="num-agent" className="block text-xs font-semibold text-slate-500 dark:text-white/50 mb-1.5">Assign to Agent</label>
+                <select
+                  id="num-agent"
+                  value={form.assignedAgentId}
+                  onChange={(e) => setForm({ ...form, assignedAgentId: e.target.value })}
+                  className="w-full h-10 rounded-xl px-3 text-sm bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500"
+                >
+                  <option value="">Unassigned</option>
+                  {agents.map((a) => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+                </select>
+              </div>
 
               <div className="flex items-center gap-5">
                 <label className="flex items-center gap-2 cursor-pointer select-none">

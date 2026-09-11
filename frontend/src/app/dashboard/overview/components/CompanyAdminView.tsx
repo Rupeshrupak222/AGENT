@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -32,8 +32,12 @@ import {
   ArrowUpRight,
   Landmark,
   FileText,
+  Volume2,
+  Play,
+  Mic,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
+import { AgentVoiceSimulatorModal } from "@/components/agents/AgentVoiceSimulatorModal";
 import {
   AreaChart,
   Area,
@@ -54,6 +58,7 @@ import {
   CallItem,
   TenantUsage,
   CompanyAlert,
+  AgentItem,
 } from "@/lib/api";
 import type { PeriodPreset, DashboardRange } from "@/lib/dashboard-range";
 
@@ -82,6 +87,7 @@ interface CompanyAdminViewProps {
   dashboard: CompanyDashboardData | null;
   recentCalls: CallItem[];
   tenantUsage: TenantUsage | null;
+  agents?: AgentItem[];
   period: PeriodPreset;
   setPeriod: (p: PeriodPreset) => void;
   customFrom: string;
@@ -223,6 +229,7 @@ export function CompanyAdminView({
   dashboard,
   recentCalls,
   tenantUsage,
+  agents = [],
   period,
   setPeriod,
   customFrom,
@@ -237,6 +244,25 @@ export function CompanyAdminView({
   companyPlan,
 }: CompanyAdminViewProps) {
   const { success } = useToast();
+
+  // Multilingual Calling Agents State
+  const [selectedCallingAgent, setSelectedCallingAgent] = useState<AgentItem | null>(null);
+  const [isVoiceSimOpen, setIsVoiceSimOpen] = useState(false);
+  const [agentLangFilter, setAgentLangFilter] = useState<"all" | "english" | "hindi" | "telugu">("all");
+
+  const agentLanguageCounts = useMemo(() => {
+    return {
+      all: (agents || []).length,
+      english: (agents || []).filter((a) => a.language === "english").length,
+      hindi: (agents || []).filter((a) => a.language === "hindi").length,
+      telugu: (agents || []).filter((a) => a.language === "telugu").length,
+    };
+  }, [agents]);
+
+  const filteredCallingAgents = useMemo(() => {
+    if (agentLangFilter === "all") return agents || [];
+    return (agents || []).filter((a) => a.language === agentLangFilter);
+  }, [agents, agentLangFilter]);
 
   const kpis = dashboard?.kpis?.current;
   const prev = dashboard?.kpis?.previous;
@@ -654,6 +680,164 @@ export function CompanyAdminView({
             </motion.div>
           ))}
         </div>
+      </section>
+
+      {/* ── Multilingual Calling Fleet (English · Hindi · Telugu) ── */}
+      <section className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-brand-500/10 to-purple-500/10 dark:from-brand-950/40 dark:via-amber-950/30 dark:to-purple-950/30 border border-amber-500/20 dark:border-brand-500/20">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-brand-600 flex items-center justify-center flex-shrink-0 shadow-md shadow-brand-500/20">
+              <Bot className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base font-black text-slate-900 dark:text-white tracking-tight">
+                  Autonomous Multilingual AI Calling Fleet
+                </h2>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/25">
+                  <Sparkles className="w-3 h-3" /> 3 Enterprise Languages
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-white/50 mt-1 max-w-xl">
+                Supervise active AI voice employees operating across English, Hindi, and Telugu regional markets with native pronunciation and specialized qualification scripts.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href="/dashboard/agents"
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-semibold bg-brand-500 hover:bg-brand-600 text-white shadow-md shadow-brand-500/20 transition-all"
+            >
+              <Bot className="w-3.5 h-3.5" /> Agent Studio & Build
+            </Link>
+          </div>
+        </div>
+
+        {/* Language Filter Tabs */}
+        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 overflow-x-auto">
+          {[
+            { id: "all", label: "All Calling Desks", flag: "🌐", count: agentLanguageCounts.all },
+            { id: "english", label: "English Desk", flag: "🇬🇧", count: agentLanguageCounts.english },
+            { id: "hindi", label: "Hindi Desk (हिन्दी)", flag: "🇮🇳", count: agentLanguageCounts.hindi },
+            { id: "telugu", label: "Telugu Desk (తెలుగు)", flag: "🇮🇳", count: agentLanguageCounts.telugu },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setAgentLangFilter(tab.id as any)}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                agentLangFilter === tab.id
+                  ? "bg-gradient-to-r from-brand-600 to-amber-600 text-white shadow-md shadow-brand-900/30"
+                  : "text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/5"
+              }`}
+            >
+              <span>{tab.flag}</span>
+              <span>{tab.label}</span>
+              <span
+                className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono ${
+                  agentLangFilter === tab.id ? "bg-white/20 text-white" : "bg-black/10 dark:bg-white/10 text-slate-600 dark:text-white/50"
+                }`}
+              >
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Agents Grid */}
+        {filteredCallingAgents.length === 0 ? (
+          <div className="text-center py-12 rounded-2xl border border-dashed border-slate-200 dark:border-white/10 p-6">
+            <Bot className="w-8 h-8 text-slate-400 dark:text-white/30 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-slate-700 dark:text-white/70">No calling agents found</p>
+            <p className="text-xs text-slate-400 dark:text-white/40 mt-1">
+              Create a new calling agent in this language from the Agent Studio.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredCallingAgents.map((ag) => {
+              const isTelugu = ag.language === "telugu";
+              const isHindi = ag.language === "hindi";
+
+              return (
+                <div
+                  key={ag.id}
+                  className="rounded-2xl p-4 sm:p-5 bg-white dark:bg-[#120a06]/90 border border-slate-200 dark:border-white/10 hover:border-brand-500/40 transition-all flex flex-col justify-between gap-4 shadow-sm"
+                >
+                  <div className="space-y-3">
+                    {/* Card Header */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-brand-600 to-amber-700 flex items-center justify-center text-sm font-bold text-white shadow-md flex-shrink-0">
+                          {ag.name.slice(0, 2).toUpperCase()}
+                          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-[#120a06]" />
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-slate-900 dark:text-white text-sm truncate flex items-center gap-1.5">
+                            {ag.name}
+                          </h4>
+                          <span className="text-[11px] text-slate-500 dark:text-white/40 truncate block capitalize">
+                            {ag.role?.replace(/_/g, " ") || "Autonomous Voice Agent"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Language Badge */}
+                      {isTelugu ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30 flex-shrink-0">
+                          🇮🇳 Telugu · తెలుగు
+                        </span>
+                      ) : isHindi ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 flex-shrink-0">
+                          🇮🇳 Hindi · हिन्दी
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/15 text-blue-600 dark:text-blue-300 border border-blue-500/30 flex-shrink-0">
+                          🇬🇧 English
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Script Snippet / Prompt */}
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/[0.06] text-xs text-slate-600 dark:text-white/70 italic line-clamp-2">
+                      &ldquo;{ag.openingScript || ag.businessGoal || "Autonomous calling agent configured and ready to dial."}&rdquo;
+                    </div>
+
+                    {/* Voice Model & Capabilities */}
+                    <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 dark:text-white/40 pt-1">
+                      <span className="flex items-center gap-1 truncate">
+                        <Volume2 className="w-3.5 h-3.5 text-brand-500 flex-shrink-0" />
+                        <span className="truncate">{ag.voiceId || "Default Neural"}</span>
+                      </span>
+                      <span className="font-semibold text-slate-700 dark:text-white/70">
+                        {ag._count?.calls ?? 0} calls
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2 pt-3 border-t border-slate-100 dark:border-white/[0.06]">
+                    <button
+                      onClick={() => {
+                        setSelectedCallingAgent(ag);
+                        setIsVoiceSimOpen(true);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold bg-brand-500/10 hover:bg-brand-500/20 text-brand-600 dark:text-brand-300 border border-brand-500/30 transition-all"
+                    >
+                      <Play className="w-3 h-3 fill-current" /> Test Voice
+                    </button>
+                    <Link
+                      href={`/dashboard/agents?agentId=${ag.id}`}
+                      className="flex items-center justify-center h-8 px-3 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-white/[0.05] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-white/70 border border-slate-200 dark:border-white/10 transition-all"
+                    >
+                      Configure
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* ── Charts Row ────────────────────────────────────────── */}
@@ -1193,6 +1377,16 @@ export function CompanyAdminView({
           })}
         </div>
       </div>
+
+      {/* Voice Simulator Modal for Quick Testing */}
+      <AgentVoiceSimulatorModal
+        agent={selectedCallingAgent}
+        isOpen={isVoiceSimOpen}
+        onClose={() => {
+          setIsVoiceSimOpen(false);
+          setSelectedCallingAgent(null);
+        }}
+      />
     </div>
   );
 }

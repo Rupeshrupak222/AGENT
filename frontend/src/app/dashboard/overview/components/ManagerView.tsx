@@ -23,6 +23,9 @@ import {
   ShieldCheck,
   Sparkles,
   Bot,
+  Volume2,
+  Play,
+  Mic,
 } from "lucide-react";
 import {
   AreaChart,
@@ -43,7 +46,9 @@ import type {
   CompanyDashboardKpis,
   CallItem,
   ConversionFunnelItem,
+  AgentItem,
 } from "@/lib/api";
+import { AgentVoiceSimulatorModal } from "@/components/agents/AgentVoiceSimulatorModal";
 import type { PeriodPreset, DashboardRange } from "@/lib/dashboard-range";
 import {
   OUTCOME_COLORS,
@@ -63,6 +68,7 @@ interface ManagerViewProps {
   dashboard: CompanyDashboardData | null;
   recentCalls: CallItem[];
   funnelData: ConversionFunnelItem[];
+  agents?: AgentItem[];
   period: PeriodPreset;
   setPeriod: (p: PeriodPreset) => void;
   customFrom: string;
@@ -99,6 +105,7 @@ export function ManagerView({
   dashboard,
   recentCalls,
   funnelData,
+  agents = [],
   period,
   setPeriod,
   customFrom,
@@ -113,6 +120,31 @@ export function ManagerView({
   workspacePlan,
 }: ManagerViewProps) {
   const { success } = useToast();
+
+  // Multilingual Shift Supervisor State
+  const [selectedSimAgent, setSelectedSimAgent] = useState<AgentItem | null>(null);
+  const [isSimModalOpen, setIsSimModalOpen] = useState(false);
+  const [shiftLangFilter, setShiftLangFilter] = useState<"all" | "english" | "hindi" | "telugu">("all");
+
+  const shiftLanguageCounts = useMemo(() => {
+    return {
+      all: (agents || []).length,
+      english: (agents || []).filter((a) => a.language === "english").length,
+      hindi: (agents || []).filter((a) => a.language === "hindi").length,
+      telugu: (agents || []).filter((a) => a.language === "telugu").length,
+    };
+  }, [agents]);
+
+  const filteredShiftAgents = useMemo(() => {
+    if (shiftLangFilter === "all") return agents || [];
+    return (agents || []).filter((a) => a.language === shiftLangFilter);
+  }, [agents, shiftLangFilter]);
+
+  const agentsById = useMemo(() => {
+    const map = new Map<string, AgentItem>();
+    (agents || []).forEach((ag) => map.set(ag.id, ag));
+    return map;
+  }, [agents]);
 
   const kpis = dashboard?.kpis?.current;
   const prev = dashboard?.kpis?.previous;
@@ -820,6 +852,155 @@ export function ManagerView({
         </div>
       </div>
 
+      {/* ── Multilingual Calling Shift & Operations Monitor ─────── */}
+      <section className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-brand-500/10 dark:from-purple-950/40 dark:via-indigo-950/30 dark:to-brand-950/30 border border-purple-500/20">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-md shadow-purple-500/20">
+              <Radio className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base font-black text-slate-900 dark:text-white tracking-tight">
+                  Multilingual Calling Shift & Operations Monitor
+                </h2>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/25">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Shift Queues
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-white/50 mt-1 max-w-xl">
+                Real-time operational readiness and queue dispatch for English, Hindi, and Telugu autonomous calling agents.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href="/dashboard/calls"
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-500/20 transition-all"
+            >
+              <PhoneCall className="w-3.5 h-3.5" /> Live Call Floor
+            </Link>
+          </div>
+        </div>
+
+        {/* Shift Language Filter Tabs */}
+        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 overflow-x-auto">
+          {[
+            { id: "all", label: "All Regional Shifts", flag: "🌐", count: shiftLanguageCounts.all },
+            { id: "english", label: "English Calling Queue", flag: "🇬🇧", count: shiftLanguageCounts.english },
+            { id: "hindi", label: "Hindi Calling Queue (हिन्दी)", flag: "🇮🇳", count: shiftLanguageCounts.hindi },
+            { id: "telugu", label: "Telugu Calling Queue (తెలుగు)", flag: "🇮🇳", count: shiftLanguageCounts.telugu },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setShiftLangFilter(tab.id as any)}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                shiftLangFilter === tab.id
+                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-900/30"
+                  : "text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/5"
+              }`}
+            >
+              <span>{tab.flag}</span>
+              <span>{tab.label}</span>
+              <span
+                className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono ${
+                  shiftLangFilter === tab.id ? "bg-white/20 text-white" : "bg-black/10 dark:bg-white/10 text-slate-600 dark:text-white/50"
+                }`}
+              >
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Shift Agents Grid */}
+        {filteredShiftAgents.length === 0 ? (
+          <div className="text-center py-10 rounded-2xl border border-dashed border-slate-200 dark:border-white/10 p-6">
+            <Bot className="w-8 h-8 text-slate-400 dark:text-white/30 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-slate-700 dark:text-white/70">No agents assigned to this shift queue</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredShiftAgents.map((ag) => {
+              const isTelugu = ag.language === "telugu";
+              const isHindi = ag.language === "hindi";
+
+              return (
+                <div
+                  key={ag.id}
+                  className="rounded-2xl p-4 bg-white dark:bg-[#120a06]/90 border border-slate-200 dark:border-white/10 hover:border-purple-500/40 transition-all flex flex-col justify-between gap-3.5 shadow-sm"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-700 flex items-center justify-center text-xs font-bold text-white shadow flex-shrink-0">
+                          {ag.name.slice(0, 2).toUpperCase()}
+                          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-[#120a06]" />
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-slate-900 dark:text-white text-sm truncate">{ag.name}</h4>
+                          <p className="text-[11px] text-slate-500 dark:text-white/40 truncate capitalize">
+                            {ag.role?.replace(/_/g, " ") || "Calling Agent"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Language Badge */}
+                      {isTelugu ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30 flex-shrink-0">
+                          🇮🇳 Telugu · తెలుగు
+                        </span>
+                      ) : isHindi ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 flex-shrink-0">
+                          🇮🇳 Hindi · हिन्दी
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/15 text-blue-600 dark:text-blue-300 border border-blue-500/30 flex-shrink-0">
+                          🇬🇧 English
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/[0.06] text-[11px] text-slate-600 dark:text-white/70 italic line-clamp-2">
+                      &ldquo;{ag.openingScript || ag.businessGoal || "Agent active on floor."}&rdquo;
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 dark:text-white/40">
+                      <span className="flex items-center gap-1 truncate">
+                        <Volume2 className="w-3.5 h-3.5 text-purple-500 flex-shrink-0" />
+                        <span className="truncate">{ag.voiceId || "Default Neural"}</span>
+                      </span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Ready
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2.5 border-t border-slate-100 dark:border-white/[0.06]">
+                    <button
+                      onClick={() => {
+                        setSelectedSimAgent(ag);
+                        setIsSimModalOpen(true);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-1.5 h-8 px-2.5 rounded-lg text-xs font-semibold bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/30 transition-all"
+                    >
+                      <Play className="w-3 h-3 fill-current" /> Quick Audio Test
+                    </button>
+                    <Link
+                      href={`/dashboard/agents?agentId=${ag.id}`}
+                      className="flex items-center justify-center h-8 px-2.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-white/[0.05] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-white/70 border border-slate-200 dark:border-white/10 transition-all"
+                    >
+                      Settings
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
       {/* ── Agent + Team performance ──────────────────────────── */}
       <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
         {/* AI Agent Fleet */}
@@ -865,6 +1046,21 @@ export function ManagerView({
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-slate-900 dark:text-white truncate flex items-center gap-2">
                           {agent.name}
+                          {agentsById.get(agent.id)?.language === "telugu" && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                              తెలుగు
+                            </span>
+                          )}
+                          {agentsById.get(agent.id)?.language === "hindi" && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                              हिन्दी
+                            </span>
+                          )}
+                          {agentsById.get(agent.id)?.language === "english" && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+                              EN
+                            </span>
+                          )}
                           <span
                             className={`hidden sm:inline-flex text-[10px] font-mono px-1.5 py-0.5 rounded capitalize ${
                               statusActive
@@ -1167,6 +1363,16 @@ export function ManagerView({
           </div>
         )}
       </div>
+
+      {/* Quick Audio Test Simulator Modal */}
+      <AgentVoiceSimulatorModal
+        agent={selectedSimAgent}
+        isOpen={isSimModalOpen}
+        onClose={() => {
+          setIsSimModalOpen(false);
+          setSelectedSimAgent(null);
+        }}
+      />
     </div>
   );
 }

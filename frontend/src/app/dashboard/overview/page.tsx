@@ -83,7 +83,7 @@ export default function OverviewPage() {
       if (opts?.manual) setIsRefreshing(true);
       setErrorMessage(null);
 
-      const [dashboardRes, callsRes, usageRes] = await Promise.allSettled([
+      const [dashboardRes, callsRes, usageRes, agentsRes] = await Promise.allSettled([
         companyDashboardApi.get({
           from: range.from,
           to: range.to,
@@ -93,6 +93,7 @@ export default function OverviewPage() {
         }),
         callsApi.list({ limit: 6 }),
         tenantApi.usage(),
+        agentsApi.list(),
       ]);
 
       let primaryError: string | null = null;
@@ -109,6 +110,10 @@ export default function OverviewPage() {
 
       if (usageRes.status === "fulfilled") {
         setTenantUsage(usageRes.value);
+      }
+
+      if (agentsRes.status === "fulfilled") {
+        setAllAgents(agentsRes.value || []);
       }
 
       if (dashboardRes.status === "rejected" && callsRes.status === "rejected") {
@@ -249,6 +254,7 @@ export default function OverviewPage() {
           dashboard={companyDashboard}
           recentCalls={recentCalls}
           funnelData={funnelData}
+          agents={allAgents}
           period={period}
           setPeriod={setPeriod}
           customFrom={customFrom}
@@ -267,6 +273,7 @@ export default function OverviewPage() {
           dashboard={companyDashboard}
           recentCalls={recentCalls}
           tenantUsage={tenantUsage}
+          agents={allAgents}
           period={period}
           setPeriod={setPeriod}
           customFrom={customFrom}

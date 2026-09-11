@@ -22,6 +22,7 @@ import {
   RefreshCw,
   Calendar,
   Headphones,
+  AlertCircle,
 } from "lucide-react";
 import { cn, formatNumber } from "@/lib/utils";
 import { platformApi, PlatformDashboardData, PlatformCallTrendItem, PlatformCompanyPerformance } from "@/lib/api";
@@ -116,22 +117,41 @@ export default function AdminDashboardPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  if (loading && !dashboard) {
+  if (!dashboard) {
     return (
       <AdminLayout>
         <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="h-32 rounded-xl bg-white dark:bg-[#120a06]/80 border border-slate-200 dark:border-white/[0.07] animate-pulse" />
-            ))}
-          </div>
+          {loading ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div key={i} className="h-32 rounded-xl bg-white dark:bg-[#120a06]/80 border border-slate-200 dark:border-white/[0.07] animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16 bg-white dark:bg-[#120a06]/80 rounded-2xl border border-slate-200 dark:border-white/[0.07] p-8">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Platform Metrics Unavailable</h3>
+              <p className="text-sm text-slate-500 dark:text-white/50 max-w-md mx-auto mb-6">
+                Unable to load platform overview metrics. Check your network or verify super admin privileges.
+              </p>
+              <button
+                onClick={() => fetchData()}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all shadow-md active:scale-95 hover:brightness-105"
+                style={{ background: "linear-gradient(135deg, #B08968 0%, #8B5A2B 50%, #6F4428 100%)" }}
+              >
+                <RefreshCw className="w-4 h-4" /> Try Again
+              </button>
+            </div>
+          )}
         </div>
       </AdminLayout>
     );
   }
 
-  const d = dashboard!;
-  const revenue = d.revenue.mrr > 0 ? `₹${formatNumber(d.revenue.mrr)}` : "—";
+  const d = dashboard;
+  const revenue = d.revenue?.mrr > 0 ? `₹${formatNumber(d.revenue.mrr)}` : "—";
 
   return (
     <AdminLayout>

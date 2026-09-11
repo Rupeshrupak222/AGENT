@@ -46,6 +46,7 @@ import { useToast } from "@/components/ui/Toast";
 import { PERMISSIONS, Permission } from "@/lib/permissions";
 import { Badge } from "@/components/ui/Badge";
 import { CommandPalette } from "@/components/ui/CommandPalette";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface NavItem {
   icon: any;
@@ -763,6 +764,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 ⌘K
               </kbd>
             </button>
+
+            {/* Theme Toggle (Light / Dark Mode) */}
+            <ThemeToggle className="bg-slate-100/70 dark:bg-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.08] border-slate-200 dark:border-white/10" />
 
             {/* Notifications */}
             <div className="relative" onClick={(e) => e.stopPropagation()}>

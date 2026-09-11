@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   FileSpreadsheet,
   Check,
+  Download,
 } from "lucide-react";
 import {
   campaignsApi,
@@ -162,6 +163,25 @@ export function CampaignCreationModal({ onClose, onSuccess }: CampaignCreationMo
     setDaysOfWeek((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()
     );
+  };
+
+  // Download sample leads CSV template
+  const downloadSampleCsv = () => {
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      "Name,Phone,Email,Company\n" +
+      "Aditya Sharma,+919876543210,aditya.sharma@example.com,Full Stack AI Inquirer\n" +
+      "Sneha Patel,+919876543211,sneha.patel@example.com,Data Science Applicant\n" +
+      "Rahul Verma,+919876543212,rahul.verma@example.com,DevOps Lead\n" +
+      "Pooja Reddy,+919876543213,pooja.reddy@example.com,Edutech Student\n";
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "agentcall_leads_sample.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    success("Sample leads CSV template downloaded!");
   };
 
   // Handle CSV File Selection
@@ -617,21 +637,34 @@ export function CampaignCreationModal({ onClose, onSuccess }: CampaignCreationMo
                 <div className="space-y-3.5">
                   {/* File Upload Box */}
                   {!csvResult ? (
-                    <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-300 dark:border-white/15 rounded-2xl hover:border-brand-500/50 hover:bg-brand-50/20 dark:hover:bg-brand-950/10 cursor-pointer transition-all">
-                      <FileSpreadsheet className="w-10 h-10 text-brand-500 mb-2" />
-                      <span className="text-xs font-bold text-slate-800 dark:text-white">
-                        Upload Leads CSV File
-                      </span>
-                      <span className="text-[11px] text-slate-400 mt-1 text-center">
-                        RFC 4180 compliant • Max 5 MB • E.164 phone formats
-                      </span>
-                      <input
-                        type="file"
-                        accept=".csv,text/csv"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                    </label>
+                    <div className="space-y-3">
+                      <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-300 dark:border-white/15 rounded-2xl hover:border-brand-500/50 hover:bg-brand-50/20 dark:hover:bg-brand-950/10 cursor-pointer transition-all">
+                        <FileSpreadsheet className="w-10 h-10 text-brand-500 mb-2" />
+                        <span className="text-xs font-bold text-slate-800 dark:text-white">
+                          Upload Leads CSV File
+                        </span>
+                        <span className="text-[11px] text-slate-400 mt-1 text-center">
+                          RFC 4180 compliant • Max 5 MB • E.164 phone formats
+                        </span>
+                        <input
+                          type="file"
+                          accept=".csv,text/csv"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                      </label>
+                      <div className="flex items-center justify-between px-1">
+                        <span className="text-[11px] text-slate-400">Need a format guide?</span>
+                        <button
+                          type="button"
+                          onClick={downloadSampleCsv}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-brand-500/10 hover:bg-brand-500/20 text-brand-700 dark:text-brand-300 border border-brand-500/25 transition-colors"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          Download Sample Template (.csv)
+                        </button>
+                      </div>
+                    </div>
                   ) : (
                     <div className="space-y-3">
                       {/* File Summary Header */}
