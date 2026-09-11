@@ -238,9 +238,14 @@ export async function bootstrapAuth(): Promise<boolean> {
 }
 
 export const healthApi = {
-  check: async () => {
-    const res = await apiClient.get<ApiResponseWrapper<{ status: string }>>(
-      "/health"
+  check: async (): Promise<{
+    status: string;
+    checks: Record<string, { status: string; latencyMs?: number; message?: string }>;
+    timestamp: string;
+    uptime: number;
+  }> => {
+    const res = await apiClient.get<ApiResponseWrapper<any>>(
+      "/health/ready"
     );
     return res.data.data;
   },
@@ -1738,6 +1743,222 @@ export const integrationsApi = {
     const res = await apiClient.post<ApiResponseWrapper<any>>(
       `/integrations/sync/${callId}`
     );
+    return res.data.data;
+  },
+};
+
+// ── Platform (Super Admin) API Contracts ────────────────────────
+export interface PlatformDashboardData {
+  companies: { total: number; active: number; change: number };
+  users: { total: number; active: number; change: number };
+  agents: { total: number; active: number };
+  calls: { total: number; completed: number; failed: number; inbound: number; outbound: number; transferred: number; change: number };
+  callMinutes: { total: number; avgDuration: number };
+  leads: { total: number };
+  campaigns: { total: number };
+  revenue: { total: number; mrr: number; invoicesCount: number; failedPayments: number };
+}
+
+export interface PlatformCallTrendItem {
+  day: string;
+  total_calls: number;
+  completed: number;
+  inbound: number;
+  outbound: number;
+  avg_sentiment: number;
+}
+
+export interface PlatformCompanyPerformance {
+  id: string;
+  name: string;
+  slug: string;
+  plan: string;
+  isActive: boolean;
+  createdAt: string;
+  users: number;
+  agents: number;
+  activeAgents: number;
+  calls: number;
+  completedCalls: number;
+  successRate: number;
+  minutes: number;
+  avgDuration: number;
+  revenue: number;
+  lastActivity: string;
+}
+
+export interface PlatformUserItem {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  tenant: { id: string; name: string; slug?: string };
+}
+
+export interface PlatformCallItem {
+  id: string;
+  phone: string;
+  direction: string;
+  status: string;
+  outcome: string | null;
+  duration: number | null;
+  sentimentScore: number | null;
+  startedAt: string;
+  lead: { id: string; name: string; phone: string } | null;
+  agent: { id: string; name: string; role: string } | null;
+  tenant: { id: string; name: string };
+}
+
+export interface PlatformCampaignItem {
+  id: string;
+  name: string;
+  status: string;
+  createdAt: string;
+  agent: { id: string; name: string } | null;
+  tenant: { id: string; name: string };
+  _count: { leads: number; calls: number };
+}
+
+export interface PlatformAuditLogItem {
+  id: string;
+  action: string;
+  resource: string;
+  resourceId: string | null;
+  details: any;
+  ipAddress: string | null;
+  createdAt: string;
+  tenant: { id: string; name: string };
+  user: { id: string; name: string; email: string } | null;
+}
+
+export interface PlatformUsageData {
+  callMinutes: { total: number; monthly: number };
+  agents: { total: number; active: number };
+  storage: { totalBytes: number };
+  tenants: { total: number; active: number };
+  apiCalls: number;
+  tenantUsage: Array<{
+    tenantId: string;
+    tenantName: string;
+    plan: string;
+    calls: number;
+    minutes: number;
+    agents: number;
+  }>;
+}
+
+export interface PlatformRevenueData {
+  mrr: number;
+  arr: number;
+  monthlyRevenue: number;
+  revenueGrowth: number;
+  totalRevenue: number;
+  planDistribution: Array<{ plan: string; count: number; price: number }>;
+  recentTransactions: Array<{
+    id: string;
+    amount: number;
+    currency: string;
+    status: string;
+    plan: string;
+    paidAt: string | null;
+    createdAt: string;
+  }>;
+  subscriptions: { total: number; trial: number; cancelled: number };
+}
+
+export interface GlobalSearchResult {
+  companies: Array<{ id: string; name: string; slug: string; plan: string; isActive: boolean }>;
+  users: Array<{ id: string; name: string; email: string; role: string; tenant: { name: string } }>;
+  agents: Array<{ id: string; name: string; role: string; status: string; tenant: { name: string } }>;
+  calls: Array<{ id: string; phone: string; status: string; direction: string; startedAt: string; tenant: { name: string } }>;
+}
+
+export interface PlatformSettingsData {
+  platformName: string;
+  platformSlug: string;
+  logoUrl: string;
+  supportEmail: string;
+  website: string;
+  industry: string;
+  whitelabelDomain: string;
+  defaultPlan: string;
+  defaultCurrency: string;
+  timezone: string;
+  registrationEnabled: boolean;
+  maintenanceMode: boolean;
+  emailNotifications: boolean;
+  apiRateLimit: string;
+  defaultCallLimit: number;
+}
+
+export const platformApi = {
+  dashboard: async (range: 'today' | 'week' | 'month' = 'week'): Promise<PlatformDashboardData> => {
+    const res = await apiClient.get<ApiResponseWrapper<PlatformDashboardData>>('/platform/dashboard', { params: { range } });
+    return res.data.data;
+  },
+
+  callTrend: async (days = 30): Promise<PlatformCallTrendItem[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<PlatformCallTrendItem[]>>('/platform/call-trend', { params: { days } });
+    return res.data.data;
+  },
+
+  companyPerformance: async (range: 'today' | 'week' | 'month' = 'month'): Promise<PlatformCompanyPerformance[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<PlatformCompanyPerformance[]>>('/platform/company-performance', { params: { range } });
+    return res.data.data;
+  },
+
+  allUsers: async (params?: {
+    page?: number; limit?: number; search?: string; role?: string; tenantId?: string;
+  }): Promise<{ items: PlatformUserItem[]; total: number; page: number; limit: number; pages: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: PlatformUserItem[]; total: number; page: number; limit: number; pages: number }>>('/platform/users', { params });
+    return res.data.data;
+  },
+
+  allCalls: async (params?: {
+    page?: number; limit?: number; tenantId?: string; agentId?: string; status?: string; direction?: string; search?: string; sortBy?: string; sortOrder?: 'asc' | 'desc';
+  }): Promise<{ items: PlatformCallItem[]; total: number; page: number; limit: number; pages: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: PlatformCallItem[]; total: number; page: number; limit: number; pages: number }>>('/platform/calls', { params });
+    return res.data.data;
+  },
+
+  allCampaigns: async (params?: {
+    page?: number; limit?: number; tenantId?: string; status?: string;
+  }): Promise<{ items: PlatformCampaignItem[]; total: number; page: number; limit: number; pages: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: PlatformCampaignItem[]; total: number; page: number; limit: number; pages: number }>>('/platform/campaigns', { params });
+    return res.data.data;
+  },
+
+  auditLogs: async (params?: {
+    page?: number; limit?: number; tenantId?: string; userId?: string; action?: string;
+  }): Promise<{ items: PlatformAuditLogItem[]; total: number; page: number; limit: number; pages: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: PlatformAuditLogItem[]; total: number; page: number; limit: number; pages: number }>>('/platform/audit-logs', { params });
+    return res.data.data;
+  },
+
+  usage: async (): Promise<PlatformUsageData> => {
+    const res = await apiClient.get<ApiResponseWrapper<PlatformUsageData>>('/platform/usage');
+    return res.data.data;
+  },
+
+  revenue: async (): Promise<PlatformRevenueData> => {
+    const res = await apiClient.get<ApiResponseWrapper<PlatformRevenueData>>('/platform/revenue');
+    return res.data.data;
+  },
+
+  search: async (query: string): Promise<GlobalSearchResult> => {
+    const res = await apiClient.get<ApiResponseWrapper<GlobalSearchResult>>('/platform/search', { params: { q: query } });
+    return res.data.data;
+  },
+
+  getSettings: async (): Promise<PlatformSettingsData> => {
+    const res = await apiClient.get<ApiResponseWrapper<PlatformSettingsData>>('/platform/settings');
+    return res.data.data;
+  },
+
+  updateSettings: async (data: Partial<PlatformSettingsData>): Promise<PlatformSettingsData> => {
+    const res = await apiClient.patch<ApiResponseWrapper<PlatformSettingsData>>('/platform/settings', data);
     return res.data.data;
   },
 };

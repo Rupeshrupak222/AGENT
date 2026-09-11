@@ -48,15 +48,6 @@ interface NavItem {
 
 const ALL_GROUPS: { label: string; items: NavItem[] }[] = [
   {
-    label: "Platform Admin",
-    items: [
-      { icon: Building2, label: "Client Tenants", href: "/dashboard/overview?tab=tenants", permission: PERMISSIONS.PLATFORM_TENANT_MANAGE, badge: "Master" },
-      { icon: Mic2, label: "AI Speech Stack", href: "/dashboard/overview?tab=gateways", permission: PERMISSIONS.PLATFORM_AI_PROVIDERS },
-      { icon: BarChart3, label: "Global Gateways", href: "/dashboard/overview?tab=gateways", permission: PERMISSIONS.PLATFORM_TELEPHONY },
-      { icon: Shield, label: "Security & Audit", href: "/dashboard/overview?tab=broadcast", permission: PERMISSIONS.PLATFORM_AUDIT },
-    ],
-  },
-  {
     label: "Overview",
     items: [
       { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard/overview", permission: PERMISSIONS.TEAM_VIEW },
@@ -435,6 +426,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const pageLabel = pathname.split("/").pop()?.replace(/-/g, " ") || "Dashboard";
+
+  // Super Admin platform panel has its own layout shell (AdminLayout);
+  // render admin routes without the regular dashboard chrome to avoid a double sidebar.
+  const isAdminRoute = pathname.startsWith("/dashboard/admin");
+  if (isAdminRoute) {
+    return <div className="h-screen overflow-hidden bg-page transition-colors duration-200">{children}</div>;
+  }
 
   // Profile dropdown items filtered by permissions
   const profileItems = [

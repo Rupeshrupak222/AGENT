@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import {
@@ -46,10 +47,19 @@ export default function OverviewPage() {
 
   const user = useAuthStore((s) => s.user);
   const tenant = useAuthStore((s) => s.tenant);
+  const router = useRouter();
 
   // Robust normalized role detection (Top 3 Roles: Super Admin, Manager, Company Admin)
   const rawRole = (user?.role || "").toLowerCase().trim();
   const isSuperAdmin = rawRole === "super_admin" || rawRole === "superadmin" || rawRole === "owner";
+
+  // Redirect Super Admin to dedicated admin panel
+  useEffect(() => {
+    if (isSuperAdmin) {
+      router.replace("/dashboard/admin");
+    }
+  }, [isSuperAdmin, router]);
+
   const isManager = rawRole === "manager" || rawRole === "supervisor";
   const isCompanyAdmin = rawRole === "company_admin" || rawRole === "admin" || (!isSuperAdmin && !isManager);
 

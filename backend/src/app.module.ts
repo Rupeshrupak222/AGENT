@@ -25,6 +25,7 @@ import { CampaignsModule } from './modules/campaigns/campaigns.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { HealthModule } from './modules/health/health.module';
+import { PlatformModule } from './modules/platform/platform.module';
 import { MetricsModule } from './common/services/metrics.module';
 import { AppController } from './app.controller';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
@@ -94,6 +95,7 @@ import { SecurityHeadersMiddleware } from './common/middleware/security-headers.
     StorageModule,
     IntegrationsModule,
     HealthModule,
+    PlatformModule,
   ],
 })
 export class AppModule implements NestModule {
