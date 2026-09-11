@@ -30,6 +30,9 @@ const ENV_CHECKS: EnvCheck[] = [
   { key: 'GROQ_API_KEY', required: false, description: 'Groq API key for AI agent brain' },
   { key: 'GEMINI_API_KEY', required: false, description: 'Gemini API key for post-call analysis' },
   { key: 'DEEPGRAM_API_KEY', required: false, description: 'Deepgram API key for STT' },
+  { key: 'CALCOM_API_KEY', required: false, description: 'Cal.com API key for appointment scheduling' },
+  { key: 'RESEND_API_KEY', required: false, description: 'Resend API key for email automation' },
+  { key: 'WHATSAPP_ACCESS_TOKEN', required: false, description: 'Meta WhatsApp Cloud API access token' },
 ];
 
 export function validateEnvironment(): { valid: boolean; warnings: string[]; errors: string[] } {

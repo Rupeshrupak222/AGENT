@@ -1,11 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
+import { MetricsService } from '../../common/services/metrics.service';
 
 export interface HealthCheckResult {
   status: 'healthy' | 'degraded' | 'unhealthy';
-  checks: Record<string, { status: string; latencyMs?: number; message?: string }>;
+  checks: Record<string, { status: string; latencyMs?: number; message?: string; provider?: string }>;
   timestamp: string;
   uptime: number;
 }
@@ -18,6 +19,7 @@ export class HealthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    @Optional() private readonly metricsService?: MetricsService,
   ) {}
 
   getLiveness(): { status: string; timestamp: string } {
@@ -118,6 +120,14 @@ export class HealthService {
       message: `whatsapp:${whatsappConfigured ? 'on' : 'mock'} resend:${resendConfigured ? 'on' : 'mock'}`,
     };
 
+    // Calendar status
+    const calcomConfigured = Boolean(this.configService.get<string>('CALCOM_API_KEY'));
+    checks.calendar = {
+      status: calcomConfigured ? 'configured' : 'mock_mode',
+      provider: calcomConfigured ? 'calcom' : 'mock',
+      message: calcomConfigured ? 'Cal.com API key configured' : 'Using mock calendar provider',
+    };
+
     if (overallStatus === 'healthy' && checks.database.status !== 'ok') {
       overallStatus = 'degraded';
     }
@@ -140,6 +150,9 @@ export class HealthService {
       const { CampaignQueueService } = await import('../campaigns/services/campaign-queue.service');
       const { RecordingQueueService } = await import('../telephony/services/recording-queue.service');
       const { AutomationQueueService } = await import('../automations/services/automation-queue.service');
+      const { AppointmentReminderQueueService } = await import(
+        '../calendar/services/appointment-reminder-queue.service'
+      );
       queueStats = {
         'post-call-analysis': {
           failedJobs: PostCallQueueService.failedJobCount,
@@ -156,6 +169,9 @@ export class HealthService {
         'automation-actions': {
           failedJobs: AutomationQueueService.failedJobCount,
         },
+        'appointment-reminders': {
+          failedJobs: AppointmentReminderQueueService.failedJobCount,
+        },
       };
     } catch {
       queueStats = { error: 'Queue stats unavailable' };
@@ -164,6 +180,7 @@ export class HealthService {
     return {
       ...readiness,
       queueStats,
+      metrics: this.metricsService?.getAllMetrics() ?? {},
       environment: this.configService.get<string>('NODE_ENV', 'development'),
     };
   }
@@ -228,5 +245,12 @@ export class HealthService {
         activeCallsList: [],
       };
     }
+  }
+
+  getPrometheusMetrics(): string {
+    if (this.metricsService) {
+      return this.metricsService.toPrometheusFormat();
+    }
+    return '# agentcall_metrics unavailable\n';
   }
 }

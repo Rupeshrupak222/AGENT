@@ -16,6 +16,7 @@ import {
   AppointmentReminderQueueService,
 } from './appointment-reminder-queue.service';
 import { buildAppointmentContext } from '../lib/appointment-context';
+import { isTerminalAppointmentStatus } from '../lib/appointment-state-machine';
 import {
   AvailabilityQueryDto,
   ScheduleAppointmentDto,
@@ -59,6 +60,7 @@ export class AppointmentService {
 
     const resolved = await this.providerRegistry.resolve(tenantId, query.provider ?? 'auto');
     this.metrics.increment('appointment.availability.requested');
+    this.metrics.increment('calendar.availability.requested');
 
     let slots: any[] = [];
     const started = Date.now();
@@ -76,6 +78,7 @@ export class AppointmentService {
     } catch (err: any) {
       const shape = err instanceof CalendarProviderException ? err.toShape() : this.errorFactory.toShape(err);
       this.metrics.increment('appointment.availability.failed');
+      this.metrics.increment('calendar.availability.failed');
       if (shape.code === CalendarErrorCode.AUTH_FAILED) {
         return {
           provider: resolved.providerName,
@@ -87,10 +90,13 @@ export class AppointmentService {
         };
       }
       this.metrics.recordLatency('appointment.availability', Date.now() - started);
+      this.metrics.recordLatency('calendar.availability', Date.now() - started);
       throw this.errorFactory.toHttpException(shape);
     }
 
     this.metrics.recordLatency('appointment.availability', Date.now() - started);
+    this.metrics.recordLatency('calendar.availability', Date.now() - started);
+    this.metrics.increment('calendar.availability.success');
 
     // Overlap local commitments so we never advertise a double-booked slot.
     if (this.prisma.isConnected) {
@@ -165,6 +171,7 @@ export class AppointmentService {
 
   async create(tenantId: string, userId: string, dto: ScheduleAppointmentDto) {
     this.metrics.increment('appointment.created.attempted');
+    this.metrics.increment('calendar.booking.attempted');
     const startAt = dto.startAt ? new Date(dto.startAt) : dto.date ? new Date(dto.date) : null;
     if (!startAt || isNaN(startAt.getTime())) {
       throw new BadRequestException('A valid startAt/date is required to book an appointment.');
@@ -309,6 +316,7 @@ export class AppointmentService {
     });
 
     this.metrics.increment(nativeOnly ? 'appointment.created.completed' : 'appointment.booked.completed');
+    this.metrics.increment('calendar.booking.success');
     return appointment;
   }
 
@@ -316,9 +324,10 @@ export class AppointmentService {
 
   async reschedule(tenantId: string, userId: string, id: string, dto: RescheduleAppointmentDto) {
     this.metrics.increment('appointment.rescheduled.attempted');
+    this.metrics.increment('calendar.reschedule.attempted');
     const existing = await this.findOneOrThrow(tenantId, id);
-    if (existing.status === 'cancelled') {
-      throw new BadRequestException('A cancelled appointment cannot be rescheduled.');
+    if (isTerminalAppointmentStatus(existing.status)) {
+      throw new BadRequestException(`An appointment in "${existing.status}" status cannot be rescheduled.`);
     }
 
     const newStartAt = new Date(dto.startAt);
@@ -401,6 +410,7 @@ export class AppointmentService {
     });
 
     this.metrics.increment('appointment.rescheduled.completed');
+    this.metrics.increment('calendar.reschedule.success');
     return updated;
   }
 
@@ -408,6 +418,7 @@ export class AppointmentService {
 
   async cancel(tenantId: string, userId: string, id: string, dto: CancelAppointmentDto) {
     this.metrics.increment('appointment.cancelled.attempted');
+    this.metrics.increment('calendar.cancel.attempted');
     const existing = await this.findOneOrThrow(tenantId, id);
 
     // Idempotent cancel — already cancelled returns as-is.
@@ -460,6 +471,7 @@ export class AppointmentService {
     });
 
     this.metrics.increment('appointment.cancelled.completed');
+    this.metrics.increment('calendar.cancel.success');
     return updated;
   }
 

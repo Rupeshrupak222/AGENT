@@ -1,17 +1,18 @@
 import {
-  Injectable, NotFoundException, Logger,
+  Injectable, NotFoundException, Logger, BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CreateAppointmentDto, UpdateAppointmentDto } from './dto/appointment.dto';
+import { canTransitionAppointment } from './lib/appointment-state-machine';
 
 @Injectable()
 export class CalendarService {
   private readonly logger = new Logger(CalendarService.name);
 
   constructor(
-    private prisma: PrismaService,
-    private auditService: AuditService,
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
   ) {}
 
   async create(tenantId: string, userId: string, dto: CreateAppointmentDto) {
@@ -93,6 +94,19 @@ export class CalendarService {
   }
 
   async update(tenantId: string, id: string, dto: UpdateAppointmentDto) {
+    if (dto.status) {
+      const existing = await this.prisma.appointment.findFirst({
+        where: { id, tenantId },
+        select: { id: true, status: true },
+      });
+      if (!existing) throw new NotFoundException('Appointment not found');
+      if (!canTransitionAppointment(existing.status, dto.status)) {
+        throw new BadRequestException(
+          `Invalid appointment status transition from "${existing.status}" to "${dto.status}".`,
+        );
+      }
+    }
+
     const data: any = { ...dto };
     if (dto.date) data.date = new Date(dto.date);
 

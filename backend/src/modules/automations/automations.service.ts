@@ -225,10 +225,43 @@ export class AutomationsService {
 
   /**
    * Test action: sends a single message to an explicit user destination.
+   * Hardened against spam, DND bypass, and malformed destinations.
    */
   async testAction(tenantId: string, dto: TestActionDto) {
-    if (!dto.destination) {
+    if (!dto.destination || typeof dto.destination !== 'string') {
       throw new BadRequestException('Destination is required for test message');
+    }
+
+    const cleanDest = dto.destination.trim();
+
+    if (dto.actionType === 'send_whatsapp') {
+      const digits = cleanDest.replace(/\D/g, '');
+      if (digits.length < 7 || digits.length > 15) {
+        throw new BadRequestException('Invalid phone destination: must be between 7 and 15 digits');
+      }
+    } else if (dto.actionType === 'send_email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(cleanDest)) {
+        throw new BadRequestException('Invalid email destination format');
+      }
+    }
+
+    if (dto.message && dto.message.length > 2000) {
+      throw new BadRequestException('Test message length exceeds maximum 2000 characters');
+    }
+
+    // DND & Opt-out defense: check if destination belongs to an opt-out lead in this tenant
+    if (this.prisma.isConnected) {
+      const existingLead = await this.prisma.lead.findFirst({
+        where: {
+          tenantId,
+          OR: [{ phone: cleanDest }, { email: cleanDest }],
+        },
+      });
+      const leadMeta = (existingLead?.metadata as Record<string, any>) || {};
+      if (leadMeta.isDnd || leadMeta.dnd || leadMeta.optOut || leadMeta.unsubscribed) {
+        throw new BadRequestException(`Recipient ${cleanDest} has active DND/opt-out status.`);
+      }
     }
 
     const triggerEventId = `test_action_${Date.now()}`;
@@ -237,7 +270,7 @@ export class AutomationsService {
       triggerEventId,
       triggerName: 'manual_test_action',
       actionType: dto.actionType,
-      destinationOverride: dto.destination,
+      destinationOverride: cleanDest,
       template: dto.message || 'This is a test notification from AgentCall AI CRM Automation Engine.',
       subject: dto.subject || 'AgentCall AI — Test Automation Message',
       isTestAction: true,
@@ -246,7 +279,7 @@ export class AutomationsService {
     return {
       success: true,
       jobId: result.jobId,
-      destination: dto.destination,
+      destination: cleanDest,
       actionType: dto.actionType,
       message: 'Test action successfully queued for delivery',
     };

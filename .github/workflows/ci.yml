@@ -1,0 +1,116 @@
+name: CI / Production Quality Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-gate:
+    name: Backend Lint, Test, Build & Schema Validation
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: agentcall_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_dev_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Validate Prisma Schema
+        working-directory: ./backend
+        run: npx prisma validate --schema=../db/schema.prisma
+
+      - name: Run Prisma Client Generation
+        working-directory: ./backend
+        run: npx prisma generate --schema=../db/schema.prisma
+
+      - name: Run ESLint
+        working-directory: ./backend
+        run: npm run lint
+
+      - name: Run Jest Test Regression
+        working-directory: ./backend
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres_dev_password@localhost:5432/agentcall_db?schema=public
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          JWT_SECRET: test-jwt-secret-key-for-ci-pipeline-2026
+          JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-pipeline-2026
+        run: npm test -- --runInBand --forceExit
+
+      - name: Compile NestJS Production Build
+        working-directory: ./backend
+        run: npm run build
+
+  frontend-gate:
+    name: Frontend Typecheck, Lint & Next.js Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: TypeScript Typecheck
+        working-directory: ./frontend
+        run: npx tsc --noEmit
+
+      - name: Run ESLint
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Build Next.js Production Bundle
+        working-directory: ./frontend
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          NODE_ENV: production
+        run: npm run build

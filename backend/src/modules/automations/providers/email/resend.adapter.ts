@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import axios, { AxiosError } from 'axios';
 import {
   MessageSendResult,
@@ -6,11 +6,14 @@ import {
   ConnectionTestResult,
 } from '../../interfaces/message-provider.interface';
 import { ResendCredentials, ResendSendPayload, ResendSendResponse } from './resend.interface';
+import { MetricsService } from '../../../../common/services/metrics.service';
 
 @Injectable()
 export class ResendEmailAdapter {
   private readonly logger = new Logger(ResendEmailAdapter.name);
   private readonly BASE_URL = 'https://api.resend.com';
+
+  constructor(@Optional() private readonly metrics?: MetricsService) {}
 
   /**
    * Send email via Resend API.
@@ -71,6 +74,7 @@ export class ResendEmailAdapter {
 
       const messageId = response.data?.id;
       this.logger.log(`Resend email sent successfully: ${messageId} -> ${recipient}`);
+      this.metrics?.increment('email.sent');
 
       return {
         success: true,
@@ -90,6 +94,11 @@ export class ResendEmailAdapter {
       const isRateLimited = status === 429;
       const isAuthError = status === 401 || status === 403;
       const isRetryable = isRateLimited || (status !== undefined && status >= 500) || axiosErr.code === 'ECONNABORTED';
+
+      if (isRateLimited) {
+        this.metrics?.increment('email.rate_limited');
+      }
+      this.metrics?.increment('email.failed');
 
       this.logger.error(`Resend dispatch failed (status ${status}): ${errorMsg}`);
 

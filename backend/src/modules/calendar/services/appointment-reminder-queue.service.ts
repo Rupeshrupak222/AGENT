@@ -29,6 +29,7 @@ function reminderJobId(appointmentId: string, kind: ReminderKind): string {
  */
 @Injectable()
 export class AppointmentReminderQueueService implements OnModuleInit, OnModuleDestroy {
+  static failedJobCount = 0;
   private readonly logger = new Logger(AppointmentReminderQueueService.name);
   public isRedisAvailable = false;
 
@@ -66,6 +67,7 @@ export class AppointmentReminderQueueService implements OnModuleInit, OnModuleDe
       );
     });
     this.queue.on('failed', (job, err) => {
+      AppointmentReminderQueueService.failedJobCount += 1;
       this.metrics.increment('queue.appointmentReminder.failed');
       this.logger.error(
         JSON.stringify({

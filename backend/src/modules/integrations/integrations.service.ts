@@ -4,6 +4,9 @@ import { CrmQueueService } from './services/crm-queue.service';
 import { CrmSyncProcessor } from './processors/crm-sync.processor';
 import { CrmSyncPayload, CrmConnectionTestResult } from './interfaces/crm-provider.interface';
 import { IntegrationProvider } from '@prisma/client';
+import { validateExternalUrl } from '../../common/utils/url-validator';
+
+const CALCOM_ALLOWED_HOSTS = [/\.cal\.com$/, /^cal\.com$/];
 
 @Injectable()
 export class IntegrationsService {
@@ -110,6 +113,16 @@ export class IntegrationsService {
       ...(data.settings || {}),
     };
 
+    if (String(provider).toLowerCase() === 'calcom') {
+      const candidateUrl = mergedCredentials.apiUrl || mergedSettings.apiUrl;
+      if (candidateUrl) {
+        const validation = validateExternalUrl(candidateUrl, CALCOM_ALLOWED_HOSTS);
+        if (!validation.isValid) {
+          throw new BadRequestException(`Invalid Cal.com API URL: ${validation.reason}`);
+        }
+      }
+    }
+
     const updated = await this.prisma.integration.upsert({
       where: {
         tenantId_provider: {
@@ -155,6 +168,15 @@ export class IntegrationsService {
     }
 
     let credentials = providedCredentials;
+    if (provider.toLowerCase() === 'calcom') {
+      const candidateUrl = credentials?.apiUrl;
+      if (candidateUrl) {
+        const validation = validateExternalUrl(candidateUrl, CALCOM_ALLOWED_HOSTS);
+        if (!validation.isValid) {
+          throw new BadRequestException(`Invalid Cal.com API URL: ${validation.reason}`);
+        }
+      }
+    }
     if (!credentials || Object.keys(credentials).length === 0) {
       // Load saved credentials from DB
       const integration = await this.prisma.integration.findUnique({

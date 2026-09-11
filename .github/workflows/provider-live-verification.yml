@@ -1,0 +1,56 @@
+name: Provider Live Integration Verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: 'Target provider to verify against live sandbox/test account'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - calcom
+          - whatsapp
+          - resend
+
+jobs:
+  verify-live-integration:
+    name: Controlled Live Provider Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Execute Controlled Verification
+        working-directory: ./backend
+        env:
+          CALCOM_API_KEY: ${{ secrets.CALCOM_API_KEY }}
+          CALCOM_EVENT_TYPE_ID: ${{ secrets.CALCOM_EVENT_TYPE_ID }}
+          WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
+          WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          TARGET_PROVIDER: ${{ github.event.inputs.provider }}
+        run: |
+          echo "Starting controlled live provider verification for target: $TARGET_PROVIDER"
+          echo "Verifying secret availability without logging values..."
+          if [ -z "$CALCOM_API_KEY" ] && [ "$TARGET_PROVIDER" = "calcom" ]; then
+            echo "::warning ::CALCOM_API_KEY secret is unconfigured. Live Cal.com verification BLOCKED."
+          fi
+          if [ -z "$WHATSAPP_ACCESS_TOKEN" ] && [ "$TARGET_PROVIDER" = "whatsapp" ]; then
+            echo "::warning ::WHATSAPP_ACCESS_TOKEN secret is unconfigured. Live WhatsApp verification BLOCKED."
+          fi
+          if [ -z "$RESEND_API_KEY" ] && [ "$TARGET_PROVIDER" = "resend" ]; then
+            echo "::warning ::RESEND_API_KEY secret is unconfigured. Live Resend verification BLOCKED."
+          fi

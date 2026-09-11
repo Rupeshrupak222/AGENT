@@ -12,6 +12,7 @@ class RealtimeSocketClient {
   private socket: Socket | null = null;
   private activeCampaignId: string | null = null;
   private activeCallId: string | null = null;
+  private subscribedAppointments = false;
   private listeners: Map<string, Set<(data: any) => void>> = new Map();
   private isConnecting = false;
 
@@ -58,6 +59,9 @@ class RealtimeSocketClient {
       if (this.activeCallId) {
         this.socket?.emit("join:call", { callId: this.activeCallId });
       }
+      if (this.subscribedAppointments) {
+        this.socket?.emit("join:appointments");
+      }
       this.notify("connection:status", { connected: true });
     });
 
@@ -81,6 +85,10 @@ class RealtimeSocketClient {
       "calls:overview_status",
       "crm:sync:status",
       "automation:action:executed",
+      "appointment:status",
+      "appointment:booked",
+      "appointment:rescheduled",
+      "appointment:cancelled",
     ];
 
     for (const evt of events) {
@@ -137,6 +145,22 @@ class RealtimeSocketClient {
     }
     if (this.socket?.connected) {
       this.socket.emit("leave:call", { callId });
+    }
+  }
+
+  public subscribeAppointments() {
+    this.subscribedAppointments = true;
+    if (this.socket?.connected) {
+      this.socket.emit("join:appointments");
+    } else {
+      this.connect();
+    }
+  }
+
+  public unsubscribeAppointments() {
+    this.subscribedAppointments = false;
+    if (this.socket?.connected) {
+      this.socket.emit("leave:appointments");
     }
   }
 
