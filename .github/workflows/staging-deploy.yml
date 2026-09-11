@@ -1,0 +1,74 @@
+name: Staging Deployment Pipeline
+
+on:
+  push:
+    branches:
+      - staging
+  workflow_dispatch:
+    inputs:
+      skip_smoke_tests:
+        description: 'Skip post-deploy smoke tests'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  validate-and-deploy:
+    name: Deploy to Staging Environment
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Validate Prisma Schema
+        run: |
+          cd backend
+          npm ci
+          npx prisma validate --schema=../db/schema.prisma
+
+      - name: Apply Database Migrations (Staging)
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          cd backend
+          npx prisma migrate deploy --schema=../db/schema.prisma
+
+      - name: Build Backend & Worker Images
+        run: |
+          cd backend
+          npm run build
+
+      - name: Build Frontend Application
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.STAGING_API_URL }}
+          NEXT_PUBLIC_WS_URL: ${{ vars.STAGING_WS_URL }}
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: Execute Deployment Smoke Test
+        if: ${{ inputs.skip_smoke_tests != 'true' }}
+        env:
+          TARGET_URL: ${{ vars.STAGING_API_URL }}
+          SMOKE_EMAIL: ${{ secrets.STAGING_SMOKE_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.STAGING_SMOKE_PASSWORD }}
+        run: |
+          node scripts/smoke-test.js
+
+      - name: Evaluate Release Gate
+        env:
+          STAGING_API_URL: ${{ vars.STAGING_API_URL }}
+        run: |
+          node scripts/release-gate.js

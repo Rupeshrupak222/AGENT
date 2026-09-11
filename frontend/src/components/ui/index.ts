@@ -20,3 +20,7 @@ export * from "./FilterBar";
 export * from "./Tooltip";
 export * from "./Avatar";
 export * from "./StatusIndicator";
+export * from "./WaveAnimation";
+export * from "./CommandPalette";
+export * from "./ErrorBoundary";
+export * from "./ProviderModeBadge";

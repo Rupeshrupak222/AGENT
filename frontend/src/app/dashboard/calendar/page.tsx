@@ -10,6 +10,7 @@ import {
   Appointment, AppointmentOverview, AppointmentStatus,
   AppointmentSlot, CalendarProviderStatus,
 } from "@/lib/api";
+import { ProviderModeBadge, deriveCalendarProviderMode } from "@/components/ui/ProviderModeBadge";
 
 const STATUS_STYLES: Record<AppointmentStatus, { label: string; cls: string }> = {
   scheduled: { label: "Scheduled", cls: "bg-slate-500/15 text-slate-500 dark:text-slate-300 border border-slate-500/30" },
@@ -267,24 +268,16 @@ export default function CalendarPage() {
 
   const providerBadge = (() => {
     if (!providerStatus) {
-      return { label: "Checking provider…", cls: "bg-slate-100 dark:bg-white/[0.08] text-slate-500 dark:text-white/50 border-slate-200 dark:border-white/15" };
+      return null;
     }
-    if (providerStatus.isMock) {
-      return {
-        label: "Mock Calendar (dev mode)",
-        cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30",
-      };
-    }
-    if (providerStatus.configured && providerStatus.success) {
-      return {
-        label: `${providerStatus.provider} Connected`,
-        cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30",
-      };
-    }
-    return {
-      label: `${providerStatus.provider} — ${providerStatus.message || "error"}`,
-      cls: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30",
-    };
+    const mode = deriveCalendarProviderMode(providerStatus);
+    return (
+      <ProviderModeBadge
+        mode={mode}
+        provider={providerStatus.provider}
+        withDot
+      />
+    );
   })();
 
   return (
@@ -303,8 +296,12 @@ export default function CalendarPage() {
           >
             <Plus className="w-4 h-4" /> New Appointment
           </button>
-          <span className="hidden lg:flex text-xs font-semibold px-3 py-1.5 rounded-xl border items-center gap-1.5">
-            <CalendarClock className="w-3.5 h-3.5" /> {providerBadge.label}
+          <span className="hidden lg:inline-flex">
+            {providerBadge ?? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/50">
+                <CalendarClock className="w-3.5 h-3.5" /> Checking provider…
+              </span>
+            )}
           </span>
         </div>
       </div>

@@ -14,6 +14,7 @@ import {
   AutomationLogItem,
   ProviderStatusItem,
 } from "@/lib/api";
+import { ProviderModeBadge, deriveAutomationProviderMode } from "@/components/ui/ProviderModeBadge";
 
 const TRIGGER_LABELS: Record<string, { label: string; color: string; desc: string }> = {
   call_completed:          { label: "Call Completed", color: "bg-blue-500/10 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400 border-blue-500/30", desc: "Fires immediately when telephony terminates" },
@@ -40,6 +41,33 @@ function fmtTime(iso?: string | null) {
   if (!iso) return "—";
   const d = new Date(iso);
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+function ProviderStatusStat({ title, status }: { title: string; status?: ProviderStatusItem }) {
+  const mode = deriveAutomationProviderMode(status || null);
+  const label =
+    status?.state === "mock_mode"
+      ? "Mock mode active"
+      : status?.state === "connected"
+        ? "Connected"
+        : status?.state === "configured"
+          ? "Configured"
+          : status?.state === "not_connected"
+            ? "Not configured"
+            : status?.isMock
+              ? "Mock mode active"
+              : undefined;
+  return (
+    <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] shadow-sm">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-slate-900 dark:text-white">{title}</p>
+        <p className="text-xs text-slate-500 dark:text-white/40 mt-0.5 truncate">
+          {status?.phoneNumberId ? status.phoneNumberId : status?.from || "No provider detail"}
+        </p>
+      </div>
+      <ProviderModeBadge mode={mode} label={label} />
+    </div>
+  );
 }
 
 export default function AutomationsPage() {
@@ -265,26 +293,26 @@ export default function AutomationsPage() {
       )}
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Active Workflows", value: `${activeCount} / ${rules.length}`, color: "text-emerald-600 dark:text-emerald-400" },
           { label: "Triggers Executed", value: totalSent.toLocaleString(), color: "text-brand-600 dark:text-brand-400" },
-          {
-            label: "WhatsApp Engine",
-            value: providers.find(p => p.provider === 'whatsapp')?.isConfigured ? "Meta Cloud" : "Offline",
-            color: providers.find(p => p.provider === 'whatsapp')?.isConfigured ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500",
-          },
-          {
-            label: "Email Engine",
-            value: providers.find(p => p.provider === 'resend')?.isConfigured ? "Resend API" : "Offline",
-            color: providers.find(p => p.provider === 'resend')?.isConfigured ? "text-emerald-600 dark:text-emerald-400" : "text-cyan-500",
-          },
         ].map((s) => (
           <div key={s.label} className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] shadow-sm">
             <p className={`text-xl font-mono font-black ${s.color}`}>{s.value}</p>
             <p className="text-xs text-slate-500 dark:text-white/40 mt-1">{s.label}</p>
           </div>
         ))}
+
+        {/* Engine status: explicit Mock / Configured / Connected / Not configured state */}
+        <ProviderStatusStat
+          title="WhatsApp Engine"
+          status={providers.find((p) => p.provider === "whatsapp")}
+        />
+        <ProviderStatusStat
+          title="Email Engine"
+          status={providers.find((p) => p.provider === "resend")}
+        />
       </div>
 
       {/* Configured Rules Section */}

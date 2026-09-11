@@ -1,14 +1,12 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Zap, Mail, Lock, Eye, EyeOff, ArrowRight, Phone, TrendingUp, ShieldCheck } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { authApi, normalizeApiError } from "@/lib/api";
 
 export default function LoginPage() {
-  const router = useRouter();
   const login  = useAuthStore(s => s.login);
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
