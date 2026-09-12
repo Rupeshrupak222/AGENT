@@ -8,5 +8,5 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["seed.ts"]
+  "include": ["seed.ts", "*.ts", "../scripts/**/*.ts"]
 }

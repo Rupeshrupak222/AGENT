@@ -13,6 +13,14 @@ import {
   RefreshCw,
   Check,
   AlertCircle,
+  Palette,
+  Sparkles,
+  Eye,
+  Layers,
+  PhoneCall,
+  Lock,
+  Image as ImageIcon,
+  Copy,
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { useToast } from "@/components/ui/Toast";
@@ -26,7 +34,7 @@ export default function SettingsPage() {
   const updateTenant = useAuthStore(s => s.updateTenant);
   const { success, error, warning } = useToast();
   const { can } = usePermissions();
-  const [activeTab, setActiveTab] = useState<"general" | "api_keys" | "telephony" | "security" | "integrations">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "branding" | "api_keys" | "telephony" | "security" | "integrations">("general");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -34,6 +42,17 @@ export default function SettingsPage() {
   const [companyName, setCompanyName] = useState(tenant?.name || "My Workspace");
   const [timezone, setTimezone] = useState("Asia/Kolkata");
   const [currency, setCurrency] = useState("INR");
+
+  // Branding & White-Label State
+  const [subdomain, setSubdomain] = useState("acme-voice");
+  const [customDomain, setCustomDomain] = useState("voice.acmecorp.com");
+  const [brandLogoUrl, setBrandLogoUrl] = useState("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=128&auto=format&fit=crop&q=80");
+  const [brandAccentColor, setBrandAccentColor] = useState("#D42027");
+  const [supportEmail, setSupportEmail] = useState("concierge@acmecorp.com");
+  const [supportPhone, setSupportPhone] = useState("+91 80 4000 1234");
+  const [removeWatermark, setRemoveWatermark] = useState(true);
+  const [customDisclaimer, setCustomDisclaimer] = useState("Calls may be recorded and analyzed by AI for quality assurance & compliance.");
+  const [savingBranding, setSavingBranding] = useState(false);
 
   // CRM Integrations State
   const [crmList, setCrmList] = useState<IntegrationItem[]>([]);
@@ -252,9 +271,17 @@ export default function SettingsPage() {
         const data = await tenantApi.me();
         if (cancelled) return;
         if (data.name) setCompanyName(data.name);
+        if (data.logo) setBrandLogoUrl(data.logo);
         if (data.settings) {
           if (typeof data.settings.timezone === "string") setTimezone(data.settings.timezone);
           if (typeof data.settings.currency === "string") setCurrency(data.settings.currency);
+          if (typeof data.settings.brandAccentColor === "string") setBrandAccentColor(data.settings.brandAccentColor);
+          if (typeof data.settings.subdomain === "string") setSubdomain(data.settings.subdomain);
+          if (typeof data.settings.customDomain === "string") setCustomDomain(data.settings.customDomain);
+          if (typeof data.settings.supportEmail === "string") setSupportEmail(data.settings.supportEmail);
+          if (typeof data.settings.supportPhone === "string") setSupportPhone(data.settings.supportPhone);
+          if (typeof data.settings.removeWatermark === "boolean") setRemoveWatermark(data.settings.removeWatermark);
+          if (typeof data.settings.customDisclaimer === "string") setCustomDisclaimer(data.settings.customDisclaimer);
         }
       } catch {
         // Non-fatal: keep local defaults
@@ -269,7 +296,17 @@ export default function SettingsPage() {
     try {
       const updated = await tenantApi.updateMe({
         name: companyName.trim() || undefined,
-        settings: { timezone, currency },
+        settings: {
+          timezone,
+          currency,
+          brandAccentColor,
+          subdomain,
+          customDomain,
+          supportEmail,
+          supportPhone,
+          removeWatermark,
+          customDisclaimer,
+        },
       });
       updateTenant({ name: updated.name });
       setSaved(true);
@@ -279,6 +316,34 @@ export default function SettingsPage() {
       error(normalizeApiError(err));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveBranding = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setSavingBranding(true);
+    try {
+      await tenantApi.updateMe({
+        logo: brandLogoUrl,
+        settings: {
+          timezone,
+          currency,
+          brandAccentColor,
+          subdomain,
+          customDomain,
+          supportEmail,
+          supportPhone,
+          removeWatermark,
+          customDisclaimer,
+        },
+      });
+      setSaved(true);
+      success("Branding and white-label preferences updated!");
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      error(`Save failed: ${normalizeApiError(err)}`);
+    } finally {
+      setSavingBranding(false);
     }
   };
 
@@ -314,7 +379,8 @@ export default function SettingsPage() {
       {/* Tabs */}
       <div className="flex border-b border-slate-200 dark:border-white/10 gap-6 text-sm overflow-x-auto">
         {[
-          { id: "general", label: "General & Branding" },
+          { id: "general", label: "General" },
+          { id: "branding", label: "Branding & White-Label" },
           { id: "integrations", label: "CRM Integrations (2-Way)" },
           { id: "telephony", label: "Telephony (Twilio/Exotel)" },
           { id: "api_keys", label: "API Keys & Webhooks" },
@@ -382,6 +448,350 @@ export default function SettingsPage() {
                 <option value="USD">USD ($) — US Dollar</option>
                 <option value="AED">AED (د.إ) — UAE Dirham</option>
               </select>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "branding" && (
+          <div className="space-y-6">
+            {/* Enterprise Header Badge */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-brand-500/10 via-brand-600/5 to-purple-500/10 border border-brand-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-brand-500/20 flex items-center justify-center text-brand-500">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Enterprise White-Label Suite</h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                      Tier 1 Active
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-white/60 mt-0.5">
+                    Present your own brand identity, custom portal domains, and personalized caller audio to clients.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleSaveBranding()}
+                disabled={savingBranding}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-lg transition-all flex items-center gap-2"
+                style={{ backgroundColor: brandAccentColor }}
+              >
+                {savingBranding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Save Branding
+              </button>
+            </div>
+
+            <div className="grid lg:grid-cols-12 gap-6">
+              {/* Left Column: Form Controls (7 cols) */}
+              <div className="lg:col-span-7 space-y-6">
+                {/* Visual Identity */}
+                <div className="rounded-2xl p-5 panel-card border border-slate-200 dark:border-white/[0.08] shadow-sm space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Palette className="w-4 h-4 text-brand-500" />
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Brand & Visual Identity</h4>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">
+                        Logo URL (PNG / SVG with transparent background)
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={brandLogoUrl}
+                          onChange={(e) => setBrandLogoUrl(e.target.value)}
+                          placeholder="https://yourdomain.com/logo.svg"
+                          className="flex-1 h-10 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setBrandLogoUrl("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=128&auto=format&fit=crop&q=80")}
+                          className="px-3 h-10 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.08] hover:bg-slate-200 dark:hover:bg-white/15 text-slate-700 dark:text-white transition-all"
+                        >
+                          Reset Demo
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Accent Color Picker */}
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-2">
+                        Primary Brand Accent Color
+                      </label>
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        {[
+                          { name: "Crimson Ember", hex: "#D42027" },
+                          { name: "Emerald Apex", hex: "#10B981" },
+                          { name: "Royal Indigo", hex: "#6366F1" },
+                          { name: "Amber Sunrise", hex: "#F59E0B" },
+                          { name: "Cyan Wave", hex: "#06B6D4" },
+                          { name: "Violet Modern", hex: "#8B5CF6" },
+                          { name: "Slate Minimal", hex: "#475569" },
+                        ].map((color) => (
+                          <button
+                            key={color.hex}
+                            type="button"
+                            onClick={() => setBrandAccentColor(color.hex)}
+                            className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center ${
+                              brandAccentColor.toLowerCase() === color.hex.toLowerCase()
+                                ? "border-slate-900 dark:border-white scale-110 shadow-md ring-2 ring-brand-500/30"
+                                : "border-transparent hover:scale-105"
+                            }`}
+                            style={{ backgroundColor: color.hex }}
+                            title={color.name}
+                          >
+                            {brandAccentColor.toLowerCase() === color.hex.toLowerCase() && (
+                              <Check className="w-3.5 h-3.5 text-white drop-shadow" />
+                            )}
+                          </button>
+                        ))}
+
+                        <div className="flex items-center gap-1.5 ml-2">
+                          <input
+                            type="color"
+                            value={brandAccentColor}
+                            onChange={(e) => setBrandAccentColor(e.target.value)}
+                            className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0 p-0"
+                          />
+                          <input
+                            type="text"
+                            value={brandAccentColor}
+                            onChange={(e) => setBrandAccentColor(e.target.value)}
+                            className="w-20 h-8 rounded-lg px-2 text-xs font-mono bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Subdomains & Custom Domains */}
+                <div className="rounded-2xl p-5 panel-card border border-slate-200 dark:border-white/[0.08] shadow-sm space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-emerald-500" />
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Subdomains & Custom CNAME</h4>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">
+                        Hosted Subdomain
+                      </label>
+                      <div className="flex items-center rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 overflow-hidden">
+                        <input
+                          type="text"
+                          value={subdomain}
+                          onChange={(e) => setSubdomain(e.target.value)}
+                          className="flex-1 h-10 px-3 text-xs bg-transparent text-slate-900 dark:text-white outline-none"
+                        />
+                        <span className="px-2.5 text-xs text-slate-400 dark:text-white/40 font-mono bg-slate-100 dark:bg-white/[0.05] h-10 flex items-center border-l border-slate-200 dark:border-white/10">
+                          .agentcall.ai
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">
+                        Custom Domain (CNAME)
+                      </label>
+                      <input
+                        type="text"
+                        value={customDomain}
+                        onChange={(e) => setCustomDomain(e.target.value)}
+                        placeholder="call.yourdomain.com"
+                        className="w-full h-10 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 text-xs flex items-center justify-between">
+                    <div>
+                      <span className="font-semibold text-slate-700 dark:text-white/70">DNS Configuration: </span>
+                      <code className="text-brand-600 dark:text-brand-400 font-mono">CNAME {customDomain || "call.yourdomain.com"} -&gt; ingress.agentcall.ai</code>
+                    </div>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> SSL Provisioned
+                    </span>
+                  </div>
+                </div>
+
+                {/* White-Label Toggles & Helpdesk */}
+                <div className="rounded-2xl p-5 panel-card border border-slate-200 dark:border-white/[0.08] shadow-sm space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-purple-500" />
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Client Portal & Compliance</h4>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">
+                        Client Helpline Phone
+                      </label>
+                      <input
+                        type="text"
+                        value={supportPhone}
+                        onChange={(e) => setSupportPhone(e.target.value)}
+                        className="w-full h-10 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">
+                        Support Concierge Email
+                      </label>
+                      <input
+                        type="email"
+                        value={supportEmail}
+                        onChange={(e) => setSupportEmail(e.target.value)}
+                        className="w-full h-10 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">
+                      Call Recording Compliance Prompt
+                    </label>
+                    <input
+                      type="text"
+                      value={customDisclaimer}
+                      onChange={(e) => setCustomDisclaimer(e.target.value)}
+                      className="w-full h-10 rounded-xl px-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500"
+                    />
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 dark:border-white/10 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">Remove &apos;Powered by AgentCall AI&apos; Watermark</p>
+                      <p className="text-[11px] text-slate-500 dark:text-white/50">Hide all vendor badges from customer-facing booking links and email receipts.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={removeWatermark}
+                        onChange={(e) => setRemoveWatermark(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-white/15 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500" />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Live Client Portal Preview (5 cols) */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Eye className="w-4 h-4 text-brand-500" />
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Live Client Preview</h4>
+                  </div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 dark:text-white/40">
+                    Real-Time Canvas
+                  </span>
+                </div>
+
+                {/* Mock Browser / Phone Window */}
+                <div className="rounded-2xl border border-slate-200 dark:border-white/15 bg-white dark:bg-slate-950 overflow-hidden shadow-2xl">
+                  {/* Browser Bar */}
+                  <div className="px-4 py-2.5 bg-slate-100 dark:bg-white/[0.04] border-b border-slate-200 dark:border-white/10 flex items-center gap-2">
+                    <div className="flex gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                    </div>
+                    <div className="flex-1 text-center">
+                      <span className="inline-block px-3 py-0.5 rounded-md bg-white dark:bg-white/[0.06] text-[10px] font-mono text-slate-600 dark:text-white/60">
+                        https://{customDomain || `${subdomain}.agentcall.ai`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Client Facing Branded UI */}
+                  <div className="p-6 space-y-6">
+                    {/* Brand Top Bar */}
+                    <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/10">
+                      <div className="flex items-center gap-3">
+                        {brandLogoUrl ? (
+                          <img
+                            src={brandLogoUrl}
+                            alt="Brand Logo"
+                            className="w-8 h-8 rounded-lg object-cover border border-slate-200 dark:border-white/10 shadow-sm"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLElement).style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <div
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-black"
+                            style={{ backgroundColor: brandAccentColor }}
+                          >
+                            {companyName.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-xs font-black text-slate-900 dark:text-white tracking-tight">{companyName}</p>
+                          <p className="text-[10px] text-slate-500 dark:text-white/50">{subdomain}.agentcall.ai</p>
+                        </div>
+                      </div>
+                      <div
+                        className="px-2.5 py-1 rounded-full text-[10px] font-bold text-white shadow-sm"
+                        style={{ backgroundColor: brandAccentColor }}
+                      >
+                        Verified
+                      </div>
+                    </div>
+
+                    {/* Client Calling Card */}
+                    <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-white/[0.03] dark:to-white/[0.01] border border-slate-200 dark:border-white/10 text-center space-y-3">
+                      <div
+                        className="w-14 h-14 rounded-full mx-auto flex items-center justify-center text-white shadow-lg animate-pulse"
+                        style={{ backgroundColor: brandAccentColor }}
+                      >
+                        <PhoneCall className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h5 className="text-sm font-black text-slate-900 dark:text-white">Connecting with {companyName} AI</h5>
+                        <p className="text-xs text-slate-500 dark:text-white/60 mt-0.5">Automated Concierge Line: {supportPhone}</p>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10 text-[10px] text-slate-600 dark:text-white/60 italic leading-snug">
+                        &ldquo;{customDisclaimer}&rdquo;
+                      </div>
+
+                      <div className="pt-2 flex justify-center gap-2">
+                        <button
+                          type="button"
+                          className="px-4 py-1.5 rounded-xl text-xs font-bold text-white shadow"
+                          style={{ backgroundColor: brandAccentColor }}
+                        >
+                          Accept Call
+                        </button>
+                        <button
+                          type="button"
+                          className="px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-white"
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Footer Watermark status */}
+                    <div className="text-center pt-2 text-[10px] text-slate-400 dark:text-white/40">
+                      {removeWatermark ? (
+                        <span className="flex items-center justify-center gap-1 text-emerald-600 dark:text-emerald-400">
+                          <CheckCircle2 className="w-3 h-3" /> White-Label Active: No Vendor Watermark
+                        </span>
+                      ) : (
+                        <span>Powered by AgentCall AI Enterprise</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
