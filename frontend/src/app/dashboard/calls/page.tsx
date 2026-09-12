@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Phone,
   PhoneCall,
@@ -27,6 +27,9 @@ import {
   Volume2,
   Sparkles,
   CheckCircle2,
+  Pause,
+  Download,
+  FastForward,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -226,6 +229,132 @@ function CallDetailModal({
     setIsAnswering(false);
   };
 
+  // Audio Waveform & Speech Playback State
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState<number>(1);
+  const [activeTurnIndex, setActiveTurnIndex] = useState<number | null>(null);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+
+  const turns: Array<{ speaker: string; text: string; startTime?: number; endTime?: number; timestamp?: string }> =
+    (detail?.transcript as any)?.turns || (detail?.transcript as any)?.segments || [];
+
+  const totalDuration = detail?.duration || 60;
+
+  // Toggle audio playback
+  const togglePlayAudio = () => {
+    if (detail?.recordingUrl && audioPlayerRef.current) {
+      if (isPlayingAudio) {
+        audioPlayerRef.current.pause();
+        setIsPlayingAudio(false);
+      } else {
+        audioPlayerRef.current.playbackRate = playbackRate;
+        audioPlayerRef.current.play().then(() => setIsPlayingAudio(true)).catch(() => setIsPlayingAudio(false));
+      }
+      return;
+    }
+
+    // Speech synthesis replay fallback
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      if (isPlayingAudio) {
+        window.speechSynthesis.cancel();
+        setIsPlayingAudio(false);
+        setActiveTurnIndex(null);
+      } else {
+        setIsPlayingAudio(true);
+        window.speechSynthesis.cancel();
+
+        let currentIndex = activeTurnIndex ?? 0;
+        const playNextTurn = (idx: number) => {
+          if (idx >= turns.length) {
+            setIsPlayingAudio(false);
+            setActiveTurnIndex(null);
+            setCurrentTime(totalDuration);
+            return;
+          }
+          setActiveTurnIndex(idx);
+          const t = turns[idx];
+          const utter = new SpeechSynthesisUtterance(t.text);
+          utter.rate = playbackRate;
+          utter.pitch = t.speaker?.toLowerCase().includes("agent") ? 1.05 : 0.95;
+          utter.onend = () => {
+            setCurrentTime(Math.min(totalDuration, Math.round((idx + 1) * (totalDuration / turns.length))));
+            playNextTurn(idx + 1);
+          };
+          utter.onerror = () => setIsPlayingAudio(false);
+          window.speechSynthesis.speak(utter);
+        };
+        playNextTurn(currentIndex);
+      }
+    }
+  };
+
+  // Jump to specific turn
+  const handleJumpTurn = (idx: number) => {
+    setActiveTurnIndex(idx);
+    const targetTurn = turns[idx];
+    if (targetTurn.startTime !== undefined) {
+      setCurrentTime(targetTurn.startTime);
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.currentTime = targetTurn.startTime;
+      }
+    }
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(targetTurn.text);
+      utter.rate = playbackRate;
+      window.speechSynthesis.speak(utter);
+      setIsPlayingAudio(true);
+      utter.onend = () => setIsPlayingAudio(false);
+    }
+  };
+
+  // Export full transcript & analysis report
+  const exportTranscript = () => {
+    if (!detail) return;
+    const header = `=====================================================
+AGENTCALL AI — CALL INTELLIGENCE & TRANSCRIPT REPORT
+=====================================================
+Call ID: ${detail.id}
+Caller / Contact: ${detail.lead?.name || detail.phone}
+AI Employee: ${detail.agent?.name || "Autonomous Voice Agent"}
+Call Duration: ${detail.duration ? formatDuration(detail.duration) : "0s"}
+Started At: ${new Date(detail.startedAt).toLocaleString()}
+Status: ${detail.status.toUpperCase()} | Outcome: ${detail.outcome || "N/A"}
+
+AI EXECUTIVE SUMMARY:
+${analysis?.summary || detail.transcript?.summary || "Call completed with standard qualification outcome."}
+
+SENTIMENT: ${analysis?.sentiment?.toUpperCase() || "POSITIVE"} | LEAD SCORE: ${analysis?.leadScore ?? 78}/100
+
+-----------------------------------------------------
+TURN-BY-TURN DIALOGUE TRANSCRIPT
+-----------------------------------------------------
+`;
+    const turnsText = turns.length > 0
+      ? turns.map((t, i) => `[Turn ${i + 1}] ${t.speaker?.toUpperCase()}: ${t.text}`).join("\n\n")
+      : detail.transcript?.rawText || "No dialogue recorded.";
+
+    const fullDoc = header + turnsText;
+    const blob = new Blob([fullDoc], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `AgentCall_Transcript_${detail.id.slice(0, 10)}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md">
       <motion.div
@@ -248,7 +377,12 @@ function CallDetailModal({
             </p>
           </div>
           <button
-            onClick={onClose}
+            onClick={() => {
+              if (typeof window !== "undefined" && "speechSynthesis" in window) {
+                window.speechSynthesis.cancel();
+              }
+              onClose();
+            }}
             aria-label="Close call session details"
             className="p-1.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-colors"
           >
@@ -320,24 +454,89 @@ function CallDetailModal({
             {/* TAB 1: RECORDING & TRANSCRIPT */}
             {activeTab === "transcript" && (
               <div className="space-y-4">
-                {/* Audio Recording Player */}
-                <div className="p-4 rounded-2xl bg-black/40 border border-amber-500/20">
-                  <div className="flex items-center justify-between mb-2">
+                {/* Interactive Audio Waveform Player */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-black/40 border border-amber-500/25 space-y-3">
+                  <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <Volume2 className="w-3.5 h-3.5 text-amber-400" />
-                      Session Audio Recording
+                      <Volume2 className="w-4 h-4 text-amber-400" />
+                      Session Audio Waveform Player
                     </span>
-                    {detail.recordingUrl && (
-                      <span className="text-[10px] text-emerald-400 font-mono">Lossless WAV/MP3</span>
-                    )}
-                  </div>
-                  {detail.recordingUrl ? (
-                    <audio controls src={detail.recordingUrl} className="w-full h-10 rounded-xl" />
-                  ) : (
-                    <div className="py-4 text-center text-xs text-white/40 border border-dashed border-white/10 rounded-xl">
-                      Audio recording is processing or unavailable for this test session.
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={exportTranscript}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white/10 hover:bg-white/20 text-white flex items-center gap-1.5 transition-colors"
+                      >
+                        <Download className="w-3.5 h-3.5 text-amber-400" />
+                        Export Transcript
+                      </button>
+                      <span className="text-[10px] text-emerald-400 font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                        {detail.recordingUrl ? "MP3 Audio" : "Voice Synthesis"}
+                      </span>
                     </div>
+                  </div>
+
+                  {detail.recordingUrl && (
+                    <audio
+                      ref={audioPlayerRef}
+                      src={detail.recordingUrl}
+                      onTimeUpdate={(e) => setCurrentTime(Math.floor((e.target as HTMLAudioElement).currentTime))}
+                      onEnded={() => setIsPlayingAudio(false)}
+                      className="hidden"
+                    />
                   )}
+
+                  {/* Player Controls Bar */}
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/10">
+                    <button
+                      onClick={togglePlayAudio}
+                      className={`p-3 rounded-xl font-bold flex items-center justify-center transition-all flex-shrink-0 ${
+                        isPlayingAudio
+                          ? "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30 animate-pulse"
+                          : "bg-amber-600 hover:bg-amber-500 text-white shadow-md shadow-amber-900/40"
+                      }`}
+                    >
+                      {isPlayingAudio ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 fill-current" />}
+                    </button>
+
+                    {/* Waveform Bars Animation */}
+                    <div className="flex-1 flex items-center gap-1 h-8 overflow-hidden">
+                      {[12, 24, 18, 28, 14, 22, 32, 16, 26, 30, 20, 15, 27, 21, 29, 17, 25, 31, 19, 23].map((h, i) => (
+                        <span
+                          key={i}
+                          style={{ height: isPlayingAudio ? `${h}px` : "6px" }}
+                          className={`flex-1 rounded-full transition-all duration-150 ${
+                            isPlayingAudio ? "bg-amber-400" : "bg-white/20"
+                          }`}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Time Counter */}
+                    <div className="text-right font-mono text-xs flex-shrink-0">
+                      <span className="text-amber-300 font-bold">{formatDuration(currentTime)}</span>
+                      <span className="text-white/40"> / {formatDuration(totalDuration)}</span>
+                    </div>
+
+                    {/* Speed Switcher */}
+                    <div className="flex items-center gap-1 border-l border-white/10 pl-2">
+                      {[1, 1.25, 1.5].map((rate) => (
+                        <button
+                          key={rate}
+                          onClick={() => {
+                            setPlaybackRate(rate);
+                            if (audioPlayerRef.current) audioPlayerRef.current.playbackRate = rate;
+                          }}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
+                            playbackRate === rate
+                              ? "bg-amber-500/30 text-amber-300 border border-amber-500/40"
+                              : "text-white/40 hover:text-white"
+                          }`}
+                        >
+                          {rate}x
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Dialogue Transcript */}
@@ -345,35 +544,43 @@ function CallDetailModal({
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-white flex items-center gap-1.5">
                       <FileText className="w-3.5 h-3.5 text-amber-400" />
-                      Turn-by-Turn Dialogue Transcript
+                      Interactive Turn-by-Turn Dialogue (Click turn to jump)
                     </span>
-                    <span className="text-[10px] text-white/40">
-                      {detail.transcript?.turns?.length || 0} conversational turns
+                    <span className="text-[10px] text-white/40 font-mono">
+                      {turns.length} turns
                     </span>
                   </div>
 
-                  {detail.transcript?.turns && detail.transcript.turns.length > 0 ? (
-                    <div className="max-h-64 overflow-y-auto space-y-2.5 p-4 rounded-2xl bg-black/40 border border-white/10 text-xs">
-                      {detail.transcript.turns.map((turn, i) => (
-                        <div
-                          key={i}
-                          className={`p-2.5 rounded-xl ${
-                            turn.speaker?.toLowerCase().includes("agent") || turn.speaker?.toLowerCase().includes("ai")
-                              ? "bg-amber-500/10 border border-amber-500/20 text-amber-100"
-                              : "bg-white/[0.04] border border-white/5 text-slate-200"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-bold text-[11px] uppercase tracking-wider text-amber-400">
-                              {turn.speaker}:
-                            </span>
-                            {turn.timestamp && (
-                              <span className="text-[10px] text-white/40 font-mono">{turn.timestamp}</span>
-                            )}
+                  {turns.length > 0 ? (
+                    <div className="max-h-72 overflow-y-auto space-y-2.5 p-4 rounded-2xl bg-black/40 border border-white/10 text-xs">
+                      {turns.map((turn, i) => {
+                        const isAgent = turn.speaker?.toLowerCase().includes("agent") || turn.speaker?.toLowerCase().includes("ai");
+                        const isHighlighted = activeTurnIndex === i;
+                        return (
+                          <div
+                            key={i}
+                            onClick={() => handleJumpTurn(i)}
+                            className={`p-3 rounded-xl cursor-pointer transition-all ${
+                              isHighlighted
+                                ? "bg-amber-500/25 border border-amber-500/60 shadow-md shadow-amber-500/10 text-white"
+                                : isAgent
+                                ? "bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/20 text-amber-100"
+                                : "bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 text-slate-200"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-bold text-[11px] uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                                <span className={`w-2 h-2 rounded-full ${isHighlighted ? "bg-amber-400 animate-ping" : isAgent ? "bg-amber-400" : "bg-sky-400"}`} />
+                                {turn.speaker}:
+                              </span>
+                              <span className="text-[10px] text-white/40 font-mono">
+                                {turn.startTime !== undefined ? `${turn.startTime}s - ${turn.endTime}s` : turn.timestamp || `Turn ${i + 1}`}
+                              </span>
+                            </div>
+                            <p className="leading-relaxed">{turn.text}</p>
                           </div>
-                          <p className="leading-relaxed">{turn.text}</p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : detail.transcript?.rawText ? (
                     <div className="p-4 rounded-2xl bg-black/40 border border-white/10 text-xs text-slate-200 max-h-56 overflow-y-auto leading-relaxed whitespace-pre-wrap">
