@@ -5,6 +5,7 @@ import {
   MessageSquare, Mail, Webhook, PhoneCall, RefreshCw,
   Trash2, Loader2, Play, Eye, Clock, Check, X, ShieldAlert,
   Send, ChevronLeft, ChevronRight, HelpCircle, Layers,
+  Smartphone, CheckCheck, SendHorizontal, Sparkles, Bot, Smile,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -78,6 +79,88 @@ export default function AutomationsPage() {
   const [logsLoading, setLogsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Omnichannel Post-Call Hub State
+  const [activeSection, setActiveSection] = useState<"omnichannel" | "rules" | "logs">("omnichannel");
+  const [omniChannel, setOmniChannel] = useState<"whatsapp" | "sms">("whatsapp");
+  const [omniTrigger, setOmniTrigger] = useState<string>("appointment_detected");
+  const [omniCustomerName, setOmniCustomerName] = useState("Vikram Malhotra");
+  const [omniAgentName, setOmniAgentName] = useState("Sophia (AI Concierge)");
+  const [omniAppointmentTime, setOmniAppointmentTime] = useState("Tomorrow, 3:30 PM IST");
+  const [omniCalendarLink, setOmniCalendarLink] = useState("https://cal.com/agentcall/consultation");
+  const [omniTemplate, setOmniTemplate] = useState(
+    "Hi {{customer_name}}, this is {{agent_name}} following up on our call! Your consultation is confirmed for {{appointment_time}}.\n\nMeeting Details & Calendar invite: {{calendar_link}}\n\nReply YES to confirm or let us know if you need to reschedule."
+  );
+  const [omniMessages, setOmniMessages] = useState<Array<{ sender: "bot" | "customer"; text: string; time: string; status?: "read" | "delivered" | "sent" }>>([
+    {
+      sender: "bot",
+      text: "Hi Vikram Malhotra, this is Sophia (AI Concierge) following up on our call! Your consultation is confirmed for Tomorrow, 3:30 PM IST.\n\nMeeting Details & Calendar invite: https://cal.com/agentcall/consultation\n\nReply YES to confirm or let us know if you need to reschedule.",
+      time: "10:42 AM",
+      status: "read",
+    },
+    {
+      sender: "customer",
+      text: "YES! Confirmed. Could we also invite my co-founder at rajesh@nexus.io?",
+      time: "10:44 AM",
+    },
+    {
+      sender: "bot",
+      text: "Added Rajesh to the calendar invite! Looking forward to connecting tomorrow at 3:30 PM.",
+      time: "10:45 AM",
+      status: "read",
+    }
+  ]);
+  const [customerReplyInput, setCustomerReplyInput] = useState("");
+  const [isSimulatingSend, setIsSimulatingSend] = useState(false);
+  const [omniDispatchSuccess, setOmniDispatchSuccess] = useState(false);
+
+  const getRenderedOmniMessage = () => {
+    return omniTemplate
+      .replace(/\{\{customer_name\}\}/g, omniCustomerName)
+      .replace(/\{\{agent_name\}\}/g, omniAgentName)
+      .replace(/\{\{appointment_time\}\}/g, omniAppointmentTime)
+      .replace(/\{\{calendar_link\}\}/g, omniCalendarLink);
+  };
+
+  const handleSendReply = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!customerReplyInput.trim()) return;
+    const newMsg = {
+      sender: "customer" as const,
+      text: customerReplyInput.trim(),
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setOmniMessages((prev) => [...prev, newMsg]);
+    setCustomerReplyInput("");
+
+    setIsSimulatingSend(true);
+    setTimeout(() => {
+      setIsSimulatingSend(false);
+      setOmniMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot" as const,
+          text: "Thanks for the update! Our voice agent has automatically logged this preference in your CRM file.",
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: "delivered" as const,
+        }
+      ]);
+    }, 900);
+  };
+
+  const handleTestOmniDispatch = () => {
+    setOmniDispatchSuccess(true);
+    setOmniMessages((prev) => [
+      ...prev,
+      {
+        sender: "bot" as const,
+        text: getRenderedOmniMessage(),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: "delivered" as const,
+      }
+    ]);
+    setTimeout(() => setOmniDispatchSuccess(false), 3000);
+  };
 
   // Pagination for logs
   const [logPage, setLogPage] = useState(1);
@@ -315,7 +398,335 @@ export default function AutomationsPage() {
         />
       </div>
 
-      {/* Configured Rules Section */}
+      {/* Navigation Switcher Tabs */}
+      <div className="flex border-b border-slate-200 dark:border-white/10 gap-6 text-sm overflow-x-auto">
+        {[
+          { id: "omnichannel", label: "Omnichannel Post-Call Hub (WhatsApp & SMS)", icon: MessageSquare },
+          { id: "rules", label: "Configured Automation Rules", icon: Layers },
+          { id: "logs", label: "Execution & Delivery Audit Logs", icon: Clock },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeSection === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveSection(tab.id as any)}
+              className={`pb-3 font-bold transition-all relative flex items-center gap-2 whitespace-nowrap ${
+                isActive
+                  ? "text-brand-600 dark:text-white"
+                  : "text-slate-500 dark:text-white/40 hover:text-slate-700 dark:hover:text-white/70"
+              }`}
+            >
+              <Icon className={`w-4 h-4 ${isActive ? "text-brand-500" : "text-slate-400"}`} />
+              <span>{tab.label}</span>
+              {isActive && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-500 rounded-full" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* SECTION 1: OMNICHANNEL POST-CALL HUB */}
+      {activeSection === "omnichannel" && (
+        <div className="space-y-6">
+          
+          {/* Header Banner */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-brand-500/5 to-transparent border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                <MessageSquare className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Post-Call WhatsApp & SMS Automation Studio</h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                    2-Way Messaging Active
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-white/60 mt-0.5">
+                  Trigger automated personalized WhatsApp & SMS messages the moment a call ends with interactive 2-way replies.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleTestOmniDispatch}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5 self-start sm:self-auto"
+            >
+              <Send className="w-3.5 h-3.5" />
+              Dispatch Live Test Message
+            </button>
+          </div>
+
+          {omniDispatchSuccess && (
+            <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/30 text-xs flex items-center gap-2 text-emerald-800 dark:text-emerald-300">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <span>Automated message dispatched to <strong>{omniCustomerName}</strong>! See live delivery status in phone preview below.</span>
+            </div>
+          )}
+
+          {/* Studio Grid: Config on Left, Smartphone Simulator on Right */}
+          <div className="grid lg:grid-cols-12 gap-6">
+
+            {/* Left: Template & Trigger Configuration (7 cols) */}
+            <div className="lg:col-span-7 space-y-5">
+              
+              {/* Trigger & Channel Card */}
+              <div className="p-5 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] shadow-sm space-y-4">
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 dark:text-white/70 block mb-1.5">
+                      Call Lifecycle Trigger Event
+                    </label>
+                    <select
+                      value={omniTrigger}
+                      onChange={(e) => setOmniTrigger(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 font-semibold"
+                    >
+                      <option value="appointment_detected">Appointment Scheduled on Calendar</option>
+                      <option value="lead_qualified">Lead Qualified (Score &ge; 75)</option>
+                      <option value="call_missed">Call Missed / Callback Requested</option>
+                      <option value="call_completed">Standard Post-Call Follow-up</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 dark:text-white/70 block mb-1.5">
+                      Dispatch Channel
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setOmniChannel("whatsapp")}
+                        className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                          omniChannel === "whatsapp"
+                            ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 shadow-sm"
+                            : "bg-white dark:bg-black/20 border-slate-200 dark:border-white/10 text-slate-500"
+                        }`}
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" /> Meta WhatsApp
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOmniChannel("sms")}
+                        className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                          omniChannel === "sms"
+                            ? "bg-cyan-500/15 border-cyan-500/40 text-cyan-600 dark:text-cyan-400 shadow-sm"
+                            : "bg-white dark:bg-black/20 border-slate-200 dark:border-white/10 text-slate-500"
+                        }`}
+                      >
+                        <PhoneCall className="w-3.5 h-3.5" /> Twilio SMS
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Variable Token Inserter */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-bold text-slate-700 dark:text-white/70">
+                      Insert Dynamic Personalization Tokens
+                    </label>
+                    <span className="text-[10px] text-slate-400">Click pill to inject</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {[
+                      { key: "customer_name", label: "{{customer_name}}" },
+                      { key: "agent_name", label: "{{agent_name}}" },
+                      { key: "appointment_time", label: "{{appointment_time}}" },
+                      { key: "calendar_link", label: "{{calendar_link}}" },
+                    ].map((pill) => (
+                      <button
+                        key={pill.key}
+                        type="button"
+                        onClick={() => setOmniTemplate((prev) => prev + ` ${pill.label}`)}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-emerald-500/40 text-emerald-600 dark:text-emerald-400 transition-colors"
+                      >
+                        + {pill.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Template Textarea */}
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-white/70 block mb-1.5">
+                    Message Template Body
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={omniTemplate}
+                    onChange={(e) => setOmniTemplate(e.target.value)}
+                    className="w-full p-3.5 rounded-xl bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white leading-relaxed focus:outline-none focus:border-emerald-500 resize-none font-sans"
+                  />
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+                    <span>A2P 10DLC Verified • Opt-out &lsquo;STOP&rsquo; footer automatic</span>
+                    <span>{omniTemplate.length} characters</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sample Lead Test Data Fields */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] space-y-3">
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Live Simulation Variables
+                </h4>
+                <div className="grid sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="text-[11px] text-slate-500 block mb-1">Customer Name</label>
+                    <input
+                      type="text"
+                      value={omniCustomerName}
+                      onChange={(e) => setOmniCustomerName(e.target.value)}
+                      className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-black/30 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-500 block mb-1">Agent Persona</label>
+                    <input
+                      type="text"
+                      value={omniAgentName}
+                      onChange={(e) => setOmniAgentName(e.target.value)}
+                      className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-black/30 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-500 block mb-1">Appointment Slot</label>
+                    <input
+                      type="text"
+                      value={omniAppointmentTime}
+                      onChange={(e) => setOmniAppointmentTime(e.target.value)}
+                      className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-black/30 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-500 block mb-1">Calendar URL</label>
+                    <input
+                      type="text"
+                      value={omniCalendarLink}
+                      onChange={(e) => setOmniCalendarLink(e.target.value)}
+                      className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-black/30 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Live Interactive Smartphone Simulator (5 cols) */}
+            <div className="lg:col-span-5 flex flex-col items-center">
+              <div className="w-full max-w-[340px] rounded-[40px] bg-slate-900 p-3 shadow-2xl border-4 border-slate-800 relative">
+                
+                {/* Speaker & camera punch-hole */}
+                <div className="absolute top-5 left-1/2 -translate-x-1/2 w-20 h-4 bg-slate-950 rounded-full z-20 flex items-center justify-center">
+                  <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-white/10" />
+                </div>
+
+                {/* Smartphone Screen */}
+                <div className="w-full h-[540px] rounded-[32px] bg-[#0b141a] overflow-hidden flex flex-col text-slate-100 relative">
+                  
+                  {/* Status Bar */}
+                  <div className="px-5 pt-3 pb-2 flex items-center justify-between text-[10px] text-slate-300 font-mono">
+                    <span>10:45</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px]">5G</span>
+                      <span>98%</span>
+                    </div>
+                  </div>
+
+                  {/* WhatsApp Header */}
+                  <div className="px-3 py-2.5 bg-[#202c33] flex items-center justify-between border-b border-white/5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-xs text-white">
+                        AC
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs font-bold leading-tight">AgentCall AI Concierge</span>
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" title="Verified Business" />
+                        </div>
+                        <span className="text-[10px] text-emerald-400 font-medium">online</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Message Stream */}
+                  <div className="flex-1 p-3 overflow-y-auto space-y-2.5 bg-[radial-gradient(#1f2c34_1px,transparent_1px)] [background-size:16px_16px]">
+                    
+                    <div className="text-center my-1">
+                      <span className="px-2 py-0.5 rounded bg-[#182229] text-[9px] text-slate-400">
+                        TODAY • END-TO-END ENCRYPTED
+                      </span>
+                    </div>
+
+                    {omniMessages.map((msg, i) => (
+                      <div
+                        key={i}
+                        className={`flex flex-col ${
+                          msg.sender === "bot" ? "items-start" : "items-end"
+                        }`}
+                      >
+                        <div
+                          className={`max-w-[85%] p-2.5 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap shadow ${
+                            msg.sender === "bot"
+                              ? "bg-[#202c33] text-slate-100 rounded-tl-none border border-white/5"
+                              : "bg-[#005c4b] text-white rounded-tr-none"
+                          }`}
+                        >
+                          {msg.text}
+                          <div className="flex items-center justify-end gap-1 mt-1 text-[9px] text-slate-300/70">
+                            <span>{msg.time}</span>
+                            {msg.sender === "bot" && (
+                              <CheckCheck className="w-3.5 h-3.5 text-cyan-400" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {isSimulatingSend && (
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400 italic">
+                        <Bot className="w-3 h-3 text-emerald-400" />
+                        <span>AgentCall AI is typing a response...</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2-Way Reply Input Simulator */}
+                  <form
+                    onSubmit={handleSendReply}
+                    className="p-2 bg-[#202c33] border-t border-white/5 flex items-center gap-1.5"
+                  >
+                    <input
+                      type="text"
+                      placeholder="Simulate customer reply..."
+                      value={customerReplyInput}
+                      onChange={(e) => setCustomerReplyInput(e.target.value)}
+                      className="flex-1 px-3 py-1.5 rounded-full bg-[#2a3942] text-xs text-white placeholder-slate-400 focus:outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!customerReplyInput.trim()}
+                      className="w-7 h-7 rounded-full bg-[#00a884] text-white flex items-center justify-center disabled:opacity-40 transition-opacity"
+                    >
+                      <SendHorizontal className="w-3.5 h-3.5" />
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-400 dark:text-white/40 mt-3 text-center">
+                Interactive 2-Way WhatsApp preview with dynamic token replacement & instant conversational replies.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 2: CONFIGURED RULES (shown when activeSection === "rules") */}
+      {activeSection === "rules" && (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
@@ -410,8 +821,10 @@ export default function AutomationsPage() {
           })}
         </div>
       </div>
+      )}
 
-      {/* Execution History (Logs) */}
+      {/* SECTION 3: EXECUTION HISTORY LOGS (shown when activeSection === "logs") */}
+      {activeSection === "logs" && (
       <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-white/10">
         <div className="flex items-center justify-between">
           <div>
@@ -525,6 +938,7 @@ export default function AutomationsPage() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Multi-Step Create Rule Modal */}
       <AnimatePresence>

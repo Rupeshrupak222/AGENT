@@ -33,6 +33,7 @@ import { AgentVoiceSimulatorModal } from "@/components/agents/AgentVoiceSimulato
 import { EnterpriseAgentStudioModal } from "@/components/agents/EnterpriseAgentStudioModal";
 import { IvrRouterModal } from "@/components/agents/IvrRouterModal";
 import { ObjectionArenaModal } from "@/components/agents/ObjectionArenaModal";
+import { VoiceCloneStudioModal } from "@/components/agents/VoiceCloneStudioModal";
 import {
   agentsApi,
   normalizeApiError,
@@ -689,6 +690,7 @@ export default function AgentsPage() {
   const [testingAgent, setTestingAgent] = useState<AgentItem | null>(null);
   const [isIvrModalOpen, setIsIvrModalOpen] = useState(false);
   const [isArenaModalOpen, setIsArenaModalOpen] = useState(false);
+  const [isVoiceCloneModalOpen, setIsVoiceCloneModalOpen] = useState(false);
   const [arenaTargetAgent, setArenaTargetAgent] = useState<AgentItem | null>(null);
   const [filter, setFilter] = useState("all");
   const [languageFilter, setLanguageFilter] = useState("all");
@@ -761,6 +763,14 @@ export default function AgentsPage() {
           >
             <GitBranch className="w-3.5 h-3.5 text-brand-500" />
             <span>Inbound IVR Flow</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsVoiceCloneModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/30 transition-all shadow-sm"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+            <span>Voice Clone Studio</span>
           </button>
           <button
             type="button"
@@ -1000,6 +1010,19 @@ export default function AgentsPage() {
             agent={arenaTargetAgent || agents[0] || null}
             isOpen={isArenaModalOpen}
             onClose={() => setIsArenaModalOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Voice Clone Studio Modal */}
+      <AnimatePresence>
+        {isVoiceCloneModalOpen && (
+          <VoiceCloneStudioModal
+            isOpen={isVoiceCloneModalOpen}
+            onClose={() => setIsVoiceCloneModalOpen(false)}
+            onVoiceCreated={(vName) => {
+              fetchAgents();
+            }}
           />
         )}
       </AnimatePresence>
