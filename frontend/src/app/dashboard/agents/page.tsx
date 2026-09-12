@@ -34,6 +34,8 @@ import { EnterpriseAgentStudioModal } from "@/components/agents/EnterpriseAgentS
 import { IvrRouterModal } from "@/components/agents/IvrRouterModal";
 import { ObjectionArenaModal } from "@/components/agents/ObjectionArenaModal";
 import { VoiceCloneStudioModal } from "@/components/agents/VoiceCloneStudioModal";
+import { MultilingualCodeSwitchModal } from "@/components/agents/MultilingualCodeSwitchModal";
+import { KnowledgeCrawlerModal } from "@/components/knowledge/KnowledgeCrawlerModal";
 import {
   agentsApi,
   normalizeApiError,
@@ -691,6 +693,8 @@ export default function AgentsPage() {
   const [isIvrModalOpen, setIsIvrModalOpen] = useState(false);
   const [isArenaModalOpen, setIsArenaModalOpen] = useState(false);
   const [isVoiceCloneModalOpen, setIsVoiceCloneModalOpen] = useState(false);
+  const [isPolyglotModalOpen, setIsPolyglotModalOpen] = useState(false);
+  const [isKnowledgeModalOpen, setIsKnowledgeModalOpen] = useState(false);
   const [arenaTargetAgent, setArenaTargetAgent] = useState<AgentItem | null>(null);
   const [filter, setFilter] = useState("all");
   const [languageFilter, setLanguageFilter] = useState("all");
@@ -771,6 +775,22 @@ export default function AgentsPage() {
           >
             <Sparkles className="w-3.5 h-3.5 text-purple-500" />
             <span>Voice Clone Studio</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsPolyglotModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-500/30 transition-all shadow-sm"
+          >
+            <Globe2 className="w-3.5 h-3.5 text-blue-500" />
+            <span>Multilingual & Dialects</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsKnowledgeModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 transition-all shadow-sm"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Knowledge Forge</span>
           </button>
           <button
             type="button"
@@ -1023,6 +1043,26 @@ export default function AgentsPage() {
             onVoiceCreated={(vName) => {
               fetchAgents();
             }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Multilingual Code-Switching Modal */}
+      <AnimatePresence>
+        {isPolyglotModalOpen && (
+          <MultilingualCodeSwitchModal
+            isOpen={isPolyglotModalOpen}
+            onClose={() => setIsPolyglotModalOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Self-Service Knowledge Base Crawler Forge Modal */}
+      <AnimatePresence>
+        {isKnowledgeModalOpen && (
+          <KnowledgeCrawlerModal
+            isOpen={isKnowledgeModalOpen}
+            onClose={() => setIsKnowledgeModalOpen(false)}
           />
         )}
       </AnimatePresence>
