@@ -9,7 +9,7 @@ import { Permissions } from '../../common/decorators/permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Response } from 'express';
-import { CALL_VIEW, CALL_INITIATE } from '../../common/rbac/permissions';
+import { CALL_VIEW, CALL_INITIATE, RECORDING_VIEW } from '../../common/rbac/permissions';
 
 @ApiTags('calls')
 @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard, TenantGuard)
@@ -51,7 +51,7 @@ export class CallsController {
 
   @Get(':id/recording')
   @ApiBearerAuth('JWT')
-  @Permissions(CALL_VIEW)
+  @Permissions(RECORDING_VIEW)
   @ApiOperation({ summary: 'Get signed URL and metadata for call audio recording' })
   async getRecording(@CurrentUser() u: any, @Param('id') id: string) {
     const data = await this.calls.getRecording(u.tenantId, id, u);
