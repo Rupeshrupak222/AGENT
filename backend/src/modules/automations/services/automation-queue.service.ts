@@ -3,6 +3,11 @@ import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import * as crypto from 'crypto';
 import { MetricsService } from '../../../common/services/metrics.service';
+import {
+  assertDurableQueueAvailable,
+  isProductionQueueFallbackForbidden,
+  RedisUnavailableError,
+} from '../../../common/utils/queue-fallback';
 
 export interface AutomationJobData {
   tenantId: string;
@@ -145,10 +150,15 @@ export class AutomationQueueService implements OnModuleInit {
         this.processedJobIds.add(jobId);
         return { jobId, queued: true };
       } catch (err: any) {
-        this.logger.warn(`Redis enqueue failed (${err.message}). Falling back to in-memory queue.`);
+        this.logger.warn(`Redis enqueue failed (${err.message}).${isProductionQueueFallbackForbidden(process.env.NODE_ENV) ? ' PRODUCTION: durable submission rejected.' : ' Falling back to in-memory queue.'}`);
         this.isRedisAvailable = false;
+        if (isProductionQueueFallbackForbidden(process.env.NODE_ENV)) {
+          throw new RedisUnavailableError('automation-actions');
+        }
       }
     }
+
+    assertDurableQueueAvailable('automation-actions', process.env.NODE_ENV);
 
     // In-memory fallback
     this.processedJobIds.add(jobId);

@@ -3,6 +3,11 @@ import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { CrmSyncPayload } from '../interfaces/crm-provider.interface';
 import { MetricsService } from '../../../common/services/metrics.service';
+import {
+  assertDurableQueueAvailable,
+  isProductionQueueFallbackForbidden,
+  RedisUnavailableError,
+} from '../../../common/utils/queue-fallback';
 
 @Injectable()
 export class CrmQueueService implements OnModuleInit {
@@ -111,9 +116,14 @@ export class CrmQueueService implements OnModuleInit {
         this.logger.log(`[CRM_SYNC_QUEUED] jobId=${jobId} callId=${data.callId}`);
         return { jobId, queued: true, mode: 'bull' };
       } catch (err: any) {
-        this.logger.warn(`Failed to enqueue CRM sync to Bull (${err.message}). Using in-memory queue.`);
+        this.logger.warn(`Failed to enqueue CRM sync to Bull (${err.message}).${isProductionQueueFallbackForbidden(process.env.NODE_ENV) ? ' PRODUCTION: durable submission rejected.' : ' Using in-memory queue.'}`);
+        if (isProductionQueueFallbackForbidden(process.env.NODE_ENV)) {
+          throw new RedisUnavailableError('crm-sync');
+        }
       }
     }
+
+    assertDurableQueueAvailable('crm-sync', process.env.NODE_ENV);
 
     const exists = this.inMemoryQueue.some((j) => j.id === jobId);
     if (exists) {

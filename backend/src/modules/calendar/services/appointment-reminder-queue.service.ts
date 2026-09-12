@@ -2,6 +2,11 @@ import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/commo
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { MetricsService } from '../../../common/services/metrics.service';
+import {
+  assertDurableQueueAvailable,
+  isProductionQueueFallbackForbidden,
+  RedisUnavailableError,
+} from '../../../common/utils/queue-fallback';
 
 export type ReminderKind = '24h' | '1h';
 
@@ -182,10 +187,15 @@ export class AppointmentReminderQueueService implements OnModuleInit, OnModuleDe
           results.push({ kind, jobId, queued: true, remindAt: remindAt.toISOString() });
           continue;
         } catch (err: any) {
-          this.logger.warn(`Redis reminder enqueue failed (${err.message}); using in-memory timer.`);
+          this.logger.warn(`Redis reminder enqueue failed (${err.message}).${isProductionQueueFallbackForbidden(process.env.NODE_ENV) ? ' PRODUCTION: durable submission rejected.' : ' Using in-memory timer.'}`);
           this.isRedisAvailable = false;
+          if (isProductionQueueFallbackForbidden(process.env.NODE_ENV)) {
+            throw new RedisUnavailableError('appointment-reminders');
+          }
         }
       }
+
+      assertDurableQueueAvailable('appointment-reminders', process.env.NODE_ENV);
 
       this.clearInMemoryTimer(appointment.id, kind);
       const delay = Math.max(0, remindAt.getTime() - Date.now());

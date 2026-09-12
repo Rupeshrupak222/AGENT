@@ -43,8 +43,8 @@ This document defines the production alerting policy for AgentCall AI based on e
   labels:
     severity: critical
   annotations:
-    summary: "Redis broker offline; queues running in in-memory degraded mode"
-    action: "Restart Redis container or check Upstash/managed Redis credentials."
+    summary: "Redis broker offline; production durable submission rejected (REDIS_UNAVAILABLE)"
+    action: "Restart Redis container or check Upstash/managed Redis credentials. Day 24 contract: production queues reject silent in-memory fallback; health-readiness returns degraded and enqueue paths surface RedisUnavailableError (retryable)."
 
 - alert: QueueStalledOrDeadlocked
   expr: sum(bullmq_queue_waiting_jobs{queue=~"outbound-calls|post-call-analysis"}) > 500
@@ -125,5 +125,5 @@ This document defines the production alerting policy for AgentCall AI based on e
 1. **Acknowledge**: Triage engineer acknowledges P1 alert within 15 minutes.
 2. **Health Probe Verification**: Run `curl -s http://<instance>/api/v1/health/ready` to evaluate component degradation map.
 3. **Log Correlation**: Search CloudWatch / Grafana Loki using `x-correlation-id` from the failing request.
-4. **Degraded Mode Verification**: Confirm in-memory fallback queues are shielding incoming customer webhooks.
+4. **Degraded Mode Verification**: Confirm `/health/ready` returns `degraded` and that production queue submission is either draining to a healthy broker after recovery or being rejected as `REDIS_UNAVAILABLE` (retryable) — never silently buffered in-memory (Day 24 durability contract).
 5. **Mitigation**: Failover or rolling restart without state loss.

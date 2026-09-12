@@ -8,10 +8,10 @@ This document records the observed recovery characteristics of the AgentCall AI 
 
 ### 1.1 Redis Broker Disconnection / Downtime
 - **Injected Condition**: Redis TCP socket connection terminated; BullMQ client disconnects.
-- **Expected Behavior**: API process must not crash with unhandled exception. Queue services must fall back to in-memory buffers or drop non-essential background tasks gracefully. `/health/ready` returns `status: "degraded"` with `checks.redis.status: "down"`.
-- **Observed Behavior**: `CampaignQueueService`, `RecordingQueueService`, `CrmQueueService`, and `AppointmentReminderQueueService` immediately caught ECONNREFUSED and transitioned into in-memory fallback mode. `/health/live` remained HTTP 200; `/health/ready` reported `status: "degraded"`.
-- **Data Safety**: In-memory FIFO ring buffers prevent queue drop during transient outages.
-- **Result**: **PASS — Resilient Graceful Degradation**
+- **Expected Behavior**: API process must not crash with unhandled exception. In **production**, queue services must refuse silent RAM-only fallback and reject durable submission with a structured `RedisUnavailableError` (`code: REDIS_UNAVAILABLE`, `retryable: true`) so operators can alert and retry once Redis recovers. In **development/test**, the same services retain the in-memory ring-buffer fallback so offline iteration is unaffected. `/health/ready` returns `status: "degraded"` with `checks.redis.status: "down"` or `error`.
+- **Observed Behavior**: All 6 critical queues (`outbound-calls`, `post-call-analysis`, `crm-sync`, `recording-processing`, `automation-actions`, `appointment-reminders`) are now guarded by `assertDurableQueueAvailable()` (`backend/src/common/utils/queue-fallback.ts`). Under `NODE_ENV=production` an enqueue failure surfaces `RedisUnavailableError` (durable submission rejected) instead of writing to a volatile buffer; under `NODE_ENV=test`/`development` the in-memory fallback is preserved. Verified by `day24-production-queue-safety.spec.ts` (22 tests, per-queue prod-offline, prod-add-failure, and dev-fallback paths). `/health/live` remained HTTP 200; `/health/ready` reported `status: "degraded"`.
+- **Data Safety**: No campaign, CRM, recording, automation, or reminder event is silently accepted in production without a durable broker; anything rejected is surfaced to the caller/alert channel immediately.
+- **Result**: **PASS — Production Durability Contract Enforced (Day 24)**
 
 ---
 

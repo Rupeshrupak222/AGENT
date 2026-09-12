@@ -10,7 +10,7 @@ This checklist must be executed and approved before deploying any release to sta
 - [x] **Sequential Migrations**: All Prisma migrations under `db/migrations` are strictly sequential, forward-only, and non-destructive.
 - [x] **Schema Validation**: `npx prisma validate --schema=db/schema.prisma` passes with exit code 0.
 - [x] **Backend Lint**: `npm run lint` in `backend` passes with 0 errors.
-- [x] **Backend Unit & Integration Tests**: `npm test` passes 100% across all 38 test suites (450/450 passing).
+- [x] **Backend Unit & Integration Tests**: `npm test` passes 100% across all 40 test suites (476/476 passing) — see coverage note `NODE_OPTIONS=--max-old-space-size=4096` plus `--runInBand --forceExit` on Windows.
 - [x] **Backend Production Build**: `npm run build` in `backend` compiles cleanly to `dist/` with NestJS.
 - [x] **Frontend Typecheck**: `npx tsc --noEmit` in `frontend` passes with 0 type errors.
 - [x] **Frontend Lint**: `npm run lint` in `frontend` passes with 0 errors.
@@ -29,7 +29,7 @@ This checklist must be executed and approved before deploying any release to sta
 - [ ] **Container Images Built**:
   - Multi-stage builds completed.
   - Non-root user permissions active (`nestjs` / `nextjs`).
-  - No secrets embedded into Docker image layers or `.env` files copied. *(Host lacks Docker CLI)*
+  - No secrets embedded into Docker image layers or `.env` files copied. *(Host lacks Docker CLI; `docker-gate` CI job authored in `ci.yml` to enforce this on the next push)*
 
 ---
 

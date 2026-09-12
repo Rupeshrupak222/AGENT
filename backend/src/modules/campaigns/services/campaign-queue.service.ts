@@ -2,6 +2,11 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { MetricsService } from '../../../common/services/metrics.service';
+import {
+  assertDurableQueueAvailable,
+  isProductionQueueFallbackForbidden,
+  RedisUnavailableError,
+} from '../../../common/utils/queue-fallback';
 
 export interface OutboundCallJobData {
   campaignId: string;
@@ -119,9 +124,14 @@ export class CampaignQueueService implements OnModuleInit {
         this.logger.log(`[CALL_JOB_QUEUED] jobId=${jobId} campaignId=${data.campaignId} leadId=${data.leadId} phone=${data.phoneNumber}`);
         return { jobId, queued: true, mode: 'bull' };
       } catch (err: any) {
-        this.logger.warn(`Failed to enqueue job to Bull queue (${err.message}). Falling back to in-memory queue.`);
+        this.logger.warn(`Failed to enqueue job to Bull queue (${err.message}).${isProductionQueueFallbackForbidden(process.env.NODE_ENV) ? ' PRODUCTION: durable submission rejected.' : ' Falling back to in-memory queue.'}`);
+        if (isProductionQueueFallbackForbidden(process.env.NODE_ENV)) {
+          throw new RedisUnavailableError('outbound-calls');
+        }
       }
     }
+
+    assertDurableQueueAvailable('outbound-calls', process.env.NODE_ENV);
 
     const exists = this.inMemoryQueue.some(j => j.id === jobId);
     if (exists) {

@@ -13,7 +13,12 @@
 
 const http = require('http');
 
-const API_BASE = process.env.SMOKE_API_BASE || 'http://localhost:3001/api/v1';
+// TARGET_URL is the documented Day 24 contract; SMOKE_API_BASE overrides it for
+// older invocations. Always points at a real live target — never assumed.
+const API_BASE =
+  process.env.SMOKE_API_BASE ||
+  process.env.TARGET_URL ||
+  'http://localhost:3001/api/v1';
 const SMOKE_EMAIL = process.env.SMOKE_EMAIL || '';
 const SMOKE_PASSWORD = process.env.SMOKE_PASSWORD || '';
 

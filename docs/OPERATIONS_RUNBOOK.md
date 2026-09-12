@@ -76,9 +76,9 @@ Redis is critical for background workers, queue durability, and rate-limiting st
   6. `appointment-reminders` (24h and 1h scheduled notifications)
 - **Persistence Settings**:
   - Configure `appendonly yes` and `appendfsync everysec` to prevent scheduled reminder loss across Redis restarts.
-- **Failover Behavior**:
+- **Failover Behavior (Day 24 enforcement)**:
   - If Redis is disconnected, `HealthService.getReadiness()` marks readiness as `false` with `status: degraded`.
-  - In-memory fallbacks exist solely for development/offline testing; production mandates Redis.
+  - In-memory fallbacks exist solely for development/offline testing. In **production**, durable queue submission (`outbound-calls`, `post-call-analysis`, `crm-sync`, `recording-processing`, `automation-actions`, `appointment-reminders`) is rejected via `RedisUnavailableError` (`code: REDIS_UNAVAILABLE`, `retryable: true`) when the broker (or an enqueue/add) fails — see `backend/src/common/utils/queue-fallback.ts` and `day24-production-queue-safety.spec.ts`. NEVER run production without a reachable Redis.
 
 ---
 

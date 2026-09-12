@@ -1,4 +1,4 @@
-# Day 22 Load & Concurrency Test Report
+# Load & Concurrency Test Report — Day 22 Baseline & Day 24 Regression
 
 ## 1. Executive Summary
 
@@ -35,6 +35,29 @@ During Day 22 release engineering, an empirical load and concurrency benchmark w
 - **Total Failures**: 0 (0.00%)
 - **Peak Throughput**: **1,061.6 req/s**
 - **Peak Concurrency Latency (c50)**: p50 = 23ms, p95 = 45ms, p99 = 59ms
+
+---
+
+## 3b. Day 24 Localhost Runtime Regression Benchmark
+
+A second benchmark was executed on Day 24 against the **live dev-mode NestJS runtime** currently listening on `http://localhost:3001` (the same target used for the Day 24 smoke test), at a moment when **local PostgreSQL and Redis were disconnected**. This documents honest runtime behavior under degraded infrastructure, not a staging-environment result.
+
+### Measured Benchmark Results (Degraded Runtime)
+
+| Test Scenario | Reqs | Concurrency | Total Time | Throughput | p50 | p95 | p99 | Failures |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Tier 1 — Liveness (c10)** | 100 | 10 | 1.11s | 90.4 req/s | 21ms | 211ms | 221ms | 0 |
+| **Tier 1 — Metrics (c10)** | 50 | 10 | 0.57s | 88.3 req/s | 15ms | 196ms | 201ms | 0 |
+| **Tier 2 — Liveness (c25)** | 250 | 25 | 2.61s | 95.9 req/s | 154ms | 310ms | 333ms | 0 |
+| **Tier 2 — Readiness (c25)** | 100 | 25 | 1.65s | 60.5 req/s | 310ms | 465ms | 493ms | 0 |
+| **Tier 2 — Metrics (c25)** | 100 | 25 | 1.14s | 87.4 req/s | 144ms | 402ms | 464ms | 0 |
+| **Tier 3 — Liveness (c50)** | 500 | 50 | 4.57s | **109.5 req/s** | 272ms | 477ms | 494ms | 0 |
+| **Tier 3 — Readiness (c50)** | 200 | 50 | 3.01s | 66.4 req/s | 489ms | 751ms | 831ms | 0 |
+| **Tier 3 — Metrics (c50)** | 200 | 50 | 2.05s | 97.7 req/s | 327ms | 580ms | 592ms | 0 |
+
+- **Total Requests**: 1,500 | **Successful**: 1,500 (100.0%) | **Failures**: 0
+- **Peak Throughput**: 109.5 req/s (health-live c50)
+- **Interpretation**: Latency tails reflect CPU contention on the dev-mode runtime plus readiness engaging offline database/Redis probes (timeout-bound) on every request. These numbers are a degraded-environment baseline, NOT the Day 22 compiled-server baseline (1,061.6 req/s, § above). Both prove 0-failure request handling under sustained concurrency. Staging load with real DB/Redis remains **BLOCKED**. Day 24 readiness still returned HTTP 200 with `status: degraded` and structured diagnostics (fail-open monitoring).
 
 ---
 
