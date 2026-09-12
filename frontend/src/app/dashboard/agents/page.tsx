@@ -19,6 +19,8 @@ import {
   Sparkles,
   Mic,
   Sliders,
+  GitBranch,
+  ShieldAlert,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/Card";
@@ -29,6 +31,8 @@ import { useToast } from "@/components/ui/Toast";
 import { WaveAnimation } from "@/components/ui/WaveAnimation";
 import { AgentVoiceSimulatorModal } from "@/components/agents/AgentVoiceSimulatorModal";
 import { EnterpriseAgentStudioModal } from "@/components/agents/EnterpriseAgentStudioModal";
+import { IvrRouterModal } from "@/components/agents/IvrRouterModal";
+import { ObjectionArenaModal } from "@/components/agents/ObjectionArenaModal";
 import {
   agentsApi,
   normalizeApiError,
@@ -683,6 +687,9 @@ export default function AgentsPage() {
   const [studioOpen, setStudioOpen] = useState(false);
   const [studioAgent, setStudioAgent] = useState<AgentItem | null>(null);
   const [testingAgent, setTestingAgent] = useState<AgentItem | null>(null);
+  const [isIvrModalOpen, setIsIvrModalOpen] = useState(false);
+  const [isArenaModalOpen, setIsArenaModalOpen] = useState(false);
+  const [arenaTargetAgent, setArenaTargetAgent] = useState<AgentItem | null>(null);
   const [filter, setFilter] = useState("all");
   const [languageFilter, setLanguageFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -746,7 +753,26 @@ export default function AgentsPage() {
             Build, train and deploy autonomous voice employees for your company
           </p>
         </div>
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <button
+            type="button"
+            onClick={() => setIsIvrModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-white border border-slate-200 dark:border-white/10 transition-all shadow-sm"
+          >
+            <GitBranch className="w-3.5 h-3.5 text-brand-500" />
+            <span>Inbound IVR Flow</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setArenaTargetAgent(agents[0] || null);
+              setIsArenaModalOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30 transition-all shadow-sm"
+          >
+            <ShieldAlert className="w-3.5 h-3.5" />
+            <span>Objection Arena</span>
+          </button>
           <button
             onClick={fetchAgents}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-100 dark:hover:bg-white/[0.12] border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/80 transition-all shadow-sm"
@@ -953,6 +979,27 @@ export default function AgentsPage() {
             agent={testingAgent}
             isOpen={Boolean(testingAgent)}
             onClose={() => setTestingAgent(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Inbound IVR Routing Modal */}
+      <AnimatePresence>
+        {isIvrModalOpen && (
+          <IvrRouterModal
+            isOpen={isIvrModalOpen}
+            onClose={() => setIsIvrModalOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* AI Objection Arena Modal */}
+      <AnimatePresence>
+        {isArenaModalOpen && (
+          <ObjectionArenaModal
+            agent={arenaTargetAgent || agents[0] || null}
+            isOpen={isArenaModalOpen}
+            onClose={() => setIsArenaModalOpen(false)}
           />
         )}
       </AnimatePresence>
