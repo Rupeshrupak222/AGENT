@@ -400,17 +400,40 @@ export function UnifiedCallWorkspaceModal({
                           {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
                         </button>
 
-                        <div className="flex-1 space-y-1">
+                        <div className="flex-1 space-y-1.5">
+                          {/* Stitch Autonomous Voice Telemetry: Dual-Tone Waveform Visualizer */}
+                          <div className="flex items-end gap-[3px] h-9 px-2 py-1 rounded-lg bg-slate-100 dark:bg-[#0b1120] border border-slate-200/60 dark:border-white/10 overflow-hidden cursor-pointer">
+                            {Array.from({ length: 42 }).map((_, idx) => {
+                              const progressRatio = (duration || detail.duration || 1) > 0 ? currentTime / (duration || detail.duration || 1) : 0;
+                              const isPast = idx / 42 <= progressRatio;
+                              const baseH = Math.round(((Math.sin(idx * 0.48) * 0.5 + 0.5) * 65 + 25));
+                              const liveH = isPlaying ? Math.min(95, Math.max(15, baseH + Math.sin(idx + currentTime * 6) * 20)) : baseH;
+                              return (
+                                <div
+                                  key={idx}
+                                  style={{ height: `${liveH}%` }}
+                                  className={`flex-1 rounded-full transition-all duration-100 ${
+                                    isPast
+                                      ? "bg-gradient-to-t from-[#6366f1] to-[#8b5cf6] shadow-[0_0_6px_rgba(99,102,241,0.4)]"
+                                      : "bg-slate-300 dark:bg-[#1e293b]"
+                                  }`}
+                                />
+                              );
+                            })}
+                          </div>
                           <input
                             type="range"
                             min="0"
                             max={duration || detail.duration || 100}
                             value={currentTime}
                             onChange={handleSeek}
-                            className="w-full h-1.5 bg-slate-200 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-500"
+                            className="w-full h-1.5 bg-slate-200 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500"
                           />
                           <div className="flex justify-between text-[10px] font-mono text-slate-400">
-                            <span>{formatDuration(Math.floor(currentTime))}</span>
+                            <span className="flex items-center gap-1.5">
+                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                              {formatDuration(Math.floor(currentTime))}
+                            </span>
                             <span>{formatDuration(Math.floor(duration || detail.duration || 0))}</span>
                           </div>
                         </div>
@@ -493,16 +516,24 @@ export function UnifiedCallWorkspaceModal({
                                 : "bg-white dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/5 ml-4"
                             }`}
                           >
-                            <div className="flex items-center justify-between mb-1">
-                              <span
-                                className={`font-bold text-[11px] ${
-                                  isAgent
-                                    ? "text-brand-600 dark:text-brand-400"
-                                    : "text-slate-800 dark:text-white/90"
-                                }`}
-                              >
-                                {isAgent ? detail.agent?.name || "AI Agent" : detail.lead?.name || "Caller"}
-                              </span>
+                            <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className={`font-bold text-[11px] ${
+                                    isAgent
+                                      ? "text-indigo-600 dark:text-indigo-400"
+                                      : "text-slate-800 dark:text-white/90"
+                                  }`}
+                                >
+                                  {isAgent ? detail.agent?.name || "AI Agent" : detail.lead?.name || "Caller"}
+                                </span>
+                                {isAgent && (
+                                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-500 dark:text-indigo-300 border border-indigo-500/20 flex items-center gap-1">
+                                    <span className="w-1 h-1 rounded-full bg-emerald-400 animate-ping" />
+                                    AI Voice • ~180ms
+                                  </span>
+                                )}
+                              </div>
                               {turn.timestamp && (
                                 <span className="text-[9px] text-slate-400 font-mono">
                                   {new Date(turn.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
