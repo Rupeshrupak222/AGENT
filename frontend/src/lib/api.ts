@@ -1409,6 +1409,13 @@ export const automationsApi = {
     );
     return res.data.data;
   },
+
+  postCall: async (callId: string): Promise<any> => {
+    const res = await apiClient.post<ApiResponseWrapper<any>>(
+      `/automations/post-call/${callId}`
+    );
+    return res.data.data;
+  },
 };
 
 // ── Tenants API ────────────────────────────────────────────────

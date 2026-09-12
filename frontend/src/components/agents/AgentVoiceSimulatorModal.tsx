@@ -475,6 +475,9 @@ export function AgentVoiceSimulatorModal({
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.06] text-white/70 border border-white/10 capitalize">
                   {agent.language}
                 </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                  <Zap className="w-2.5 h-2.5" /> 230ms WebRTC
+                </span>
               </div>
               <p className="text-xs text-white/50 mt-0.5 flex items-center gap-1.5">
                 <Radio className="w-3 h-3 text-emerald-400" />
@@ -585,6 +588,39 @@ export function AgentVoiceSimulatorModal({
                   className="ml-3 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 hover:bg-amber-500/40 text-amber-200 border border-amber-500/40 transition-colors"
                 >
                   Stop Audio
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── User Speaking Equalizer Banner ─────────────────── */}
+        <AnimatePresence>
+          {isRecording && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="bg-gradient-to-r from-rose-500/15 via-rose-600/20 to-rose-500/15 border-b border-rose-500/30 px-4 py-2 flex items-center justify-between overflow-hidden"
+            >
+              <div className="flex items-center gap-2 text-xs font-semibold text-rose-200">
+                <Mic className="w-4 h-4 text-rose-400 animate-pulse" />
+                <span>Listening to your voice... (Speak naturally)</span>
+              </div>
+              <div className="flex items-center gap-1">
+                {[14, 22, 16, 26, 18, 30, 20, 24, 15, 28].map((h, idx) => (
+                  <span
+                    key={idx}
+                    style={{ height: `${h}px` }}
+                    className="w-1 bg-rose-400 rounded-full animate-pulse"
+                  />
+                ))}
+                <button
+                  type="button"
+                  onClick={stopSpeechRecognition}
+                  className="ml-3 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 hover:bg-rose-500/40 text-rose-200 border border-rose-500/40 transition-colors"
+                >
+                  Done Speaking
                 </button>
               </div>
             </motion.div>
