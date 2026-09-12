@@ -4,6 +4,7 @@ import { TelephonyService } from '../telephony/services/telephony.service';
 import { CloudflareR2StorageProvider } from '../storage/providers/r2-storage.provider';
 import { PostCallQueueService } from '../ai/services/post-call-queue.service';
 import { RecordingProcessor } from '../telephony/processors/recording.processor';
+import { ScopedActor, callScope, leadScope, agentScope } from '../../common/scope';
 
 export interface InitiateCallDto {
   leadId:   string;
@@ -71,10 +72,10 @@ export class CallsService implements OnModuleInit {
     }
   }
 
-  async initiateCall(tenantId: string, dto: InitiateCallDto) {
+  async initiateCall(tenantId: string, dto: InitiateCallDto, actor?: ScopedActor) {
     const [lead, agent] = await Promise.all([
-      this.prisma.lead.findFirst({ where: { id: dto.leadId, tenantId } }),
-      this.prisma.aIAgent.findFirst({ where: { id: dto.agentId, tenantId, status: 'active' } }),
+      this.prisma.lead.findFirst({ where: { id: dto.leadId, tenantId, ...leadScope(actor) } }),
+      this.prisma.aIAgent.findFirst({ where: { id: dto.agentId, tenantId, status: 'active', ...agentScope(actor) } }),
     ]);
 
     if (!lead)  throw new NotFoundException('Lead not found');
@@ -112,18 +113,19 @@ export class CallsService implements OnModuleInit {
     return latest ?? call;
   }
 
-  async findAll(tenantId: string, query: {
+async findAll(tenantId: string, query: {
     status?: string; agentId?: string; leadId?: string; direction?: string;
     outcome?: string; campaignId?: string; search?: string;
     from?: string; to?: string;
     sortBy?: string; sortOrder?: 'asc' | 'desc';
     page?: number; limit?: number;
-  }) {
+  }, actor?: ScopedActor) {
     try {
       const pageNum  = Math.max(1, Number(query?.page) || 1);
       const limitNum = Math.max(1, Math.min(100, Number(query?.limit) || 20));
       const skip  = (pageNum - 1) * limitNum;
-      const where: any = { tenantId, ...(query?.status     && { status:     query.status }),
+      const scope = callScope(actor);
+      const where: any = { tenantId, ...scope, ...(query?.status       && { status:     query.status }),
                                       ...(query?.agentId    && { agentId:    query.agentId }),
                                       ...(query?.leadId     && { leadId:     query.leadId }),
                                       ...(query?.direction  && { direction:  query.direction }),
@@ -167,16 +169,16 @@ export class CallsService implements OnModuleInit {
     }
   }
 
-  async findOne(tenantId: string, id: string) {
+  async findOne(tenantId: string, id: string, actor?: ScopedActor) {
     const call = await this.prisma.call.findFirst({
-      where:   { id, tenantId },
+      where:   { id, tenantId, ...callScope(actor) },
       include: { lead: true, agent: true, transcript: true },
     });
     if (!call) throw new NotFoundException('Call not found');
     return call;
   }
 
-  async getMetrics(tenantId: string, range: 'today' | 'week' | 'month' = 'today') {
+  async getMetrics(tenantId: string, range: 'today' | 'week' | 'month' = 'today', actor?: ScopedActor) {
     try {
       const now   = new Date();
       const start = range === 'today'
@@ -185,7 +187,7 @@ export class CallsService implements OnModuleInit {
           ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
           : new Date(now.getFullYear(), now.getMonth(), 1);
 
-      const where = { tenantId, startedAt: { gte: start } };
+      const where = { tenantId, ...callScope(actor), startedAt: { gte: start } };
 
       const [total, completed, missed, failed, avgDur] = await Promise.all([
         this.prisma.call.count({ where }),
@@ -219,9 +221,9 @@ export class CallsService implements OnModuleInit {
   /**
    * Retrieves tenant-isolated, authorized audio recording with a short-lived signed URL.
    */
-  async getRecording(tenantId: string, callId: string) {
+  async getRecording(tenantId: string, callId: string, actor?: ScopedActor) {
     const call = await this.prisma.call.findFirst({
-      where: { id: callId, tenantId },
+      where: { id: callId, tenantId, ...callScope(actor) },
       include: { recordings: true },
     });
 
@@ -257,9 +259,9 @@ export class CallsService implements OnModuleInit {
   /**
    * Retrieves canonical structured post-call AI analysis.
    */
-  async getAnalysis(tenantId: string, callId: string) {
+  async getAnalysis(tenantId: string, callId: string, actor?: ScopedActor) {
     const call = await this.prisma.call.findFirst({
-      where: { id: callId, tenantId },
+      where: { id: callId, tenantId, ...callScope(actor) },
       include: { analysis: true },
     });
 
@@ -274,9 +276,9 @@ export class CallsService implements OnModuleInit {
   /**
    * Manually re-triggers post-call analysis for a completed call.
    */
-  async retryAnalysis(tenantId: string, callId: string) {
+  async retryAnalysis(tenantId: string, callId: string, actor?: ScopedActor) {
     const call = await this.prisma.call.findFirst({
-      where: { id: callId, tenantId },
+      where: { id: callId, tenantId, ...callScope(actor) },
     });
 
     if (!call) throw new NotFoundException('Call not found');

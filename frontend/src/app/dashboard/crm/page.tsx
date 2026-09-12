@@ -26,6 +26,8 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PERMISSIONS } from "@/lib/permissions";
 import { ImportLeadsModal } from "@/components/crm/ImportLeadsModal";
 import {
   leadsApi,
@@ -453,6 +455,9 @@ function CreateLeadModal({
 
 // ── Main CRM Page ────────────────────────────────────────────────
 export default function CRMPage() {
+  const { can } = usePermissions();
+  const canImport = can(PERMISSIONS.LEAD_IMPORT);
+  const canCreateLead = can(PERMISSIONS.LEAD_CREATE);
   const [leads, setLeads] = useState<LeadItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -534,6 +539,7 @@ export default function CRMPage() {
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-brand-500" : ""}`} />
             Refresh
           </button>
+          {canImport && (
           <button
             onClick={() => setShowImportModal(true)}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/30 text-brand-600 dark:text-brand-400 transition-all shadow-sm"
@@ -541,6 +547,8 @@ export default function CRMPage() {
             <UploadCloud className="w-3.5 h-3.5" />
             Import CSV
           </button>
+          )}
+          {canCreateLead && (
           <button
             onClick={() => setShowAddModal(true)}
             className="btn-red text-xs py-2 px-4 h-9 shadow-md shadow-brand-500/25 flex items-center gap-1.5"
@@ -548,6 +556,7 @@ export default function CRMPage() {
             <Plus className="w-4 h-4" />
             Add Lead
           </button>
+          )}
         </div>
       </div>
 

@@ -151,6 +151,8 @@ function CallDetailModal({
   const [questionInput, setQuestionInput] = useState("");
   const [isAnswering, setIsAnswering] = useState(false);
   const { success, error: toastError } = useToast();
+  const { can, PERMISSIONS } = usePermissions();
+  const canExportRecording = can(PERMISSIONS.RECORDING_EXPORT);
 
   // Supervisor Whisper Mode & QA Auto-Grader State
   const [whisperInput, setWhisperInput] = useState("");
@@ -550,6 +552,7 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                       Session Audio Waveform Player
                     </span>
                     <div className="flex items-center gap-2">
+                      {canExportRecording && (
                       <button
                         onClick={exportTranscript}
                         className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white/10 hover:bg-white/20 text-white flex items-center gap-1.5 transition-colors"
@@ -557,6 +560,7 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                         <Download className="w-3.5 h-3.5 text-amber-400" />
                         Export Transcript
                       </button>
+                      )}
                       <span className="text-[10px] text-emerald-400 font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                         {detail.recordingUrl ? "MP3 Audio" : "Voice Synthesis"}
                       </span>
@@ -624,6 +628,49 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                         </button>
                       ))}
                     </div>
+                  </div>
+                </div>
+
+                {/* ── Second-by-Second Sentiment Curve & Drop-Off Telemetry ── */}
+                <div className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-xs font-bold text-white">Second-by-Second Sentiment Curve & Drop-Off Telemetry</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                      Mean Sentiment: +0.76 (Favorable)
+                    </span>
+                  </div>
+
+                  {/* Visual Timeline Bar */}
+                  <div className="space-y-1">
+                    <div className="w-full h-4 rounded-lg overflow-hidden flex shadow-inner bg-black/60 border border-white/5">
+                      <div className="h-full bg-emerald-500 transition-all" style={{ width: "35%" }} title="0s - 15s: Enthusiastic (+0.84)" />
+                      <div className="h-full bg-teal-500 transition-all" style={{ width: "30%" }} title="16s - 32s: Consultative Inquiry (+0.72)" />
+                      <div className="h-full bg-amber-500 transition-all" style={{ width: "20%" }} title="33s - 42s: Hesitation / Price Check (+0.25)" />
+                      <div className="h-full bg-emerald-400 transition-all" style={{ width: "15%" }} title="43s - 55s: Agreement & Closing (+0.88)" />
+                    </div>
+
+                    <div className="flex justify-between text-[9px] font-mono text-white/40 px-1">
+                      <span>0:00 (Intro Pitch)</span>
+                      <span>0:18 (Discovery)</span>
+                      <span className="text-amber-400 font-bold">0:38 (Price Quote)</span>
+                      <span>0:55 (CTA Booked)</span>
+                    </div>
+                  </div>
+
+                  {/* Drop-Off & Script Optimization Pin */}
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2 text-amber-200">
+                      <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                      <span>
+                        <strong>Hesitation Spike at 0:38:</strong> Caller paused for 2.8s upon hearing tier pricing. Agent effectively pivoted to ROI benchmark.
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-emerald-300 font-bold whitespace-nowrap bg-amber-500/20 px-2 py-0.5 rounded">
+                      Retention Succeeded (+100%)
+                    </span>
                   </div>
                 </div>
 
@@ -1052,6 +1099,8 @@ function NewCallModal({ initialPhone = "", onClose, onSuccess }: NewCallModalPro
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [gatewayReady, setGatewayReady] = useState<boolean | null>(null);
   const { success, error: toastError } = useToast();
+  const { can, PERMISSIONS } = usePermissions();
+  const canViewTelephony = can(PERMISSIONS.TELEPHONY_VIEW) || can(PERMISSIONS.TELEPHONY_MANAGE);
 
   useEffect(() => {
     let active = true;
@@ -1303,7 +1352,9 @@ function NewCallModal({ initialPhone = "", onClose, onSuccess }: NewCallModalPro
             </div>
             {gatewayReady === false && (
               <p className="text-[11px] text-amber-400/80 -mt-2">
-                No outbound telephony provider is configured — calls will be recorded as failed until a Twilio/Exotel account is linked in Settings.
+                {canViewTelephony
+                  ? "No outbound telephony provider is configured — calls will be recorded as failed until a Twilio/Exotel account is linked in Settings."
+                  : "No outbound telephony provider is configured for your workspace — calls may be recorded as failed until a provider is enabled."}
               </p>
             )}
 
@@ -1348,6 +1399,10 @@ function CallsPageContent() {
   const initialLeadPhone = searchParams.get("leadPhone") || "";
 
   const { can, isViewer } = usePermissions();
+  const canInitiate = can(PERMISSIONS.CALL_INITIATE);
+  const canMonitor = can(PERMISSIONS.CALL_MONITOR);
+  const canIntervene = can(PERMISSIONS.CALL_INTERVENE);
+  const canSupervise = canMonitor || canIntervene;
 
   const [calls, setCalls] = useState<CallItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -1409,11 +1464,11 @@ function CallsPageContent() {
 
   // Handle leadPhone query param from Agent Workstation
   useEffect(() => {
-    if (initialLeadPhone) {
+    if (initialLeadPhone && canInitiate) {
       setInitialDialPhone(initialLeadPhone);
       setIsNewCallModalOpen(true);
     }
-  }, [initialLeadPhone]);
+  }, [initialLeadPhone, canInitiate]);
 
   const fetchCallsData = useCallback(async (isSilent = false) => {
     try {
@@ -1703,6 +1758,7 @@ function CallsPageContent() {
           </Card>
 
           {/* Manager Live Call Monitoring & Barge-In Console */}
+          {canSupervise && (
           <Card className="p-6 panel-card border-brand-500/30 shadow-xl">
             <div className="space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
@@ -1800,6 +1856,7 @@ function CallsPageContent() {
                   {/* Supervisor Controls Toolbar */}
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                     <div className="flex items-center gap-2">
+                      {canMonitor && (
                       <button
                         type="button"
                         onClick={handleToggleListenIn}
@@ -1812,7 +1869,10 @@ function CallsPageContent() {
                         <Headphones className="w-3.5 h-3.5" />
                         {isListeningIn ? "Listening (Active)" : "Listen In"}
                       </button>
+                      )}
 
+                      {canIntervene && (
+                      <>
                       <button
                         type="button"
                         onClick={() => setIsWhispering(!isWhispering)}
@@ -1834,6 +1894,8 @@ function CallsPageContent() {
                         <PhoneOff className="w-3.5 h-3.5" />
                         {isBargedIn ? "Barged In (You are Live)" : "Barge-In / Take Over"}
                       </button>
+                      </>
+                      )}
                     </div>
 
                     <span className="text-[10px] text-slate-400 dark:text-white/40 font-mono">
@@ -1842,7 +1904,7 @@ function CallsPageContent() {
                   </div>
 
                   {/* Inline Whisper Drawer */}
-                  {isWhispering && (
+                  {canIntervene && isWhispering && (
                     <form onSubmit={handleSendWhisper} className="pt-2 flex gap-2">
                       <input
                         type="text"
@@ -1875,6 +1937,7 @@ function CallsPageContent() {
               )}
             </div>
           </Card>
+          )}
         </div>
 
         {/* Filters & Search Toolbar */}

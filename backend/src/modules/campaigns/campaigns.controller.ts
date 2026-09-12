@@ -44,14 +44,14 @@ export class CampaignsController {
   @Permissions(CAMPAIGN_CREATE)
   @ApiOperation({ summary: 'Create a new campaign' })
   create(@CurrentUser() user: any, @Body() dto: CreateCampaignDto) {
-    return this.campaignsService.create(user.tenantId, user.id, dto);
+    return this.campaignsService.create(user.tenantId, user.id, dto, user);
   }
 
   @Get()
   @Permissions(CAMPAIGN_VIEW)
   @ApiOperation({ summary: 'List all campaigns in workspace' })
   findAll(@CurrentUser() user: any, @Query() query: CampaignQueryDto) {
-    return this.campaignsService.findAll(user.tenantId, query);
+    return this.campaignsService.findAll(user.tenantId, query, user);
   }
 
   @Post('eligibility-preview')
@@ -61,14 +61,14 @@ export class CampaignsController {
     @CurrentUser() user: any,
     @Body() dto: { leadIds: string[]; agentId?: string },
   ) {
-    return this.campaignsService.previewLeadsEligibility(user.tenantId, dto.leadIds, dto.agentId);
+    return this.campaignsService.previewLeadsEligibility(user.tenantId, dto.leadIds, dto.agentId, user);
   }
 
   @Get(':id')
   @Permissions(CAMPAIGN_VIEW)
   @ApiOperation({ summary: 'Get campaign details by ID' })
   findOne(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.campaignsService.findOne(user.tenantId, id);
+    return this.campaignsService.findOne(user.tenantId, id, user);
   }
 
   @Patch(':id')
@@ -79,14 +79,14 @@ export class CampaignsController {
     @Param('id') id: string,
     @Body() dto: UpdateCampaignDto,
   ) {
-    return this.campaignsService.update(user.tenantId, id, dto);
+    return this.campaignsService.update(user.tenantId, id, dto, user);
   }
 
   @Delete(':id')
   @Permissions(CAMPAIGN_UPDATE)
   @ApiOperation({ summary: 'Delete or archive a campaign' })
   delete(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.campaignsService.delete(user.tenantId, id);
+    return this.campaignsService.delete(user.tenantId, id, user);
   }
 
   @Post(':id/leads')
@@ -97,7 +97,7 @@ export class CampaignsController {
     @Param('id') id: string,
     @Body() dto: AddCampaignLeadsDto,
   ) {
-    return this.campaignsService.addLeads(user.tenantId, id, dto.leadIds);
+    return this.campaignsService.addLeads(user.tenantId, id, dto.leadIds, user);
   }
 
   @Get(':id/leads')
@@ -113,21 +113,21 @@ export class CampaignsController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    return this.campaignsService.getLeads(user.tenantId, id, { status, page, limit });
+    return this.campaignsService.getLeads(user.tenantId, id, { status, page, limit }, user);
   }
 
   @Get(':id/metrics')
   @Permissions(CAMPAIGN_VIEW)
   @ApiOperation({ summary: 'Get real-time campaign performance metrics' })
   getMetrics(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.campaignsService.getCampaignMetrics(user.tenantId, id);
+    return this.campaignsService.getCampaignMetrics(user.tenantId, id, user);
   }
 
   @Get(':id/eligibility-preview')
   @Permissions(CAMPAIGN_VIEW)
   @ApiOperation({ summary: 'Get campaign lead eligibility breakdown and calling window status' })
   getEligibilityPreview(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.campaignsService.getEligibilityPreview(user.tenantId, id);
+    return this.campaignsService.getEligibilityPreview(user.tenantId, id, user);
   }
 
   @Post(':id/start')
@@ -135,7 +135,7 @@ export class CampaignsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Start campaign execution and enqueue eligible leads' })
   start(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.campaignsService.startCampaign(user.tenantId, id);
+    return this.campaignsService.startCampaign(user.tenantId, id, user);
   }
 
   @Post(':id/pause')
@@ -143,7 +143,7 @@ export class CampaignsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Pause campaign execution' })
   pause(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.campaignsService.pauseCampaign(user.tenantId, id);
+    return this.campaignsService.pauseCampaign(user.tenantId, id, user);
   }
 
   @Post(':id/resume')
@@ -151,7 +151,7 @@ export class CampaignsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Resume paused campaign execution' })
   resume(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.campaignsService.resumeCampaign(user.tenantId, id);
+    return this.campaignsService.resumeCampaign(user.tenantId, id, user);
   }
 
   @Post(':id/cancel')
@@ -159,6 +159,6 @@ export class CampaignsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Cancel campaign and mark pending leads skipped' })
   cancel(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.campaignsService.cancelCampaign(user.tenantId, id);
+    return this.campaignsService.cancelCampaign(user.tenantId, id, user);
   }
 }

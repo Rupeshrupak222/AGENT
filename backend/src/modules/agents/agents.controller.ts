@@ -27,7 +27,7 @@ export class AgentsController {
   @Permissions(AI_AGENT_CREATE)
   @ApiOperation({ summary: 'Create a new AI agent' })
   create(@CurrentUser() user: any, @Body() dto: CreateAgentDto) {
-    return this.agents.create(user.tenantId, user.id, dto);
+    return this.agents.create(user.tenantId, user.id, dto, user);
   }
 
   @Get('platform/all')
@@ -43,28 +43,28 @@ export class AgentsController {
   @ApiQuery({ name: 'status', required: false })
   @ApiQuery({ name: 'role', required: false })
   findAll(@CurrentUser() user: any, @Query('status') status?: string, @Query('role') role?: string) {
-    return this.agents.findAll(user.tenantId, { status, role });
+    return this.agents.findAll(user.tenantId, { status, role }, user);
   }
 
   @Get(':id')
   @Permissions(AI_AGENT_VIEW)
   @ApiOperation({ summary: 'Get single agent by ID' })
   findOne(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.agents.findOne(user.tenantId, id);
+    return this.agents.findOne(user.tenantId, id, user);
   }
 
   @Get(':id/stats')
   @Permissions(AI_AGENT_VIEW)
   @ApiOperation({ summary: 'Get agent performance stats' })
   getStats(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.agents.getStats(user.tenantId, id);
+    return this.agents.getStats(user.tenantId, id, user);
   }
 
   @Patch(':id')
   @Permissions(AI_AGENT_UPDATE)
   @ApiOperation({ summary: 'Update agent configuration' })
   update(@CurrentUser() user: any, @Param('id') id: string, @Body() dto: UpdateAgentDto) {
-    return this.agents.update(user.tenantId, id, dto);
+    return this.agents.update(user.tenantId, id, dto, user);
   }
 
   @Post(':id/activate')
@@ -72,7 +72,7 @@ export class AgentsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Activate agent' })
   activate(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.agents.activate(user.tenantId, id);
+    return this.agents.activate(user.tenantId, id, user);
   }
 
   @Post(':id/pause')
@@ -80,7 +80,7 @@ export class AgentsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Pause agent' })
   pause(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.agents.pause(user.tenantId, id);
+    return this.agents.pause(user.tenantId, id, user);
   }
 
   @Post(':id/duplicate')
@@ -88,14 +88,14 @@ export class AgentsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Duplicate an agent' })
   duplicate(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.agents.duplicate(user.tenantId, id, user.id);
+    return this.agents.duplicate(user.tenantId, id, user.id, user);
   }
 
   @Delete(':id')
   @Permissions(AI_AGENT_DELETE)
   @ApiOperation({ summary: 'Soft-delete an agent' })
   remove(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.agents.remove(user.tenantId, id);
+    return this.agents.remove(user.tenantId, id, user);
   }
 
   @Post(':id/test-chat')
@@ -107,6 +107,6 @@ export class AgentsController {
     @Param('id') id: string,
     @Body() body: { userMessage: string; history?: Array<{ role: 'user' | 'assistant'; content: string }> },
   ) {
-    return this.agents.testChat(user.tenantId, id, body?.userMessage || '', body?.history || []);
+    return this.agents.testChat(user.tenantId, id, body?.userMessage || '', body?.history || [], user);
   }
 }

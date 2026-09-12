@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PLAN_LIMITS, isUnlimited } from '../../common/plans';
+import { ScopedActor, agentScope, leadScope, isManager } from '../../common/scope';
 
 export type DashboardGranularity = 'hour' | 'day' | 'week' | 'month';
 export type DashboardSeverity = 'critical' | 'warning' | 'info';
@@ -26,7 +28,24 @@ export class AnalyticsService {
 
   constructor(private prisma: PrismaService) {}
 
-  async getDashboardMetrics(tenantId: string, range: 'today' | 'week' | 'month' = 'week') {
+  /** Agent IDs a manager supervises; null when the actor is not a manager (unscoped). */
+  private async managedAgentIds(tenantId: string, actor?: ScopedActor | null): Promise<string[] | null> {
+    if (!isManager(actor)) return null;
+    const agents = await this.prisma.aIAgent.findMany({
+      where: { tenantId, managerId: actor!.id, deletedAt: null },
+      select: { id: true },
+      take: 1000,
+    });
+    return agents.map((a) => a.id);
+  }
+
+  /** SQL fragment filtering by the manager's supervised agent IDs (or no-op for non-managers). */
+  private agentIdsSql(ids: string[] | null, col: string = '"agentId"'): Prisma.Sql {
+    if (!ids || ids.length === 0) return Prisma.empty;
+    return Prisma.sql`AND ${Prisma.raw(col)} IN (${Prisma.join(ids)})`;
+  }
+
+  async getDashboardMetrics(tenantId: string, range: 'today' | 'week' | 'month' = 'week', actor?: ScopedActor) {
     try {
       const now   = new Date();
       const start = range === 'today'
@@ -35,7 +54,11 @@ export class AnalyticsService {
           ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
           : new Date(now.getFullYear(), now.getMonth(), 1);
 
-      const where = { tenantId, startedAt: { gte: start } };
+      const agentIds = await this.managedAgentIds(tenantId, actor);
+      const agentFilter = agentIds ? { agentId: { in: agentIds } } : {};
+      const leadFilter = agentIds ? { assignedAgentId: { in: agentIds } } : {};
+
+      const where = { tenantId, ...agentFilter, startedAt: { gte: start } };
 
       const [
         totalCalls, connected, qualified,
@@ -43,9 +66,9 @@ export class AnalyticsService {
       ] = await Promise.all([
         this.prisma.call.count({ where }),
         this.prisma.call.count({ where: { ...where, status: 'completed' } }),
-        this.prisma.lead.count({ where: { tenantId, status: 'qualified', updatedAt: { gte: start } } }),
-        this.prisma.lead.count({ where: { tenantId, status: 'appointment', updatedAt: { gte: start } } }),
-        this.prisma.lead.count({ where: { tenantId, status: 'closed_won', updatedAt: { gte: start } } }),
+        this.prisma.lead.count({ where: { tenantId, ...leadFilter, status: 'qualified', updatedAt: { gte: start } } }),
+        this.prisma.lead.count({ where: { tenantId, ...leadFilter, status: 'appointment', updatedAt: { gte: start } } }),
+        this.prisma.lead.count({ where: { tenantId, ...leadFilter, status: 'closed_won', updatedAt: { gte: start } } }),
         this.prisma.call.aggregate({ where: { ...where, status: 'completed' }, _avg: { duration: true } }),
         this.prisma.call.aggregate({ where: { ...where, sentimentScore: { not: null } }, _avg: { sentimentScore: true } }),
       ]);
@@ -77,8 +100,11 @@ export class AnalyticsService {
     }
   }
 
-  async getCallTrend(tenantId: string, days = 7) {
+  async getCallTrend(tenantId: string, days = 7, actor?: ScopedActor) {
     try {
+      const agentIds = await this.managedAgentIds(tenantId, actor);
+      if (agentIds && agentIds.length === 0) return [];
+
       const rows: any[] = await this.prisma.$queryRaw`
         SELECT
           DATE_TRUNC('day', "startedAt") AS day,
@@ -88,6 +114,7 @@ export class AnalyticsService {
         FROM "Call"
         WHERE "tenantId" = ${tenantId}
           AND "startedAt" >= NOW() - (${days} * INTERVAL '1 day')
+          ${this.agentIdsSql(agentIds)}
         GROUP BY 1
         ORDER BY 1
       `;
@@ -98,10 +125,10 @@ export class AnalyticsService {
     }
   }
 
-  async getAgentPerformance(tenantId: string) {
+  async getAgentPerformance(tenantId: string, actor?: ScopedActor) {
     try {
       const agents = await this.prisma.aIAgent.findMany({
-        where: { tenantId, deletedAt: null },
+        where: { tenantId, deletedAt: null, ...agentScope(actor) },
         include: {
           _count: { select: { calls: true } },
           calls: {
@@ -134,12 +161,12 @@ export class AnalyticsService {
     }
   }
 
-  async getConversionFunnel(tenantId: string) {
+  async getConversionFunnel(tenantId: string, actor?: ScopedActor) {
     try {
       const statuses = ['new','contacted','interested','qualified','appointment','closed_won','closed_lost'];
       const counts   = await this.prisma.lead.groupBy({
         by:    ['status'],
-        where: { tenantId, deletedAt: null },
+        where: { tenantId, deletedAt: null, ...leadScope(actor) },
         _count: { status: true },
       });
 
@@ -157,8 +184,11 @@ export class AnalyticsService {
     }
   }
 
-  async getSentimentDistribution(tenantId: string) {
+  async getSentimentDistribution(tenantId: string, actor?: ScopedActor) {
     try {
+      const agentIds = await this.managedAgentIds(tenantId, actor);
+      if (agentIds && agentIds.length === 0) return [];
+
       const buckets = await this.prisma.$queryRaw<any[]>`
         SELECT
           CASE
@@ -171,6 +201,7 @@ export class AnalyticsService {
           COUNT(*)::int AS count
         FROM "Call"
         WHERE "tenantId" = ${tenantId} AND "sentimentScore" IS NOT NULL
+          ${this.agentIdsSql(agentIds)}
         GROUP BY 1
       `;
       return buckets;
@@ -180,11 +211,11 @@ export class AnalyticsService {
     }
   }
 
-  async getLeadPriorityStats(tenantId: string) {
+  async getLeadPriorityStats(tenantId: string, actor?: ScopedActor) {
     try {
       return await this.prisma.lead.groupBy({
         by:    ['score'],
-        where: { tenantId, deletedAt: null },
+        where: { tenantId, deletedAt: null, ...leadScope(actor) },
         _count: { score: true },
         orderBy: { score: 'desc' },
       });
@@ -199,7 +230,7 @@ export class AnalyticsService {
   async getCompanyDashboard(tenantId: string, opts: {
     from?: string; to?: string; prevFrom?: string; prevTo?: string;
     granularity?: DashboardGranularity;
-  }) {
+  }, actor?: ScopedActor) {
     const granularity: DashboardGranularity =
       (opts?.granularity as DashboardGranularity) in GRANULARITY_SQL ? opts.granularity as DashboardGranularity : 'day';
 
@@ -207,17 +238,18 @@ export class AnalyticsService {
       const current    = this.resolveRange(opts?.from, opts?.to);
       const previous   = this.resolveComparison(current, opts?.prevFrom, opts?.prevTo);
       const now        = new Date();
+      const agentIds   = await this.managedAgentIds(tenantId, actor);
 
       const kpiShape = () => ({ ...this.EMPTY_KPIS });
       const [cur, prev, timeSeries, outcomes, agentPerformance, activeCampaigns, facts, alerts] = await Promise.all([
-        this.computeKpis(tenantId, current),
-        this.computeKpis(tenantId, previous),
-        this.computeTimeSeries(tenantId, current, granularity),
-        this.computeOutcomes(tenantId, current),
-        this.computeAgentPerformance(tenantId, current),
-        this.computeActiveCampaigns(tenantId),
-        this.computeFacts(tenantId),
-        this.computeAlerts(tenantId),
+        this.computeKpis(tenantId, current, agentIds),
+        this.computeKpis(tenantId, previous, agentIds),
+        this.computeTimeSeries(tenantId, current, granularity, agentIds),
+        this.computeOutcomes(tenantId, current, agentIds),
+        this.computeAgentPerformance(tenantId, current, agentIds),
+        this.computeActiveCampaigns(tenantId, agentIds),
+        this.computeFacts(tenantId, agentIds),
+        this.computeAlerts(tenantId, agentIds),
       ]);
 
       kpiShape();
@@ -309,9 +341,11 @@ export class AnalyticsService {
     return { from, to, label: `${from.toISOString().slice(0, 10)} → ${to.toISOString().slice(0, 10)}` };
   }
 
-  private async computeKpis(tenantId: string, range: DateRange): Promise<typeof this.EMPTY_KPIS> {
-    const where = { tenantId, startedAt: { gte: range.from, lte: range.to } };
-    const leadWhere = { tenantId, deletedAt: null, updatedAt: { gte: range.from, lte: range.to } };
+  private async computeKpis(tenantId: string, range: DateRange, agentIds: string[] | null = null) {
+    const agentFilter = agentIds ? { agentId: { in: agentIds } } : {};
+    const leadFilter = agentIds ? { assignedAgentId: { in: agentIds } } : {};
+    const where = { tenantId, ...agentFilter, startedAt: { gte: range.from, lte: range.to } };
+    const leadWhere = { tenantId, ...leadFilter, deletedAt: null, updatedAt: { gte: range.from, lte: range.to } };
 
     const [
       totalCalls, connectedCalls, missedCalls, failedCalls, transferredCalls,
@@ -330,7 +364,7 @@ export class AnalyticsService {
       this.prisma.lead.count({ where: { ...leadWhere, status: 'qualified' } }),
       this.prisma.lead.count({ where: { ...leadWhere, status: 'appointment' } }),
       this.prisma.lead.count({ where: { ...leadWhere, status: 'closed_won' } }),
-      this.prisma.callAnalysis.count({ where: { tenantId, processedAt: { gte: range.from, lte: range.to }, processingStatus: 'completed' } }),
+      this.prisma.callAnalysis.count({ where: { tenantId, ...(agentIds ? { call: { agentId: { in: agentIds } } } : {}), processedAt: { gte: range.from, lte: range.to }, processingStatus: 'completed' } }),
     ]);
 
     return {
@@ -354,7 +388,8 @@ export class AnalyticsService {
     };
   }
 
-  private async computeTimeSeries(tenantId: string, range: DateRange, granularity: DashboardGranularity) {
+  private async computeTimeSeries(tenantId: string, range: DateRange, granularity: DashboardGranularity, agentIds: string[] | null = null) {
+    if (agentIds && agentIds.length === 0) return [];
     const sqlGranularity = GRANULARITY_SQL[granularity];
     const rows: any[] = await this.prisma.$queryRaw`
       SELECT
@@ -369,6 +404,7 @@ export class AnalyticsService {
       WHERE "tenantId" = ${tenantId}
         AND "startedAt" >= ${range.from}
         AND "startedAt" <= ${range.to}
+        ${this.agentIdsSql(agentIds)}
       GROUP BY 1
       ORDER BY 1
     `;
@@ -383,17 +419,19 @@ export class AnalyticsService {
     }));
   }
 
-  private async computeOutcomes(tenantId: string, range: DateRange) {
+  private async computeOutcomes(tenantId: string, range: DateRange, agentIds: string[] | null = null) {
+    const callWhere = { tenantId, ...(agentIds ? { agentId: { in: agentIds } } : {}), startedAt: { gte: range.from, lte: range.to }, outcome: { not: null, notIn: ['', 'unknown', 'unknown_outcome'] } };
     const [callOutcomes, analysisOutcomes] = await Promise.all([
       this.prisma.call.groupBy({
         by: ['outcome'],
-        where: { tenantId, startedAt: { gte: range.from, lte: range.to }, outcome: { not: null, notIn: ['', 'unknown', 'unknown_outcome'] } },
+        where: callWhere,
         _count: { outcome: true },
       }),
       this.prisma.callAnalysis.groupBy({
         by: ['outcome'],
         where: {
           tenantId,
+          ...(agentIds ? { call: { agentId: { in: agentIds } } } : {}),
           processedAt: { gte: range.from, lte: range.to },
           outcome: { not: null, notIn: ['', 'unknown', 'unknown_outcome'] },
         },
@@ -411,11 +449,13 @@ export class AnalyticsService {
       .sort((a, b) => b.count - a.count);
   }
 
-  private async computeAgentPerformance(tenantId: string, range: DateRange) {
+  private async computeAgentPerformance(tenantId: string, range: DateRange, agentIds: string[] | null = null) {
+    if (agentIds && agentIds.length === 0) return [];
+
     const [agents, stats, qualifiedByAgent] = await Promise.all([
       this.prisma.aIAgent.findMany({
-        where: { tenantId, deletedAt: null },
-        select: { id: true, name: true, role: true, status: true, createdBy: { select: { id: true, name: true, role: true } } },
+        where: { tenantId, deletedAt: null, ...(agentIds ? { id: { in: agentIds } } : {}) },
+        select: { id: true, name: true, role: true, status: true, managerId: true, manager: { select: { id: true, name: true } }, createdBy: { select: { id: true, name: true, role: true } } },
         orderBy: { createdAt: 'asc' },
       }),
       this.prisma.$queryRaw<any[]>`
@@ -431,6 +471,7 @@ export class AnalyticsService {
         WHERE "tenantId" = ${tenantId}
           AND "startedAt" >= ${range.from}
           AND "startedAt" <= ${range.to}
+          ${this.agentIdsSql(agentIds)}
         GROUP BY "agentId"
       `,
       this.prisma.$queryRaw<any[]>`
@@ -441,6 +482,7 @@ export class AnalyticsService {
           AND status = 'qualified'
           AND "updatedAt" >= ${range.from}
           AND "updatedAt" <= ${range.to}
+          ${this.agentIdsSql(agentIds, '"assignedAgentId"')}
         GROUP BY 1
       `,
     ]);
@@ -452,13 +494,14 @@ export class AnalyticsService {
       const stat = statMap.get(agent.id);
       const total = stat?.total_calls ?? 0;
       const connected = stat?.connected ?? 0;
+      const createdByManager = agent.createdBy?.role === 'manager' || agent.createdBy?.role === 'company_admin';
       return {
         id: agent.id,
         name: agent.name,
         role: agent.role,
         status: agent.status,
-        managerId: agent.createdBy?.role === 'manager' || agent.createdBy?.role === 'company_admin' ? agent.createdBy.id : null,
-        managerName: agent.createdBy?.role === 'manager' || agent.createdBy?.role === 'company_admin' ? agent.createdBy.name : null,
+        managerId: agent.managerId ?? (createdByManager ? agent.createdBy.id : null),
+        managerName: agent.managerId ? (agent.manager?.name ?? null) : (createdByManager ? agent.createdBy.name : null),
         totalCalls: total,
         connectedCalls: connected,
         missedCalls: stat?.missed ?? 0,
@@ -501,9 +544,9 @@ export class AnalyticsService {
     }));
   }
 
-  private async computeActiveCampaigns(tenantId: string) {
+  private async computeActiveCampaigns(tenantId: string, agentIds: string[] | null = null) {
     const campaigns = await this.prisma.campaign.findMany({
-      where: { tenantId, status: { in: ['running', 'scheduled', 'paused'] } },
+      where: { tenantId, ...(agentIds ? { agentId: { in: agentIds } } : {}), status: { in: ['running', 'scheduled', 'paused'] } },
       select: {
         id: true, name: true, status: true, scheduledAt: true, createdAt: true,
         maxCalls: true, callsPerDay: true,
@@ -546,15 +589,15 @@ export class AnalyticsService {
     });
   }
 
-  private async computeFacts(tenantId: string) {
+  private async computeFacts(tenantId: string, agentIds: string[] | null = null) {
     const [activeAgents, teamMembers] = await Promise.all([
-      this.prisma.aIAgent.count({ where: { tenantId, deletedAt: null, status: 'active' } }),
+      this.prisma.aIAgent.count({ where: { tenantId, deletedAt: null, status: 'active', ...(agentIds ? { id: { in: agentIds } } : {}) } }),
       this.prisma.user.count({ where: { tenantId, isActive: true } }),
     ]);
     return { activeAgents, teamMembers };
   }
 
-  private async computeAlerts(tenantId: string) {
+  private async computeAlerts(tenantId: string, agentIds: string[] | null = null) {
     const alerts: Array<{
       id: string; type: string; severity: DashboardSeverity; title: string; message: string; createdAt: string;
     }> = [];
@@ -567,13 +610,13 @@ export class AnalyticsService {
       const limits = PLAN_LIMITS[tenant.plan] ?? PLAN_LIMITS.growth;
 
       const [monthCalls, idleAgents, runningCampaigns, failedCalls24h, latestInvoice] = await Promise.all([
-        this.prisma.call.count({ where: { tenantId, startedAt: { gte: monthStart } } }),
-        this.prisma.aIAgent.count({ where: { tenantId, deletedAt: null, status: 'active', calls: { none: { startedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } } } }),
+        this.prisma.call.count({ where: { tenantId, ...(agentIds ? { agentId: { in: agentIds } } : {}), startedAt: { gte: monthStart } } }),
+        this.prisma.aIAgent.count({ where: { tenantId, deletedAt: null, status: 'active', ...(agentIds ? { id: { in: agentIds } } : {}), calls: { none: { startedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } } } }),
         this.prisma.campaign.findMany({
-          where: { tenantId, status: 'running' },
+          where: { tenantId, ...(agentIds ? { agentId: { in: agentIds } } : {}), status: 'running' },
           select: { id: true, name: true, _count: { select: { leads: true } } },
         }),
-        this.prisma.call.count({ where: { tenantId, status: 'failed', startedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } } }),
+        this.prisma.call.count({ where: { tenantId, ...(agentIds ? { agentId: { in: agentIds } } : {}), status: 'failed', startedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } } }),
         this.prisma.invoice.findFirst({ where: { tenantId }, orderBy: { createdAt: 'desc' }, select: { status: true, createdAt: true, amount: true } }),
       ]);
 

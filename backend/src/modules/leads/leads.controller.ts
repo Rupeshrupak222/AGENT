@@ -40,41 +40,41 @@ export class LeadsController {
   @Permissions(LEAD_VIEW)
   @ApiOperation({ summary: 'Get lead pipeline stats' })
   pipeline(@CurrentUser() u: any) {
-    return this.leads.getPipelineStats(u.tenantId);
+    return this.leads.getPipelineStats(u.tenantId, u);
   }
 
   @Get()
   @Permissions(LEAD_VIEW)
   @ApiOperation({ summary: 'List leads' })
   findAll(@CurrentUser() u: any, @Query() q: any) {
-    return this.leads.findAll(u.tenantId, q);
+    return this.leads.findAll(u.tenantId, q, u);
   }
 
   @Get(':id')
   @Permissions(LEAD_VIEW)
   @ApiOperation({ summary: 'Get lead by ID' })
   findOne(@CurrentUser() u: any, @Param('id') id: string) {
-    return this.leads.findOne(u.tenantId, id);
+    return this.leads.findOne(u.tenantId, id, u);
   }
 
   @Patch(':id')
   @Permissions(LEAD_UPDATE)
   @ApiOperation({ summary: 'Update lead' })
   update(@CurrentUser() u: any, @Param('id') id: string, @Body() dto: UpdateLeadDto) {
-    return this.leads.update(u.tenantId, id, dto);
+    return this.leads.update(u.tenantId, id, dto, u);
   }
 
   @Patch(':id/status')
   @Permissions(LEAD_UPDATE)
   @ApiOperation({ summary: 'Update lead status' })
   updateStatus(@CurrentUser() u: any, @Param('id') id: string, @Body() dto: UpdateLeadStatusDto) {
-    return this.leads.updateStatus(u.tenantId, id, dto);
+    return this.leads.updateStatus(u.tenantId, id, dto, u);
   }
 
   @Delete(':id')
   @Permissions(LEAD_DELETE)
   @ApiOperation({ summary: 'Soft-delete lead' })
   remove(@CurrentUser() u: any, @Param('id') id: string) {
-    return this.leads.remove(u.tenantId, id);
+    return this.leads.remove(u.tenantId, id, u);
   }
 }

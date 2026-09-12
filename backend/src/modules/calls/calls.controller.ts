@@ -22,7 +22,7 @@ export class CallsController {
   @Permissions(CALL_INITIATE)
   @ApiOperation({ summary: 'Initiate a call' })
   initiate(@CurrentUser() u: any, @Body() dto: InitiateCallDto) {
-    return this.calls.initiateCall(u.tenantId, dto);
+    return this.calls.initiateCall(u.tenantId, dto, u);
   }
 
   @Get('metrics')
@@ -30,7 +30,7 @@ export class CallsController {
   @Permissions(CALL_VIEW)
   @ApiOperation({ summary: 'Get call metrics' })
   metrics(@CurrentUser() u: any, @Query('range') range: any) {
-    return this.calls.getMetrics(u.tenantId, range);
+    return this.calls.getMetrics(u.tenantId, range, u);
   }
 
   @Get()
@@ -38,7 +38,7 @@ export class CallsController {
   @Permissions(CALL_VIEW)
   @ApiOperation({ summary: 'List calls' })
   findAll(@CurrentUser() u: any, @Query() q: any) {
-    return this.calls.findAll(u.tenantId, q);
+    return this.calls.findAll(u.tenantId, q, u);
   }
 
   @Get(':id')
@@ -46,7 +46,7 @@ export class CallsController {
   @Permissions(CALL_VIEW)
   @ApiOperation({ summary: 'Get call by ID' })
   findOne(@CurrentUser() u: any, @Param('id') id: string) {
-    return this.calls.findOne(u.tenantId, id);
+    return this.calls.findOne(u.tenantId, id, u);
   }
 
   @Get(':id/recording')
@@ -54,7 +54,7 @@ export class CallsController {
   @Permissions(CALL_VIEW)
   @ApiOperation({ summary: 'Get signed URL and metadata for call audio recording' })
   async getRecording(@CurrentUser() u: any, @Param('id') id: string) {
-    const data = await this.calls.getRecording(u.tenantId, id);
+    const data = await this.calls.getRecording(u.tenantId, id, u);
     return { success: true, data };
   }
 
@@ -63,7 +63,7 @@ export class CallsController {
   @Permissions(CALL_VIEW)
   @ApiOperation({ summary: 'Get structured post-call AI intelligence analysis' })
   getAnalysis(@CurrentUser() u: any, @Param('id') id: string) {
-    return this.calls.getAnalysis(u.tenantId, id);
+    return this.calls.getAnalysis(u.tenantId, id, u);
   }
 
   @Post(':id/analysis/retry')
@@ -71,7 +71,7 @@ export class CallsController {
   @Permissions(CALL_INITIATE)
   @ApiOperation({ summary: 'Manually re-trigger post-call intelligence analysis' })
   retryAnalysis(@CurrentUser() u: any, @Param('id') id: string) {
-    return this.calls.retryAnalysis(u.tenantId, id);
+    return this.calls.retryAnalysis(u.tenantId, id, u);
   }
 
   // ── Telephony Webhooks (Twilio & Exotel) ──────────────────────────────────

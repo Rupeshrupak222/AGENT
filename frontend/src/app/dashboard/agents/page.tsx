@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
+import { usePermissions } from "@/hooks/usePermissions";
 import { WaveAnimation } from "@/components/ui/WaveAnimation";
 import { AgentVoiceSimulatorModal } from "@/components/agents/AgentVoiceSimulatorModal";
 import { EnterpriseAgentStudioModal } from "@/components/agents/EnterpriseAgentStudioModal";
@@ -480,6 +481,11 @@ function AgentCardItem({
   const [actionLoading, setActionLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const { success: toastSuccess, error: toastError } = useToast();
+  const { can, PERMISSIONS } = usePermissions();
+  const canUpdate = can(PERMISSIONS.AI_AGENT_UPDATE);
+  const canCreate = can(PERMISSIONS.AI_AGENT_CREATE);
+  const canDelete = can(PERMISSIONS.AI_AGENT_DELETE);
+  const hasMenuActions = canUpdate || canCreate || canDelete;
 
   const toggleStatus = async () => {
     try {
@@ -561,6 +567,7 @@ function AgentCardItem({
               {agent.status}
             </Badge>
 
+            {hasMenuActions && (
             <div className="relative">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
@@ -572,6 +579,7 @@ function AgentCardItem({
               </button>
               {menuOpen && (
                 <div className="absolute right-0 top-8 w-36 rounded-xl bg-dropdown border-slate-200 dark:border-white/10 shadow-xl z-20 overflow-hidden text-xs">
+                  {canUpdate && (
                   <button
                     onClick={() => {
                       setMenuOpen(false);
@@ -581,12 +589,16 @@ function AgentCardItem({
                   >
                     <Sliders className="w-3.5 h-3.5 text-amber-400" /> Configure Studio
                   </button>
+                  )}
+                  {canCreate && (
                   <button
                     onClick={handleDuplicate}
                     className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/[0.02] dark:hover:bg-white/5 transition-colors"
                   >
                     <Copy className="w-3.5 h-3.5" /> Duplicate
                   </button>
+                  )}
+                  {canDelete && (
                   <button
                     onClick={() => {
                       setMenuOpen(false);
@@ -596,9 +608,11 @@ function AgentCardItem({
                   >
                     <Trash2 className="w-3.5 h-3.5" /> Archive
                   </button>
+                  )}
                 </div>
               )}
             </div>
+            )}
           </div>
         </div>
 
@@ -651,6 +665,7 @@ function AgentCardItem({
           <Mic className="w-3.5 h-3.5 text-amber-400" />
           Test Voice
         </button>
+        {canUpdate && (
         <Button
           variant={agent.status === "active" ? "secondary" : "primary"}
           size="sm"
@@ -667,6 +682,7 @@ function AgentCardItem({
         >
           {agent.status === "active" ? "Pause" : "Activate"}
         </Button>
+        )}
       </div>
 
       <ConfirmDialog
@@ -699,6 +715,8 @@ export default function AgentsPage() {
   const [filter, setFilter] = useState("all");
   const [languageFilter, setLanguageFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const { can, PERMISSIONS } = usePermissions();
+  const canCreateAgent = can(PERMISSIONS.AI_AGENT_CREATE);
 
   const fetchAgents = useCallback(async () => {
     try {
@@ -810,6 +828,7 @@ export default function AgentsPage() {
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-brand-500" : ""}`} />
             Refresh
           </button>
+          {canCreateAgent && (
           <button
             onClick={() => {
               setStudioAgent(null);
@@ -820,6 +839,7 @@ export default function AgentsPage() {
             <Plus className="w-4 h-4" />
             Create Agent
           </button>
+          )}
         </div>
       </div>
 
@@ -939,6 +959,7 @@ export default function AgentsPage() {
             <p className="text-xs text-slate-500 dark:text-white/40 max-w-md mx-auto mt-1 mb-4">
               Deploy your first autonomous conversational agent to start qualifying prospects and handling live phone calls.
             </p>
+            {canCreateAgent && (
             <button
               onClick={() => {
                 setStudioAgent(null);
@@ -948,6 +969,7 @@ export default function AgentsPage() {
             >
               Build New Agent
             </button>
+            )}
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -965,6 +987,7 @@ export default function AgentsPage() {
             ))}
 
             {/* Create New Agent Tile */}
+            {canCreateAgent && (
             <button
               onClick={() => {
                 setStudioAgent(null);
@@ -984,6 +1007,7 @@ export default function AgentsPage() {
                 </p>
               </div>
             </button>
+            )}
           </div>
         )}
       </div>

@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CreateLeadDto, UpdateLeadDto, BulkImportLeadsDto, UpdateLeadStatusDto } from './dto/lead.dto';
 import { LeadStatus } from '@prisma/client';
+import { ScopedActor, leadScope } from '../../common/scope';
 
 @Injectable()
 export class LeadsService {
@@ -84,7 +85,7 @@ export class LeadsService {
   async findAll(tenantId: string, query: {
     status?: string; search?: string; agentId?: string; assignedTo?: string;
     page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc';
-  }) {
+  }, actor?: ScopedActor) {
     try {
       const pageNum = Math.max(1, Number(query?.page) || 1);
       const limitNum = Math.max(1, Math.min(100, Number(query?.limit) || 20));
@@ -94,6 +95,7 @@ export class LeadsService {
       const where: any = {
         tenantId,
         deletedAt: null,
+        ...leadScope(actor),
         ...(status && { status }),
         ...(agentId && { assignedAgentId: agentId }),
         ...(assignedTo && { assignedToId: assignedTo }),
@@ -124,10 +126,10 @@ export class LeadsService {
     }
   }
 
-  async findOne(tenantId: string, id: string) {
+  async findOne(tenantId: string, id: string, actor?: ScopedActor) {
     try {
       const lead = await this.prisma.lead.findFirst({
-        where: { id, tenantId, deletedAt: null },
+        where: { id, tenantId, deletedAt: null, ...leadScope(actor) },
         include: {
           calls: { orderBy: { startedAt: 'desc' }, take: 10 },
           assignedAgent: true,
@@ -143,7 +145,13 @@ export class LeadsService {
     }
   }
 
-  async update(tenantId: string, id: string, dto: UpdateLeadDto) {
+  async update(tenantId: string, id: string, dto: UpdateLeadDto, actor?: ScopedActor) {
+    const existing = await this.prisma.lead.findFirst({
+      where: { id, tenantId, deletedAt: null, ...leadScope(actor) },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundException('Lead not found');
+
     const result = await this.prisma.tenantUpdate(
       this.prisma.lead,
       tenantId,
@@ -162,7 +170,13 @@ export class LeadsService {
     return result;
   }
 
-  async updateStatus(tenantId: string, id: string, dto: UpdateLeadStatusDto) {
+  async updateStatus(tenantId: string, id: string, dto: UpdateLeadStatusDto, actor?: ScopedActor) {
+    const existing = await this.prisma.lead.findFirst({
+      where: { id, tenantId, deletedAt: null, ...leadScope(actor) },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundException('Lead not found');
+
     const result = await this.prisma.tenantUpdate(
       this.prisma.lead,
       tenantId,
@@ -181,7 +195,13 @@ export class LeadsService {
     return result;
   }
 
-  async remove(tenantId: string, id: string) {
+  async remove(tenantId: string, id: string, actor?: ScopedActor) {
+    const existing = await this.prisma.lead.findFirst({
+      where: { id, tenantId, deletedAt: null, ...leadScope(actor) },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundException('Lead not found');
+
     const result = await this.prisma.tenantSoftDelete(
       this.prisma.lead,
       tenantId,
@@ -198,11 +218,11 @@ export class LeadsService {
     return result;
   }
 
-  async getPipelineStats(tenantId: string) {
+  async getPipelineStats(tenantId: string, actor?: ScopedActor) {
     try {
       const counts = await this.prisma.lead.groupBy({
         by: ['status'],
-        where: { tenantId, deletedAt: null },
+        where: { tenantId, deletedAt: null, ...leadScope(actor) },
         _count: { status: true },
       });
       return counts.reduce((acc: Record<string, number>, c: any) => {

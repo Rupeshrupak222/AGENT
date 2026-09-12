@@ -20,6 +20,7 @@ import {
   CampaignQueryDto,
   CampaignStatus,
 } from '../dto/campaign.dto';
+import { ScopedActor, campaignScope, leadScope, agentScope } from '../../../common/scope';
 
 @Injectable()
 export class CampaignsService implements OnModuleInit {
@@ -44,10 +45,10 @@ export class CampaignsService implements OnModuleInit {
   }
 
   // ── 1. Create Campaign ──────────────────────────────────────
-  async create(tenantId: string, createdById: string, dto: CreateCampaignDto) {
-    // Verify Agent belongs to tenant and is active
+  async create(tenantId: string, createdById: string, dto: CreateCampaignDto, actor?: ScopedActor) {
+    // Verify Agent belongs to tenant, is active, and (for managers) is supervised by the actor
     const agent = await this.prisma.aIAgent.findFirst({
-      where: { id: dto.agentId, tenantId, deletedAt: null },
+      where: { id: dto.agentId, tenantId, deletedAt: null, ...agentScope(actor) },
     });
     if (!agent) {
       throw new NotFoundException(`Agent [${dto.agentId}] not found for this tenant`);
@@ -80,20 +81,21 @@ export class CampaignsService implements OnModuleInit {
 
     // Attach initial leads if provided
     if (dto.leadIds && dto.leadIds.length > 0) {
-      await this.addLeads(tenantId, campaign.id, dto.leadIds);
+      await this.addLeads(tenantId, campaign.id, dto.leadIds, actor);
     }
 
     return campaign;
   }
 
   // ── 2. Find All Campaigns (Tenant-Scoped) ───────────────────
-  async findAll(tenantId: string, query: CampaignQueryDto) {
+  async findAll(tenantId: string, query: CampaignQueryDto, actor?: ScopedActor) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
     const skip = (page - 1) * limit;
 
     const where: any = {
       tenantId,
+      ...campaignScope(actor),
       ...(query.status && { status: query.status }),
       ...(query.search && {
         OR: [
@@ -121,9 +123,9 @@ export class CampaignsService implements OnModuleInit {
   }
 
   // ── 3. Find One Campaign ────────────────────────────────────
-  async findOne(tenantId: string, id: string) {
+  async findOne(tenantId: string, id: string, actor?: ScopedActor) {
     const campaign = await this.prisma.campaign.findFirst({
-      where: { id, tenantId },
+      where: { id, tenantId, ...campaignScope(actor) },
       include: {
         agent: true,
         _count: { select: { leads: true, calls: true } },
@@ -138,12 +140,12 @@ export class CampaignsService implements OnModuleInit {
   }
 
   // ── 4. Update Campaign ──────────────────────────────────────
-  async update(tenantId: string, id: string, dto: UpdateCampaignDto) {
-    const campaign = await this.findOne(tenantId, id);
+  async update(tenantId: string, id: string, dto: UpdateCampaignDto, actor?: ScopedActor) {
+    const campaign = await this.findOne(tenantId, id, actor);
 
     if (dto.agentId && dto.agentId !== campaign.agentId) {
       const agent = await this.prisma.aIAgent.findFirst({
-        where: { id: dto.agentId, tenantId, status: 'active', deletedAt: null },
+        where: { id: dto.agentId, tenantId, status: 'active', deletedAt: null, ...agentScope(actor) },
       });
       if (!agent) {
         throw new BadRequestException(`New assigned agent [${dto.agentId}] not found or not active`);
@@ -169,8 +171,8 @@ export class CampaignsService implements OnModuleInit {
   }
 
   // ── 5. Delete Campaign ──────────────────────────────────────
-  async delete(tenantId: string, id: string) {
-    const campaign = await this.findOne(tenantId, id);
+  async delete(tenantId: string, id: string, actor?: ScopedActor) {
+    const campaign = await this.findOne(tenantId, id, actor);
 
     if (campaign.status === CampaignStatus.RUNNING) {
       throw new BadRequestException('Cannot delete a running campaign. Pause or cancel the campaign first.');
@@ -180,15 +182,16 @@ export class CampaignsService implements OnModuleInit {
   }
 
   // ── 6. Add Leads to Campaign ────────────────────────────────
-  async addLeads(tenantId: string, campaignId: string, leadIds: string[]) {
-    await this.findOne(tenantId, campaignId);
+  async addLeads(tenantId: string, campaignId: string, leadIds: string[], actor?: ScopedActor) {
+    await this.findOne(tenantId, campaignId, actor);
 
-    // Verify leads belong to tenant and not deleted
+    // Verify leads belong to tenant and not deleted (for managers: must be in their scope)
     const leads = await this.prisma.lead.findMany({
       where: {
         id: { in: leadIds },
         tenantId,
         deletedAt: null,
+        ...leadScope(actor),
       },
       select: { id: true, phone: true },
     });
@@ -224,8 +227,8 @@ export class CampaignsService implements OnModuleInit {
   }
 
   // ── 7. Get Campaign Leads ───────────────────────────────────
-  async getLeads(tenantId: string, campaignId: string, query: { status?: string; page?: number; limit?: number }) {
-    await this.findOne(tenantId, campaignId);
+  async getLeads(tenantId: string, campaignId: string, query: { status?: string; page?: number; limit?: number }, actor?: ScopedActor) {
+    await this.findOne(tenantId, campaignId, actor);
 
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
@@ -274,8 +277,8 @@ export class CampaignsService implements OnModuleInit {
   }
 
   // ── 8. Start Campaign ───────────────────────────────────────
-  async startCampaign(tenantId: string, campaignId: string) {
-    const campaign = await this.findOne(tenantId, campaignId);
+  async startCampaign(tenantId: string, campaignId: string, actor?: ScopedActor) {
+    const campaign = await this.findOne(tenantId, campaignId, actor);
 
     if (campaign.status === CampaignStatus.RUNNING) {
       throw new ConflictException('Campaign is already running');
@@ -360,8 +363,8 @@ export class CampaignsService implements OnModuleInit {
   }
 
   // ── 9. Pause Campaign ───────────────────────────────────────
-  async pauseCampaign(tenantId: string, campaignId: string) {
-    const campaign = await this.findOne(tenantId, campaignId);
+  async pauseCampaign(tenantId: string, campaignId: string, actor?: ScopedActor) {
+    const campaign = await this.findOne(tenantId, campaignId, actor);
 
     if (campaign.status !== CampaignStatus.RUNNING) {
       throw new BadRequestException(`Cannot pause campaign with status '${campaign.status}' (must be running)`);
@@ -380,19 +383,19 @@ export class CampaignsService implements OnModuleInit {
   }
 
   // ── 10. Resume Campaign ─────────────────────────────────────
-  async resumeCampaign(tenantId: string, campaignId: string) {
-    const campaign = await this.findOne(tenantId, campaignId);
+  async resumeCampaign(tenantId: string, campaignId: string, actor?: ScopedActor) {
+    const campaign = await this.findOne(tenantId, campaignId, actor);
 
     if (campaign.status !== CampaignStatus.PAUSED) {
       throw new BadRequestException(`Cannot resume campaign with status '${campaign.status}' (must be paused)`);
     }
 
-    return this.startCampaign(tenantId, campaignId);
+    return this.startCampaign(tenantId, campaignId, actor);
   }
 
   // ── 11. Cancel Campaign ─────────────────────────────────────
-  async cancelCampaign(tenantId: string, campaignId: string) {
-    await this.findOne(tenantId, campaignId);
+  async cancelCampaign(tenantId: string, campaignId: string, actor?: ScopedActor) {
+    await this.findOne(tenantId, campaignId, actor);
 
     // Cancel in-memory queue jobs
     this.queueService.clearCampaignInMemoryJobs(campaignId);
@@ -418,8 +421,8 @@ export class CampaignsService implements OnModuleInit {
   }
 
   // ── 12. Campaign Metrics ────────────────────────────────────
-  async getCampaignMetrics(tenantId: string, campaignId: string) {
-    await this.findOne(tenantId, campaignId);
+  async getCampaignMetrics(tenantId: string, campaignId: string, actor?: ScopedActor) {
+    await this.findOne(tenantId, campaignId, actor);
 
     if (!this.prisma.isConnected) {
       return {
@@ -479,7 +482,7 @@ export class CampaignsService implements OnModuleInit {
   }
 
   // ── 12b. Campaign Eligibility Preview ────────────────────────
-  async getEligibilityPreview(tenantId: string, campaignId: string) {
+  async getEligibilityPreview(tenantId: string, campaignId: string, actor?: ScopedActor) {
     if (!this.prisma.isConnected) {
       return {
         campaignId,
@@ -496,7 +499,7 @@ export class CampaignsService implements OnModuleInit {
       };
     }
 
-    const campaign: any = await this.findOne(tenantId, campaignId);
+    const campaign: any = await this.findOne(tenantId, campaignId, actor);
 
     const callingWindow = this.eligibilityService.isWithinCallingWindow(
       campaign.startTime,
@@ -632,13 +635,13 @@ export class CampaignsService implements OnModuleInit {
   }
 
   // ── 12c. Preview Lead Eligibility (before enrollment) ────────
-  async previewLeadsEligibility(tenantId: string, leadIds: string[], agentId?: string) {
+  async previewLeadsEligibility(tenantId: string, leadIds: string[], agentId?: string, actor?: ScopedActor) {
     if (!leadIds || leadIds.length === 0) {
       return { total: 0, eligibleCount: 0, ineligibleCount: 0, categories: {}, leads: [] };
     }
 
     const leads = await this.prisma.lead.findMany({
-      where: { id: { in: leadIds }, tenantId },
+      where: { id: { in: leadIds }, tenantId, ...leadScope(actor) },
       select: { id: true, name: true, phone: true, status: true },
     });
 

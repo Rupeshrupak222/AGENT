@@ -20,7 +20,7 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Get top-level dashboard KPIs' })
   @ApiQuery({ name: 'range', enum: ['today', 'week', 'month'], required: false })
   dashboard(@CurrentUser() u: any, @Query('range') range: any) {
-    return this.svc.getDashboardMetrics(u.tenantId, range);
+    return this.svc.getDashboardMetrics(u.tenantId, range, u);
   }
 
   @Get('overview')
@@ -28,7 +28,7 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Get top-level dashboard KPIs (overview alias)' })
   @ApiQuery({ name: 'range', enum: ['today', 'week', 'month'], required: false })
   overview(@CurrentUser() u: any, @Query('range') range: any) {
-    return this.svc.getDashboardMetrics(u.tenantId, range);
+    return this.svc.getDashboardMetrics(u.tenantId, range, u);
   }
 
   @Get('company-dashboard')
@@ -42,7 +42,7 @@ export class AnalyticsController {
     @Query('prevTo') prevTo?: string,
     @Query('granularity') granularity?: string,
   ) {
-    return this.svc.getCompanyDashboard(u.tenantId, { from, to, prevFrom, prevTo, granularity: granularity as any });
+    return this.svc.getCompanyDashboard(u.tenantId, { from, to, prevFrom, prevTo, granularity: granularity as any }, u);
   }
 
   @Get('call-trend')
@@ -50,34 +50,34 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Daily call volume trend' })
   @ApiQuery({ name: 'days', required: false })
   callTrend(@CurrentUser() u: any, @Query('days') days: number) {
-    return this.svc.getCallTrend(u.tenantId, days ?? 7);
+    return this.svc.getCallTrend(u.tenantId, days ?? 7, u);
   }
 
   @Get('agent-performance')
   @Permissions(ANALYTICS_VIEW)
   @ApiOperation({ summary: 'Per-agent performance stats' })
   agentPerf(@CurrentUser() u: any) {
-    return this.svc.getAgentPerformance(u.tenantId);
+    return this.svc.getAgentPerformance(u.tenantId, u);
   }
 
   @Get('conversion-funnel')
   @Permissions(ANALYTICS_VIEW)
   @ApiOperation({ summary: 'Lead conversion funnel by stage' })
   funnel(@CurrentUser() u: any) {
-    return this.svc.getConversionFunnel(u.tenantId);
+    return this.svc.getConversionFunnel(u.tenantId, u);
   }
 
   @Get('sentiment')
   @Permissions(ANALYTICS_VIEW)
   @ApiOperation({ summary: 'Sentiment score distribution' })
   sentiment(@CurrentUser() u: any) {
-    return this.svc.getSentimentDistribution(u.tenantId);
+    return this.svc.getSentimentDistribution(u.tenantId, u);
   }
 
   @Get('lead-priority')
   @Permissions(ANALYTICS_VIEW)
   @ApiOperation({ summary: 'Lead priority score distribution' })
   priority(@CurrentUser() u: any) {
-    return this.svc.getLeadPriorityStats(u.tenantId);
+    return this.svc.getLeadPriorityStats(u.tenantId, u);
   }
 }

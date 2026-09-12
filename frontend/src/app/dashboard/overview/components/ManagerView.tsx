@@ -41,6 +41,8 @@ import {
 } from "recharts";
 import { formatDuration, formatNumber } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PERMISSIONS } from "@/lib/permissions";
 import type {
   CompanyDashboardData,
   CompanyDashboardKpis,
@@ -120,6 +122,8 @@ export function ManagerView({
   workspacePlan,
 }: ManagerViewProps) {
   const { success } = useToast();
+  const { can } = usePermissions();
+  const canExportAnalytics = can(PERMISSIONS.ANALYTICS_EXPORT);
 
   // Multilingual Shift Supervisor State
   const [selectedSimAgent, setSelectedSimAgent] = useState<AgentItem | null>(null);
@@ -382,6 +386,7 @@ export function ManagerView({
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <RefreshButton isRefreshing={isRefreshing} onRefresh={onRefresh} />
+          {canExportAnalytics && (
           <button
             onClick={handleExportCsv}
             disabled={!dashboard}
@@ -389,6 +394,7 @@ export function ManagerView({
           >
             <Download className="w-4 h-4 text-purple-500 dark:text-purple-400" /> Export CSV
           </button>
+          )}
           <Link
             href="/dashboard/calls"
             className="inline-flex items-center gap-2 h-10 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-lg shadow-purple-500/25 transition-all"

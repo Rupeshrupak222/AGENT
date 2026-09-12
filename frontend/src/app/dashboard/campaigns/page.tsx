@@ -25,6 +25,7 @@ import {
   Radio,
   Activity,
   BarChart3,
+  FlaskConical,
 } from "lucide-react";
 import {
   campaignsApi,
@@ -42,6 +43,7 @@ import { CampaignProgressBar } from "@/components/campaigns/CampaignProgressBar"
 import { CampaignLeadsTable } from "@/components/campaigns/CampaignLeadsTable";
 import { CampaignCreationModal } from "@/components/campaigns/CampaignCreationModal";
 import { UnifiedCallWorkspaceModal } from "@/components/campaigns/UnifiedCallWorkspaceModal";
+import { AbExperimentLabModal } from "@/components/campaigns/AbExperimentLabModal";
 import { realtimeSocket } from "@/lib/socket";
 
 export default function CampaignOperationsPage() {
@@ -53,6 +55,7 @@ export default function CampaignOperationsPage() {
 
   // Permissions
   const canCreate = can(PERMISSIONS.CAMPAIGN_CREATE);
+  const canUpdate = can(PERMISSIONS.CAMPAIGN_UPDATE);
   const canExecute = can(PERMISSIONS.CAMPAIGN_EXECUTE);
   const canPause = can(PERMISSIONS.CAMPAIGN_PAUSE);
 
@@ -61,6 +64,7 @@ export default function CampaignOperationsPage() {
   const [selectedTimezone, setSelectedTimezone] = useState("Asia/Kolkata (IST)");
   const [amdEnabled, setAmdEnabled] = useState(true);
   const [recycleHours, setRecycleHours] = useState(48);
+  const [isAbModalOpen, setIsAbModalOpen] = useState(false);
 
   // Campaigns list state
   const [campaigns, setCampaigns] = useState<CampaignItem[]>([]);
@@ -364,6 +368,17 @@ export default function CampaignOperationsPage() {
           >
             <RefreshCw className={`w-4 h-4 ${loadingCampaigns || loadingMetrics ? "animate-spin" : ""}`} />
           </button>
+
+          {canUpdate && (
+          <button
+            type="button"
+            onClick={() => setIsAbModalOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/30 text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+          >
+            <FlaskConical className="w-3.5 h-3.5 text-purple-500" />
+            <span>A/B Testing Lab</span>
+          </button>
+          )}
 
           {canCreate && (
             <button
@@ -831,6 +846,15 @@ export default function CampaignOperationsPage() {
             loadLeads();
             loadMetrics();
           }}
+        />
+      )}
+
+      {/* ── A/B Testing Lab Modal ── */}
+      {canUpdate && isAbModalOpen && (
+        <AbExperimentLabModal
+          isOpen={isAbModalOpen}
+          onClose={() => setIsAbModalOpen(false)}
+          campaignName={activeCampaign?.name}
         />
       )}
     </div>

@@ -6,6 +6,7 @@ import { AuditService } from '../audit/audit.service';
 import { CreateAgentDto, UpdateAgentDto } from './dto/agent.dto';
 import { GroqAgentBrainService } from '../ai/brain/groq-agent-brain.service';
 import { EdgeTTSProvider } from '../ai/tts/edge-tts.provider';
+import { ScopedActor, agentScope, isManager } from '../../common/scope';
 
 @Injectable()
 export class AgentsService {
@@ -18,13 +19,14 @@ export class AgentsService {
     private tts: EdgeTTSProvider,
   ) {}
 
-  async create(tenantId: string, userId: string, dto: CreateAgentDto) {
+  async create(tenantId: string, userId: string, dto: CreateAgentDto, actor?: ScopedActor) {
     const agent = await this.prisma.aIAgent.create({
       data: {
         ...dto,
         tenantId,
         createdById: userId,
         status: 'draft',
+        ...(actor && isManager(actor) ? { managerId: actor.id } : {}),
       },
     });
 
@@ -40,12 +42,13 @@ export class AgentsService {
     return agent;
   }
 
-  async findAll(tenantId: string, filters?: { status?: string; role?: string }) {
+  async findAll(tenantId: string, filters?: { status?: string; role?: string }, actor?: ScopedActor) {
     try {
       return await this.prisma.aIAgent.findMany({
         where: {
           tenantId,
           deletedAt: null,
+          ...agentScope(actor),
           ...(filters?.status && { status: filters.status as any }),
           ...(filters?.role && { role: filters.role as any }),
         },
@@ -76,9 +79,9 @@ export class AgentsService {
     }
   }
 
-  async findOne(tenantId: string, id: string) {
+  async findOne(tenantId: string, id: string, actor?: ScopedActor) {
     const agent = await this.prisma.aIAgent.findFirst({
-      where: { id, tenantId, deletedAt: null },
+      where: { id, tenantId, deletedAt: null, ...agentScope(actor) },
       include: {
         _count: { select: { calls: true } },
         campaigns: { take: 5, orderBy: { createdAt: 'desc' } },
@@ -88,7 +91,13 @@ export class AgentsService {
     return agent;
   }
 
-  async update(tenantId: string, id: string, dto: UpdateAgentDto) {
+  async update(tenantId: string, id: string, dto: UpdateAgentDto, actor?: ScopedActor) {
+    const existing = await this.prisma.aIAgent.findFirst({
+      where: { id, tenantId, deletedAt: null, ...agentScope(actor) },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundException('Agent not found');
+
     const result = await this.prisma.tenantUpdate(
       this.prisma.aIAgent,
       tenantId,
@@ -107,7 +116,13 @@ export class AgentsService {
     return result;
   }
 
-  async remove(tenantId: string, id: string) {
+  async remove(tenantId: string, id: string, actor?: ScopedActor) {
+    const existing = await this.prisma.aIAgent.findFirst({
+      where: { id, tenantId, deletedAt: null, ...agentScope(actor) },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundException('Agent not found');
+
     const result = await this.prisma.tenantSoftDelete(
       this.prisma.aIAgent,
       tenantId,
@@ -124,7 +139,13 @@ export class AgentsService {
     return result;
   }
 
-  async activate(tenantId: string, id: string) {
+  async activate(tenantId: string, id: string, actor?: ScopedActor) {
+    const existing = await this.prisma.aIAgent.findFirst({
+      where: { id, tenantId, deletedAt: null, ...agentScope(actor) },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundException('Agent not found');
+
     const result = await this.prisma.tenantUpdate(
       this.prisma.aIAgent,
       tenantId,
@@ -142,7 +163,13 @@ export class AgentsService {
     return result;
   }
 
-  async pause(tenantId: string, id: string) {
+  async pause(tenantId: string, id: string, actor?: ScopedActor) {
+    const existing = await this.prisma.aIAgent.findFirst({
+      where: { id, tenantId, deletedAt: null, ...agentScope(actor) },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundException('Agent not found');
+
     const result = await this.prisma.tenantUpdate(
       this.prisma.aIAgent,
       tenantId,
@@ -160,9 +187,9 @@ export class AgentsService {
     return result;
   }
 
-  async getStats(tenantId: string, id: string) {
+  async getStats(tenantId: string, id: string, actor?: ScopedActor) {
     try {
-      await this.findOne(tenantId, id);
+      await this.findOne(tenantId, id, actor);
       const [totalCalls, connectedCalls, qualifiedLeads] = await Promise.all([
         this.prisma.call.count({ where: { agentId: id, tenantId } }),
         this.prisma.call.count({ where: { agentId: id, tenantId, status: 'completed' } }),
@@ -193,8 +220,8 @@ export class AgentsService {
     }
   }
 
-  async duplicate(tenantId: string, id: string, userId: string) {
-    const agent = await this.findOne(tenantId, id);
+  async duplicate(tenantId: string, id: string, userId: string, actor?: ScopedActor) {
+    const agent = await this.findOne(tenantId, id, actor);
     const { id: _, createdAt, updatedAt, _count, campaigns, ...rest } = agent as any;
     const newAgent = await this.prisma.aIAgent.create({
       data: {
@@ -203,6 +230,7 @@ export class AgentsService {
         status: 'draft',
         tenantId,
         createdById: userId,
+        ...(actor && isManager(actor) ? { managerId: actor.id } : {}),
       },
     });
 
@@ -226,8 +254,9 @@ export class AgentsService {
     id: string,
     userMessage: string,
     history: Array<{ role: 'user' | 'assistant'; content: string }> = [],
+    actor?: ScopedActor,
   ) {
-    const agent = await this.findOne(tenantId, id);
+    const agent = await this.findOne(tenantId, id, actor);
     const t0 = Date.now();
 
     // 1. Build conversational turn input conforming to AgentTurnInput

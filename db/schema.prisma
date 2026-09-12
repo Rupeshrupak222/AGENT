@@ -264,6 +264,9 @@ model User {
   auditLogs       AuditLog[]
   createdKnowledgeSources KnowledgeSource[] @relation("KnowledgeCreatedBy")
 
+  // Managers supervise a team of AI agents
+  managedAgents   AIAgent[]      @relation("AgentManagedBy")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -294,6 +297,10 @@ model AIAgent {
   createdById String
   createdBy   User    @relation("AgentCreatedBy", fields: [createdById], references: [id])
 
+  // Managers supervise a team of agents (manager data scoping)
+  managerId String?
+  manager   User?   @relation("AgentManagedBy", fields: [managerId], references: [id], onDelete: SetNull)
+
   // Relations
   calls       Call[]
   campaigns   Campaign[]
@@ -306,6 +313,7 @@ model AIAgent {
 
   @@index([tenantId])
   @@index([status])
+  @@index([managerId])
   @@map("AIAgent")
 }
 
