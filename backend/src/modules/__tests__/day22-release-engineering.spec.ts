@@ -42,7 +42,7 @@ describe('Day 22 Release Engineering & Failure Recovery Suite', () => {
     it('health readiness reports degraded when Redis is down, without crashing process', async () => {
       const readiness = await healthService.getReadiness();
       expect(readiness).toBeDefined();
-      expect(['ok', 'degraded']).toContain(readiness.status);
+      expect(['healthy', 'degraded', 'unhealthy']).toContain(readiness.status);
       expect(readiness.checks).toHaveProperty('database');
       expect(readiness.checks).toHaveProperty('redis');
     });

@@ -7,6 +7,8 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  ParseEnumPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { IntegrationsService } from './integrations.service';
@@ -47,6 +49,13 @@ export class TestConnectionDto {
 export class IntegrationsController {
   constructor(private readonly integrationsService: IntegrationsService) {}
 
+  private static readonly providerPipe = new ParseEnumPipe(IntegrationProvider, {
+    exceptionFactory: () =>
+      new BadRequestException(
+        `Unsupported integration provider. Valid providers: ${Object.values(IntegrationProvider).join(', ')}`,
+      ),
+  });
+
   @Get()
   @Permissions(INTEGRATIONS_VIEW)
   @ApiOperation({ summary: 'List all configured integrations for tenant' })
@@ -57,8 +66,11 @@ export class IntegrationsController {
   @Get(':provider')
   @Permissions(INTEGRATIONS_VIEW)
   @ApiOperation({ summary: 'Get specific integration configuration' })
-  get(@CurrentUser() user: any, @Param('provider') provider: string) {
-    return this.integrationsService.getIntegration(user.tenantId, provider as IntegrationProvider);
+  get(
+    @CurrentUser() user: any,
+    @Param('provider', IntegrationsController.providerPipe) provider: IntegrationProvider,
+  ) {
+    return this.integrationsService.getIntegration(user.tenantId, provider);
   }
 
   @Post(':provider')
@@ -66,10 +78,10 @@ export class IntegrationsController {
   @ApiOperation({ summary: 'Upsert credentials and settings for an integration' })
   upsert(
     @CurrentUser() user: any,
-    @Param('provider') provider: string,
+    @Param('provider', IntegrationsController.providerPipe) provider: IntegrationProvider,
     @Body() dto: UpsertIntegrationDto,
   ) {
-    return this.integrationsService.upsertIntegration(user.tenantId, provider as IntegrationProvider, dto);
+    return this.integrationsService.upsertIntegration(user.tenantId, provider, dto);
   }
 
   @Post(':provider/test')
@@ -78,7 +90,7 @@ export class IntegrationsController {
   @ApiOperation({ summary: 'Test connection with integration credentials' })
   testConnection(
     @CurrentUser() user: any,
-    @Param('provider') provider: string,
+    @Param('provider', IntegrationsController.providerPipe) provider: IntegrationProvider,
     @Body() dto: TestConnectionDto,
   ) {
     return this.integrationsService.testConnection(user.tenantId, provider, dto?.credentials);
