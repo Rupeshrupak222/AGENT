@@ -25,7 +25,7 @@
 | **Smoke Contract** | Node.js HTTP test harness | `scripts/smoke-test.js` | **PASS** (live localhost, re-executed 2026-09-13) | 6 PASS / 3 SKIPPED (no creds); target env honored (`TARGET_URL`) |
 | **Load Benchmark** | Node.js concurrency runner | `scripts/load-test.js` | **PASS** (1500 reqs, 0 failures; 8 tiers) | Re-executed 2026-09-13 against degraded DB/Redis runtime; artifact stored as `LOAD_RESULT_FILE` evidence |
 | **Release Gate** | Operational Readiness Evaluator | `scripts/release-gate.js` (v0.25.0-rc1) | **CODE VERIFIED** | 7 PASS, 0 WARN, 4 BLOCKED, 0 FAIL (real smoke + load evidence); staging/load/smoke cannot PASS from config alone (Day 25 honesty tests) |
-| **CI / Docker Gate** | GitHub Actions + Dockerfile build | `.github/workflows/ci.yml` → `docker-gate` | **PENDING — will run on Day 26 push** | Build + non-root + healthcheck image inspection; backend-gate runs with real Postgres 15 + Redis 7 service containers |
+| **CI / Docker Gate** | GitHub Actions + Dockerfile build | `.github/workflows/ci.yml` → 3 gates | **PASS — run #19 (2026-09-13)** | backend-gate (real Postgres 15 + Redis 7), frontend-gate, docker-gate (compose validate + image builds + non-root/healthcheck inspect); fixes `85f526c`, `2e483b8` |
 
 ---
 
