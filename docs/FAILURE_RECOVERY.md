@@ -38,6 +38,7 @@ This document records the observed recovery characteristics of the AgentCall AI 
 - **Observed Behavior**: Verified deterministic job ID generation and exponential retry backoff (`delay = Math.min(2^attempts * 1000, 30000)`). Stalled jobs are safely reclaimed upon worker restart.
 - **Data Safety**: Zero duplicate outbound calls triggered due to deterministic job deduplication.
 - **Result**: **PASS — Worker Recovery Verified**
+- **Day 26 addition**: Worker-node separation now verified. `WORKER_MODE=true node dist/main.js` boots a worker-only application context (no HTTP/WS listener), and `setupWorkerShutdown` registers graceful `SIGTERM`/`SIGINT` handling: `app.close()` (BullMQ queues + Prisma disconnect) then `process.exit(0)`, error-tolerant close still exits 0. Covered by `backend/src/common/utils/__tests__/worker-mode.spec.ts` (SIGTERM, SIGINT, and close-throw cases) and host process probe (PID 24228 — worker booted, port 3001 not listening, clean stop).
 
 ---
 

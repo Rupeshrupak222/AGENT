@@ -132,6 +132,10 @@ services:
         condition: service_healthy
     networks:
       - agentcall-network
+    # Day 26: the worker runs in WORKER_MODE=true, which bootstraps a non-HTTP
+    # application context (no port 3001 listener), so no HTTP healthcheck applies.
+    # Liveness = container process; restart: always revives it. Queue/worker health
+    # is observable via BullMQ metrics and API /health/diagnostics queue depths.
     deploy:
       resources:
         limits:

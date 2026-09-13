@@ -25,7 +25,7 @@ This checklist must be executed and approved before deploying any release to sta
 - [ ] **Redis 7+ Available**:
   - Running with Append-Only File enabled: `--appendonly yes --appendfsync everysec`.
   - Maxmemory policy configured to `noeviction` for BullMQ queue durability.
-- [ ] **Worker Separation**: Background queue processors (`post-call-analysis`, `crm-sync`, `outbound-calls`, `recording-processing`, `automation-actions`, `appointment-reminders`) monitored and configured for graceful shutdown (`SIGTERM` tolerance: 10s).
+- [x] **Worker Separation**: Background queue processors (`post-call-analysis`, `crm-sync`, `outbound-calls`, `recording-processing`, `automation-actions`, `appointment-reminders`) run in an isolated worker process via `WORKER_MODE=true` (`createApplicationContext`; no HTTP/WS listener) with graceful `SIGTERM`/`SIGINT` shutdown (Day 26: code + 8 unit tests + on-host process verification; compose worker service uses the worker mode).
 - [ ] **Container Images Built**:
   - Multi-stage builds completed.
   - Non-root user permissions active (`nestjs` / `nextjs`).

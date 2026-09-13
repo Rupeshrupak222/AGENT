@@ -94,9 +94,14 @@ All queue workers run as NestJS Bull consumers within the application process (o
 - `AppointmentReminderQueueService` (`appointment-reminders`)
 
 To run dedicated background worker containers without HTTP ingress:
-- In production, set `WORKER_MODE=true` or start the application with a dedicated worker module entry point.
+- In production, set `WORKER_MODE=true`. The same `dist/main.js` entry point boots a **worker-only** NestJS application context (`createApplicationContext`) that:
+  - runs only the BullMQ consumers (6 processors below),
+  - exposes **no HTTP/WebSocket listener** (port 3001 intentionally not bound),
+  - logs `[Bootstrap] Worker mode — background queue consumers active. HTTP/WebSocket listeners disabled.`,
+  - registers graceful termination: `SIGTERM`/`SIGINT` -> `app.close()` (BulMQ queue close + Prisma disconnect) -> `process.exit(0)`.
+- The compose `worker` service sets `WORKER_MODE=true`; its liveness is the container process + restart policy (no HTTP healthcheck — see `docker-compose.prod.yml`). Queue/worker health is observed via BullMQ metrics and the API `/health/diagnostics` queue-depth endpoint.
 
-> **Day 25 verification note**: `WORKER_MODE` is currently referenced **only** in `docker-compose.prod.yml` and this runbook — no code consumes it. The compose `worker` service therefore runs the **full NestJS app** (API + WebSockets + workers), not a separate worker process. Splitting workers into an isolated process is a follow-up item; do not assume reduced surface area from the `worker` service alone.
+> **Day 26 verification note**: `WORKER_MODE` is now consumed by `backend/src/common/utils/worker-mode.ts` via `backend/src/main.ts`. Verified on this host: `WORKER_MODE=true node dist/main.js` boots the worker context (~4s), holds no listener on port 3001, and shuts down cleanly (see 8 unit tests in `backend/src/common/utils/__tests__/worker-mode.spec.ts`). Deploying a real runtime (Postgres + Redis + compose) requires infrastructure that is not present on this dev box — see `DAY_26_REPORT.md`.
 
 ## 4b. Release Gate Operations (Day 25)
 

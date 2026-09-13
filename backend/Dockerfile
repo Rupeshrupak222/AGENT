@@ -69,5 +69,8 @@ HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
 # Graceful termination handling
 STOPSIGNAL SIGTERM
 
-# Default startup command (HTTP API + In-process worker queues)
+# Default startup command. The SAME image serves both roles:
+#   - API:         (default)      node dist/main.js            -> HTTP + WebSocket + enqueue + monitors
+#   - Worker:      WORKER_MODE=true node dist/main.js           -> BullMQ consumers ONLY (no HTTP/WS listener)
+# docker-compose.prod.yml sets WORKER_MODE=true on the worker service.
 CMD ["node", "dist/main.js"]

@@ -11,6 +11,7 @@ import { MetricsService }        from './common/services/metrics.service';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import { SecurityHeadersMiddleware } from './common/middleware/security-headers.middleware';
 import { validateEnvironment }    from './common/utils/env-validation';
+import { isWorkerMode, createWorkerApp, setupWorkerShutdown } from './common/utils/worker-mode';
 
 process.on('unhandledRejection', (reason: any) => {
   if (reason?.code === 'ECONNREFUSED' || reason?.message?.includes('ECONNREFUSED')) {
@@ -22,6 +23,33 @@ process.on('unhandledRejection', (reason: any) => {
 process.on('uncaughtException', (err: any) => {
   console.error('Uncaught Exception:', err?.message || err);
 });
+
+/**
+ * Worker process (WORKER_MODE=true): boots the same application graph but as a
+ * non-HTTP application context so BullMQ consumers / Prisma / queues are the
+ * ONLY active surfaces. No HTTP listener, WebSocket gateway, CORS, Swagger, or
+ * global express middleware is attached — the worker is not a duplicate API.
+ */
+async function bootstrapWorker() {
+  const envResult = validateEnvironment();
+  if (!envResult.valid && process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
+
+  try {
+    const app = await createWorkerApp();
+    setupWorkerShutdown(app);
+    new Logger('Bootstrap').log('Worker mode — background queue consumers active. HTTP/WebSocket listeners disabled.');
+  } catch (err: any) {
+    new Logger('Bootstrap').error(`Worker bootstrap failed: ${err?.message || err}`);
+    process.exit(1);
+  }
+}
+
+export async function main() {
+  if (isWorkerMode()) return bootstrapWorker();
+  return bootstrap();
+}
 
 async function bootstrap() {
   const envResult = validateEnvironment();
@@ -131,4 +159,9 @@ async function bootstrap() {
   process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
 
-bootstrap();
+if (require.main === module) {
+  main().catch((err: any) => {
+    console.error('Fatal bootstrap error:', err?.message || err);
+    process.exit(1);
+  });
+}

@@ -1,6 +1,6 @@
-# Production Readiness Matrix — Day 24 / Day 25
+# Production Readiness Matrix — Day 24 / Day 25 / Day 26
 
-This matrix tracks the operational verification of all 20 subsystems across the Adyapan AI / AgentCall AI platform as of Day 25.
+This matrix tracks the operational verification of all 20 subsystems across the Adyapan AI / AgentCall AI platform as of Day 26.
 
 ---
 
@@ -22,7 +22,7 @@ This matrix tracks the operational verification of all 20 subsystems across the 
 | **CRM Integrations** | PASS | PASS | PASS | BLOCKED | BLOCKED | **PASS (Code)** | Hubspot/Salesforce/Zoho adapters, credentials masking (`••••••••`). |
 | **PostgreSQL Database** | PASS | PASS | PASS | BLOCKED | BLOCKED | **PASS (Code)** | 14 Prisma migrations, schema validated (`db/schema.prisma`), pool timeouts verified. |
 | **Redis & BullMQ** | PASS | PASS | PASS | BLOCKED | BLOCKED | **PASS (Code)** | Durable production submission enforced (Day 24): silent in-memory fallback is production-forbidden; `RedisUnavailableError` (retryable) surfaced on broker outage. Day 25: error contract verified (no credential leakage, no false success, deterministic concurrent dedupe, offline→online recovery re-routes submissions to Bull); 22 regression tests + 6 new failure-path tests. |
-| **Background Workers** | PASS | PASS | PASS | BLOCKED | BLOCKED | **PASS (Code)** | Outbound call, post-call, CRM, and reminder processors verified. Day 24: localhost runtime readiness `degraded` (DB/Redis disconnected) still returned HTTP 200 with structured diagnostics. Day 25: degraded-runtime profile re-observed on a fresh boot (2026-09-13) — `/health/ready` returns HTTP 200 with `status: degraded` and per-component `disconnected`/`error` detail; queue recovery flip and health component restoration covered by new tests. |
+| **Background Workers** | PASS | PASS | PASS | BLOCKED | BLOCKED | **PASS (Code)** | Outbound call, post-call, CRM, and reminder processors verified. Day 24: localhost runtime readiness `degraded` (DB/Redis disconnected) still returned HTTP 200 with structured diagnostics. Day 26: **worker/API separation implemented** via `WORKER_MODE` + `createApplicationContext` in `backend/src/main.ts`; worker mode boots with no HTTP/WS listener (verified on host, PID 24228, `Listening=False` on port 3001) and graceful `SIGTERM`/`SIGINT` shutdown; 8 new unit tests (`worker-mode.spec.ts`). |
 | **Observability** | PASS | PASS | PASS | BLOCKED | BLOCKED | **PASS (Code)** | Structured logs, `x-correlation-id`, bounded Prometheus `/health/metrics`. |
 | **Backups & Recovery** | PASS | PASS | PASS | BLOCKED | BLOCKED | **BLOCKED** | Scripts validated (`backup-db.ps1`); destructive restore drill blocked on disposable DB. |
 | **Docker & Compose** | PASS | PASS | BLOCKED | BLOCKED | BLOCKED | **BLOCKED** | Multi-stage Dockerfiles ready; `docker-gate` CI job added (build + non-root user + healthcheck inspection). Docker CLI still not installed on host Windows machine. |
@@ -43,19 +43,21 @@ This matrix tracks the operational verification of all 20 subsystems across the 
 
 ---
 
-## 3. Release Gate Decision (Day 24 / Day 25)
+## 3. Release Gate Decision (Day 24 / Day 25 / Day 26)
 
-- **Code-Level Verification**: **100% COMPLETE** (42 test suites, 493 tests passing 100% — including Day 24 production queue-safety and WebSocket tenant-isolation suites plus the Day 25 staging-release-candidate suite; backend build/lint, frontend tsc/lint/`next build`, and `prisma validate` all green).
-- **Production Durability Hardening**: **COMPLETE** (all 6 critical queues now reject silent in-memory fallback in production; `RedisUnavailableError` surfaces on broker outage). Day 25 adds: error-contract leak tests, no-false-success on mid-enqueue connection drop, concurrent deterministic dedupe, offline→online recovery re-routing, health component restoration, WebSocket reconnect idempotency, and release-gate honesty tests (spawned process must NOT auto-PASS staging/load/smoke from configuration alone).
-- **Release Gate Honesty (Day 25)**: **VERIFIED** — with `STAGING_API_URL` set to an unreachable target the gate reports `GATE_STAGING_DEPLOY: BLOCKED` (not PASS); without a `LOAD_RESULT_FILE` the load gate cannot PASS; without a target the smoke gate reports WARN. With a real localhost target + executed smoke test + zero-failure load artifact, the gate honestly reports `GATE_SMOKE_TEST: PASS` and `GATE_LOAD_TEST: PASS`. Load artifact parsing now strips UTF-8 BOM (Windows redirect robustness).
+- **Code-Level Verification**: **100% COMPLETE** (43 test suites, 501 tests passing 100% — including the new Day 26 `worker-mode` suite; backend build/lint, frontend tsc/lint/`next build`, and `prisma validate` all green).
+- **Production Durability Hardening**: **COMPLETE** (all 6 critical queues reject silent in-memory fallback in production; `RedisUnavailableError` surfaces on broker outage). Day 25 adds: error-contract leak tests, no-false-success on mid-enqueue connection drop, concurrent deterministic dedupe, offline→online recovery re-routing, health component restoration, WebSocket reconnect idempotency, and release-gate honesty tests.
+- **Worker / API Separation (Day 26)**: **CODE + PROCESS VERIFIED** — `WORKER_MODE=true` boots a worker-only application context (6 BullMQ processors, no HTTP/WebSocket listener), logs `[Bootstrap] Worker mode — background queue consumers active...`, and exits gracefully on `SIGTERM`/`SIGINT`. The compose `worker` service now uses this mode with a container-process liveness model (HTTP healthcheck removed — no listener in worker mode).
+- **Release Gate Honesty (Day 25)**: **VERIFIED** — with `STAGING_API_URL` set to an unreachable target the gate reports `GATE_STAGING_DEPLOY: BLOCKED` (not PASS); without a `LOAD_RESULT_FILE` the load gate cannot PASS; without a target the smoke gate reports WARN.
 - **Operational Verification (Localhost Runtime)**: **COMPLETE** (release gate v0.25.0-rc1 → 7 PASS / 4 BLOCKED / 0 FAIL; smoke test 6 PASS / 3 skipped on live `http://localhost:3001`; load test 1,500 requests / 0 failures re-executed 2026-09-13 on a degraded DB/Redis runtime).
-- **External & Staging Verification**: **BLOCKED** (No local Docker CLI, staging target not provisioned, live vendor credentials absent, no disposable PostgreSQL/Redis staging instance for backup drill).
+- **CI Execution (Day 26)**: push to `main` authorized by user on 2026-09-13 — `ci.yml` gates (backend with real Postgres 15 + Redis 7 services, frontend, `docker-gate` compose-validate + image builds + non-root/healthcheck inspect) run on GitHub Actions. Host has no Docker; image/runtime evidence comes from CI.
+- **External & Staging Verification**: **BLOCKED** (No local Docker CLI, staging target not provisioned, live vendor credentials absent, no disposable PostgreSQL/Redis staging instance for backup drill; runtime infra intentionally NOT installed per Day 26 decision).
 - **Official Status**: **`RELEASE-CANDIDATE — CODE VERIFIED (Infrastructure/provider gates BLOCKED)`**
-- **Success Level (Day 25 metric)**: **3/10** — Levels 1–3 (consistent baseline, QA green, production durable queue contract verified) hold with observed evidence; Levels 4–9 (Docker, staging runtime, backup/restore drill, load on staging, CI execution, live providers) remain BLOCKED pending infrastructure.
+- **Success Level (Day 26 metric)**: **4/10** — Levels 1–4 hold with observed evidence (consistent baseline, QA green, durable queue contract, **worker/API separation implemented and verified on-host + unit-tested**); Levels 5–9 (Docker images, full Docker stack, staging runtime, staging journey/E2E, backup/restore drill + RPO/RTO + staging load) remain BLOCKED and require infrastructure that will not be installed on this dev box.
 
 ### Blocked Items Requiring Infrastructure
 
-1. Docker image build/run (`docker-gate` CI job authored; no local Docker CLI / no push executed).
+1. Docker image build/run (`docker-gate` CI job authored; `ci.yml` executes it on push — host machine has no Docker CLI).
 2. PostgreSQL 15+ and Redis 7+ staging instances (readiness on live localhost is `degraded` — DB/Redis disconnected).
-3. WebSocket / worker / backup-restore drilling on a disposable staging database.
+3. WebSocket / queue-E2E / worker-drill / backup-restore drilling on a disposable staging database.
 4. Live provider verification (Twilio PSTN safe destination, Groq/Gemini/Deepgram, Cal.com, WhatsApp, Resend, CRM).
