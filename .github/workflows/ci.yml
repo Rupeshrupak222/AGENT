@@ -14,6 +14,8 @@ jobs:
   backend-gate:
     name: Backend Lint, Test, Build & Schema Validation
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres_dev_password@localhost:5432/agentcall_db?schema=public
     services:
       postgres:
         image: postgres:15-alpine
