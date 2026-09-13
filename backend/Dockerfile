@@ -12,7 +12,8 @@ RUN apk add --no-cache python3 make g++
 
 # Copy package descriptors
 COPY backend/package*.json ./backend/
-COPY db/package*.json ./db/ 2>/dev/null || true
+# NOTE: db/package*.json are intentionally NOT copied here (Dockerfile COPY does not support shell redirection);
+# the entire db/ directory is copied below and only provides the Prisma schema for `prisma generate`.
 
 # Install dependencies
 WORKDIR /app/backend
