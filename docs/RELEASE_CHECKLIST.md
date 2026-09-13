@@ -50,6 +50,8 @@ This checklist must be executed and approved before deploying any release to sta
 
 ## 4. Staging Deployment Gate
 
+> **Day 25 status**: ALL items below remain **BLOCKED** — no staging PostgreSQL/Redis, no staged containers, no disposable restore DB, and `staging-deploy.yml` contains no actual deploy step (build + gate only). Item "Deployment Smoke Test" has a partial code-level equivalent (see 4b).
+
 - [ ] **Database Pre-Migration Backup**: `scripts/backup-db.sh` or `.ps1` executed successfully and backup file verified.
 - [ ] **Deploy Database Migrations**: `npx prisma migrate deploy` completed with 0 errors on staging database.
 - [ ] **Deploy Services**: Backend and Frontend containers started in staging environment.
@@ -59,6 +61,13 @@ This checklist must be executed and approved before deploying any release to sta
   - `GET /health/metrics` returns valid Prometheus exposition text without PII.
 - [ ] **Deployment Smoke Test**: `node scripts/smoke-test.js` passes against live staging endpoints.
 - [ ] **WebSocket Connectivity**: Socket client successfully connects to `/calls`, authenticates with JWT, and joins tenant-scoped room.
+
+### 4b. Release Gate Honesty Contract (Day 25) — verified green
+
+- [x] `GATE_STAGING_DEPLOY` reports **BLOCKED** when `STAGING_API_URL` is set but unreachable (probes `/health/live`; never auto-PASS from config presence alone).
+- [x] `GATE_LOAD_TEST` cannot PASS without a zero-failure `LOAD_RESULT_FILE` artifact (UTF-8 BOM tolerant).
+- [x] `GATE_SMOKE_TEST` reports WARN (not PASS) when no live target is configured.
+- [x] With TARGET_URL + live localhost smoke + load artifact: `GATE_SMOKE_TEST: PASS`, `GATE_LOAD_TEST: PASS` — decision `RELEASE-CANDIDATE — CODE VERIFIED`, 7 PASS / 0 WARN / 4 BLOCKED / 0 FAIL (2026-09-13).
 
 ---
 

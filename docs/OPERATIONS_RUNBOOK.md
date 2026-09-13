@@ -79,6 +79,7 @@ Redis is critical for background workers, queue durability, and rate-limiting st
 - **Failover Behavior (Day 24 enforcement)**:
   - If Redis is disconnected, `HealthService.getReadiness()` marks readiness as `false` with `status: degraded`.
   - In-memory fallbacks exist solely for development/offline testing. In **production**, durable queue submission (`outbound-calls`, `post-call-analysis`, `crm-sync`, `recording-processing`, `automation-actions`, `appointment-reminders`) is rejected via `RedisUnavailableError` (`code: REDIS_UNAVAILABLE`, `retryable: true`) when the broker (or an enqueue/add) fails — see `backend/src/common/utils/queue-fallback.ts` and `day24-production-queue-safety.spec.ts`. NEVER run production without a reachable Redis.
+- **Day 25 additions**: error contract verified — no credential/connection-string leakage in the raised error, no false `queued:true` on failure, deterministic concurrency de-duplicates dev/test submissions, and once Redis recovers (`isRedisAvailable: false → true`) submissions automatically route back to the durable Bull path (`mode: 'bull'`). Guarded by `day25-staging-release-candidate.spec.ts`.
 
 ---
 
@@ -94,6 +95,25 @@ All queue workers run as NestJS Bull consumers within the application process (o
 
 To run dedicated background worker containers without HTTP ingress:
 - In production, set `WORKER_MODE=true` or start the application with a dedicated worker module entry point.
+
+> **Day 25 verification note**: `WORKER_MODE` is currently referenced **only** in `docker-compose.prod.yml` and this runbook — no code consumes it. The compose `worker` service therefore runs the **full NestJS app** (API + WebSockets + workers), not a separate worker process. Splitting workers into an isolated process is a follow-up item; do not assume reduced surface area from the `worker` service alone.
+
+## 4b. Release Gate Operations (Day 25)
+
+`scripts/release-gate.js` (v0.25.0-rc1) evaluates release readiness with honest evidence gates (never implying PASS from configuration alone):
+
+```bash
+node scripts/release-gate.js            # human-readable table + decision
+node scripts/release-gate.js --json     # machine-readable (staging-deploy.yml parses it)
+```
+
+- `GATE_STAGING_DEPLOY`: probes `<STAGING_API_URL>/health/live`; PASS only when actually reachable, BLOCKED otherwise.
+- `GATE_SMOKE_TEST`: executes `scripts/smoke-test.js` against the live target when set, else WARN.
+- `GATE_LOAD_TEST`: requires a zero-failure `LOAD_RESULT_FILE` (UTF-8 BOM tolerant) artifact.
+- `GATE_DOCKER_VERIFY`: requires a reachable Docker CLI + daemon.
+- `GATE_LIVE_PROVIDERS`: requires opt-in + credentials + `LIVE_PROVIDER_EVIDENCE`.
+- `GATE_BACKUP_DRILL`: requires `TEST_DB_RESTORE=true` + `BACKUP_DRILL_EVIDENCE`.
+- Core code gates (build, test suites, lint) always run.
 
 ---
 

@@ -114,3 +114,20 @@ Truth source for the full inventory: `backend/.env.example` (backend), `frontend
 3. `NODE_ENV=production` is mandatory on staging — this activates the Day 24 durable-queue contract (silent in-memory fallback forbidden).
 4. Configure the smoke-test variables when a target exists: `SMOKE_API_BASE` (or `TARGET_URL` for `scripts/smoke-test.js`) and optional `TARGET_URL`/`LOAD_TARGET_URL` for `scripts/load-test.js`, plus `SMOKE_EMAIL`/`SMOKE_PASSWORD` for authenticated checks.
 5. CI mapping is already wired: `staging-deploy.yml` passes `SMOKE_API_BASE: ${{ vars.STAGING_API_URL }}`.
+
+---
+
+## 12. Release Gate Variables (Day 25, `scripts/release-gate.js` v0.25.0-rc1)
+
+The gate is **uniformly honest**: no gate reaches PASS from environment/config presence alone.
+
+| Variable | Gate | Semantics |
+|:---|:---|:---|
+| `STAGING_API_URL` | `GATE_STAGING_DEPLOY` | Probes `<STAGING_API_URL>/health/live`. **PASS only when actually reachable; BLOCKED otherwise** (auto-PASS-by-config removed in Day 25). |
+| `TARGET_URL` / `SMOKE_API_BASE` | `GATE_SMOKE_TEST` | When set, the gate **executes** `scripts/smoke-test.js` against it and requires exit 0. If unset → WARN (never PASS). |
+| `LOAD_TARGET_URL` + `LOAD_RESULT_FILE` | `GATE_LOAD_TEST` | Requires a `LOAD_RESULT_FILE` JSON artifact with **0 failures** (UTF-8 BOM tolerated). WARN without artifact. |
+| `LIVE_PROVIDER_TESTS=true` + provider creds + `LIVE_PROVIDER_EVIDENCE` | `GATE_LIVE_PROVIDERS` | Requires explicit opt-in and a written video/log evidence file. |
+| `TEST_DB_RESTORE=true` + `BACKUP_DRILL_EVIDENCE` | `GATE_BACKUP_DRILL` | Requires explicit opt-in and a restore-drill evidence file. |
+| `DOCKER_HOST`/local daemon | `GATE_DOCKER_VERIFY` | Requires a reachable Docker CLI + daemon. |
+
+**All staging gates are currently BLOCKED** (no provisioned target, no Docker daemon, no disposable DB, no live credentials). Decision on any run today: `RELEASE-CANDIDATE — CODE VERIFIED`.

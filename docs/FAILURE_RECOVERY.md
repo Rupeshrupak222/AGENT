@@ -13,6 +13,14 @@ This document records the observed recovery characteristics of the AgentCall AI 
 - **Data Safety**: No campaign, CRM, recording, automation, or reminder event is silently accepted in production without a durable broker; anything rejected is surfaced to the caller/alert channel immediately.
 - **Result**: **PASS — Production Durability Contract Enforced (Day 24)**
 
+**Day 25 additions (code-level, `day25-staging-release-candidate.spec.ts`, 15 tests):**
+- Error contract: `RedisUnavailableError` identifies the queue via `err.queue`, is `retryable: true`, and its serialized message/JSON contains no credential material (`redis://`, `DATABASE_URL`, `password`, `apiKey`, `token`).
+- No false success: production enqueue rejects with the structured error and provably leaves zero RAM-buffer entries — including `bull.add()` failing mid-submission (ECONNRESET connection drop).
+- Concurrent determinism: `Promise.all` of two identical deterministic jobs produces exactly one in-memory entry in dev/test (`outbound-calls`, `post-call-analysis`, `automation-actions`).
+- Recovery flip: `isRedisAvailable: false → true` re-routes submissions back to the durable Bull path (`mode: 'bull'`) with the pre-recovery RAM job preserved.
+- Centralization: all 6 queue names reject under `production` and allow under `test`/`development` via the single shared guard.
+- **Runtime injection drill on staging Redis: BLOCKED** (no staging stack).
+
 ---
 
 ### 1.2 PostgreSQL Database Outage / Connection Pool Exhaustion
@@ -20,7 +28,7 @@ This document records the observed recovery characteristics of the AgentCall AI 
 - **Expected Behavior**: API endpoints reject incoming mutations with structured JSON error (503/500), preserving correlation ID. Health readiness marks database status as `disconnected` / `down`. No process exit.
 - **Observed Behavior**: Tested in `day22-release-engineering.spec.ts`. HealthService trapped query exception, set `readiness.status: "degraded"`, and returned detailed diagnostics without crashing the Node.js runtime.
 - **Data Safety**: Transactions are aborted cleanly; Prisma ensures no half-committed database states.
-- **Result**: **PASS — Safe Failure State**
+- **Result**: **PASS — Safe Failure State** (Day 25 addition: component-level restoration verified in `day25-staging-release-candidate.spec.ts` — readiness reports `checks.database.status: "disconnected"` while down and flips back to `"ok"` once `isConnected`/`$queryRaw` recover, without restart; degraded → restored transition is observable per-component.)
 
 ---
 
@@ -47,7 +55,7 @@ This document records the observed recovery characteristics of the AgentCall AI 
 - **Expected Behavior**: Client rejoins its assigned tenant room (`tenant:<tenantId>`). Tenant boundary is strictly enforced; cross-tenant events are rejected. Listener counts do not leak or multiply upon reconnect.
 - **Observed Behavior**: Tested in `day22-release-engineering.spec.ts`. Tenant isolation prevents leakage between tenant-alpha and tenant-beta. Rejoin operates idempotently.
 - **Data Safety**: Total tenant event isolation guaranteed.
-- **Result**: **PASS — Reconnect Safe**
+- **Result**: **PASS — Reconnect Safe** (Day 25 addition: reconnect idempotency re-verified — `handleConnection` called twice across two sockets re-joins `tenant:<id>` on each connection, does not multiply listeners, and the reconnected connection still refuses cross-tenant campaign joins with the `CROSS_TENANT_ACCESS_ATTEMPT` audit log. Connections without a token are rejected without joining any room.)
 
 ---
 

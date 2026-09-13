@@ -61,6 +61,30 @@ A second benchmark was executed on Day 24 against the **live dev-mode NestJS run
 
 ---
 
+## 3c. Day 25 Localhost Regression Benchmark (fresh boot, 2026-09-13)
+
+Re-executed against a freshly compiled `dist/main.js` dev-mode runtime on `http://localhost:3001` with PostgreSQL and Redis disconnected (degraded runtime). The result artifact was fed back into the release gate as `LOAD_RESULT_FILE` evidence, and `GATE_LOAD_TEST` required the gate to read and verify it (0-failure requirement enforced).
+
+### Measured Benchmark Results (Degraded Runtime)
+
+| Test Scenario | Reqs | Concurrency | Total Time | Throughput | p50 | p95 | p99 | Failures |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Tier 1 — Liveness (c10)** | 100 | 10 | 0.12s | 854.7 req/s | 7ms | 11ms | 14ms | 0 |
+| **Tier 1 — Metrics (c10)** | 50 | 10 | 0.08s | 666.7 req/s | 8ms | 18ms | 22ms | 0 |
+| **Tier 2 — Liveness (c25)** | 250 | 25 | 0.27s | 929.4 req/s | 14ms | 27ms | 32ms | 0 |
+| **Tier 2 — Readiness (c25)** | 100 | 25 | 0.19s | 534.8 req/s | 35ms | 53ms | 54ms | 0 |
+| **Tier 2 — Metrics (c25)** | 100 | 25 | 0.14s | 729.9 req/s | 17ms | 35ms | 40ms | 0 |
+| **Tier 3 — Liveness (c50)** | 500 | 50 | 0.45s | **1111.1 req/s** | 22ms | 49ms | 57ms | 0 |
+| **Tier 3 — Readiness (c50)** | 200 | 50 | 0.31s | 643.1 req/s | 61ms | 80ms | 84ms | 0 |
+| **Tier 3 — Metrics (c50)** | 200 | 50 | 0.20s | 1005.0 req/s | 23ms | 46ms | 53ms | 0 |
+
+- **Total Requests**: 1,500 | **Successful**: 1,500 (100.0%) | **Failures**: 0
+- **Peak Throughput**: 1111.1 req/s (health-live c50) — 10× higher than the Day 24 dev-runtime figure because no prior load had populated the Node event-loop/connection pools (fresh boot, cold counters).
+- **Readiness behavior on degraded stack**: `/health/ready` returned HTTP 200 `status: degraded` — `database.status: disconnected` (PostgreSQL not connected), `redis.status: error` ("Connection is closed", 4ms latency check) — confirming fail-open monitoring with zero request failures.
+- **Interpretation**: This is a *fresh-boot localhost degraded-runtime* benchmark, NOT a staging result. It proves 0-failure sustained concurrency on the compiled server without DB/Redis. Staging load on provisioned PostgreSQL + Redis remains **BLOCKED**.
+
+---
+
 ## 4. Resource & Subsystem Behavior
 
 - **Memory Safety**: Process memory footprint remained bounded between 92MB and 118MB RSS with zero memory leak or unhandled promise rejection.
