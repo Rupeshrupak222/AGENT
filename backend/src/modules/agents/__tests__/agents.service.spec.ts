@@ -10,6 +10,7 @@ describe('AgentsService Operator & Scoping Suite', () => {
 
   beforeEach(() => {
     mockPrisma = {
+      isConnected: true,
       aIAgent: {
         create: jest.fn(),
         findMany: jest.fn(),
