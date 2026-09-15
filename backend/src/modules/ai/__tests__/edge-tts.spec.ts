@@ -1,10 +1,22 @@
 import { ConfigService } from '@nestjs/config';
 import { EdgeTTSProvider } from '../tts/edge-tts.provider';
+import { MsEdgeTTS } from 'msedge-tts';
+import { Readable } from 'stream';
+
+jest.mock('msedge-tts');
 
 describe('EdgeTTSProvider', () => {
   let provider: EdgeTTSProvider;
 
   beforeEach(() => {
+    jest.clearAllMocks();
+    (MsEdgeTTS as unknown as jest.Mock).mockImplementation(() => ({
+      setMetadata: jest.fn().mockResolvedValue(undefined),
+      toStream: jest.fn().mockReturnValue({
+        audioStream: Readable.from([Buffer.from('mock-mp3-audio-chunk')]),
+      }),
+    }));
+
     provider = new EdgeTTSProvider(new ConfigService());
   });
 
@@ -14,7 +26,6 @@ describe('EdgeTTSProvider', () => {
   });
 
   it('should synthesize short text into an audio buffer with correct encoding metadata', async () => {
-    // Note: Test synthesis of a minimal text utterance
     const result = await provider.synthesize('Hello from Edge TTS', {
       voiceId: 'en-US-JennyNeural',
     });
@@ -23,5 +34,6 @@ describe('EdgeTTSProvider', () => {
     expect(result.audioBuffer.length).toBeGreaterThan(0);
     expect(result.encoding).toBe('audio/mpeg');
     expect(result.sampleRate).toBe(24000);
-  }, 15000);
+  });
 });
+
