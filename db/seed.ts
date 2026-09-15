@@ -61,7 +61,19 @@ async function main() {
       tenantId: tenant.id,
     },
   });
-  console.log(`✅ Users: ${admin.email}, ${manager.email}`);
+
+  const operator = await prisma.user.upsert({
+    where:  { email: 'agent@acmecorp.com' },
+    update: { password: pwd },
+    create: {
+      name:     'Agent Operator',
+      email:    'agent@acmecorp.com',
+      password: pwd,
+      role:     'agent',
+      tenantId: tenant.id,
+    },
+  });
+  console.log(`✅ Users: ${admin.email}, ${manager.email}, ${operator.email}`);
 
   // ── Demo AI Agents (English, Hindi, Telugu Calling Agents) ─
   const agentDefs = [
@@ -77,6 +89,7 @@ async function main() {
       status:             'active' as const,
       tenantId:           tenant.id,
       createdById:        admin.id,
+      operatorUserId:     operator.id,
     },
     {
       name:               'Arjun AI',

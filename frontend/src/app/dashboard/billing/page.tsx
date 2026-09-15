@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   CheckCircle2, Zap,
   Clock, Users, ArrowRight, RefreshCw, AlertCircle, Headphones, PhoneCall, Target, CalendarClock
@@ -52,7 +52,7 @@ export default function BillingPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const toast = useToast();
 
-  const fetchBillingInfo = async () => {
+  const fetchBillingInfo = useCallback(async () => {
     if (!hasBillingAccess) {
       setLoading(false);
       return;
@@ -65,8 +65,8 @@ export default function BillingPage() {
         apiClient.get("/billing/subscription"),
         tenantApi.usage(),
       ]);
-      setPlans(plansRes.data || {});
-      setSubscription(subRes.data || null);
+      setPlans(plansRes.data?.data || plansRes.data || {});
+      setSubscription(subRes.data?.data || subRes.data || null);
       setUsage(usageRes || null);
     } catch (err) {
       console.error("Billing fetch error:", err);
@@ -74,11 +74,11 @@ export default function BillingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [hasBillingAccess]);
 
   useEffect(() => {
     fetchBillingInfo();
-  }, []);
+  }, [fetchBillingInfo]);
 
   const handleUpgrade = async (planKey: string) => {
     try {

@@ -20,19 +20,28 @@ export function HeroSection() {
   return (
     <section id="hero" className="relative min-h-screen flex items-center pt-24 sm:pt-28 pb-16 overflow-hidden"
       style={{
-        background: "#000",
+        backgroundColor: "#F5F0E8",
       }}>
 
-      {/* Video Background */}
+      {/* Video Background with Poster Fallback */}
       <video
         className="absolute inset-0 w-full h-full object-cover"
         autoPlay
         muted
         loop
         playsInline
+        poster="/hero-bg.png"
       >
         <source src="/hero-bg.mp4" type="video/mp4" />
       </video>
+
+      {/* Warm Scrim Overlay for Legibility */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "linear-gradient(180deg, rgba(245, 240, 232, 0.72) 0%, rgba(245, 240, 232, 0.85) 100%)",
+        }}
+      />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full z-10">
         <div className="flex items-center justify-center">
@@ -41,7 +50,7 @@ export function HeroSection() {
             <motion.div initial={{ opacity:0,y:30 }} animate={{ opacity:1,y:0 }} transition={{ duration:0.8, ease:[0.22, 1, 0.36, 1] }}>
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-[1.1] tracking-tight text-balance mb-6">
                 <span style={{
-                  color: "#000000",
+                  color: "#1a1a1a",
                   display: "block"
                 }}>Meet the AI Workforce</span>
                 <span style={{ 
@@ -49,7 +58,7 @@ export function HeroSection() {
                   display: "block"
                 }}>Built for the Way<br/>Business Moves Now</span>
               </h1>
-              <p className="text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto text-gray-700 mb-8">
+              <p className="text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto text-slate-700 mb-8 font-normal">
                 Deploy AI Telecallers, Recruiters, Receptionists and Sales Agents in minutes. Reduce costs, increase conversions and automate operations.
               </p>
             </motion.div>

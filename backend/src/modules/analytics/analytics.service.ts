@@ -28,16 +28,26 @@ export class AnalyticsService {
 
   constructor(private prisma: PrismaService) {}
 
-  /** Agent IDs a manager supervises; null when the actor is not a manager (unscoped). */
+  /** Agent IDs a manager supervises or an agent operates; null when the actor is unscoped. */
   private async managedAgentIds(tenantId: string, actor?: ScopedActor | null): Promise<string[] | null> {
     if (!this.prisma.isConnected) return null;
-    if (!isManager(actor)) return null;
-    const agents = await this.prisma.aIAgent.findMany({
-      where: { tenantId, managerId: actor!.id, deletedAt: null },
-      select: { id: true },
-      take: 1000,
-    });
-    return agents.map((a) => a.id);
+    if (isManager(actor)) {
+      const agents = await this.prisma.aIAgent.findMany({
+        where: { tenantId, managerId: actor!.id, deletedAt: null },
+        select: { id: true },
+        take: 1000,
+      });
+      return agents.map((a) => a.id);
+    }
+    if (actor?.role === 'agent') {
+      const agents = await this.prisma.aIAgent.findMany({
+        where: { tenantId, operatorUserId: actor.id, deletedAt: null },
+        select: { id: true },
+        take: 1000,
+      });
+      return agents.map((a) => a.id);
+    }
+    return null;
   }
 
   /** SQL fragment filtering by the manager's supervised agent IDs (or no-op for non-managers). */

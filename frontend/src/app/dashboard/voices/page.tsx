@@ -97,6 +97,7 @@ export default function VoicesPage() {
       utterance.rate = speed;
       utterance.pitch = pitch;
       utterance.onend = () => setPlayingId(null);
+      utterance.onerror = () => setPlayingId(null);
       window.speechSynthesis.speak(utterance);
     }
   };
