@@ -19,16 +19,34 @@ export class AgentsService {
     private tts: EdgeTTSProvider,
   ) {}
 
-  async create(tenantId: string, userId: string, dto: CreateAgentDto, actor?: ScopedActor) {
-    const agent = await this.prisma.aIAgent.create({
-      data: {
-        ...dto,
-        tenantId,
-        createdById: userId,
-        status: 'draft',
-        ...(actor && isManager(actor) ? { managerId: actor.id } : {}),
-      },
+  private async validateOperator(tenantId: string, operatorUserId: string, actor?: ScopedActor) {
+    if (!actor || isManager(actor)) {
+      throw new ForbiddenException('Only administrators can assign an operator to an agent');
+    }
+    const exists = await this.prisma.user.findFirst({
+      where: { id: operatorUserId, tenantId, role: 'agent', isActive: true },
+      select: { id: true },
     });
+    if (!exists) {
+      throw new ForbiddenException('Operator must be an active agent-role user in this tenant');
+    }
+  }
+
+  async create(tenantId: string, userId: string, dto: CreateAgentDto, actor?: ScopedActor) {
+    const data: any = {
+      ...dto,
+      tenantId,
+      createdById: userId,
+      status: 'draft',
+      ...(actor && isManager(actor) ? { managerId: actor.id } : {}),
+    };
+
+    if (dto.operatorUserId) {
+      await this.validateOperator(tenantId, dto.operatorUserId, actor);
+      data.operatorUserId = dto.operatorUserId;
+    }
+
+    const agent = await this.prisma.aIAgent.create({ data });
 
     this.auditService.log({
       action: 'AI_AGENT_CREATED',
@@ -98,11 +116,20 @@ export class AgentsService {
     });
     if (!existing) throw new NotFoundException('Agent not found');
 
+    const { operatorUserId, ...fields } = dto as any;
+    const data: any = { ...fields };
+    if (operatorUserId !== undefined && operatorUserId !== null) {
+      await this.validateOperator(tenantId, operatorUserId, actor);
+      data.operatorUserId = operatorUserId;
+    } else if (operatorUserId === null) {
+      data.operatorUserId = null;
+    }
+
     const result = await this.prisma.tenantUpdate(
       this.prisma.aIAgent,
       tenantId,
       id,
-      dto as any,
+      data,
     );
 
     this.auditService.log({

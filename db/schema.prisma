@@ -267,6 +267,9 @@ model User {
   // Managers supervise a team of AI agents
   managedAgents   AIAgent[]      @relation("AgentManagedBy")
 
+  // Agent-role users operate AI agents (agent data scoping)
+  operatedAgents  AIAgent[]      @relation("AgentOperatedBy")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -301,6 +304,10 @@ model AIAgent {
   managerId String?
   manager   User?   @relation("AgentManagedBy", fields: [managerId], references: [id], onDelete: SetNull)
 
+  // Human agent-role operator bound to this AI agent (agent data scoping)
+  operatorUserId String?
+  operatorUser   User?   @relation("AgentOperatedBy", fields: [operatorUserId], references: [id], onDelete: SetNull)
+
   // Relations
   calls       Call[]
   campaigns   Campaign[]
@@ -314,6 +321,7 @@ model AIAgent {
   @@index([tenantId])
   @@index([status])
   @@index([managerId])
+  @@index([operatorUserId])
   @@map("AIAgent")
 }
 

@@ -63,6 +63,10 @@ export class CreateAgentDto {
   @ApiPropertyOptional({ type: Object })
   @IsObject() @IsOptional()
   settings?: Record<string, any>;
+
+  @ApiPropertyOptional({ description: 'ID of an agent-role user who operates this agent (governance only)' })
+  @IsString() @IsOptional()
+  operatorUserId?: string;
 }
 
 export class UpdateAgentDto extends PartialType(CreateAgentDto) {}
