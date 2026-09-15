@@ -1,9 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CreateLeadDto, UpdateLeadDto, BulkImportLeadsDto, UpdateLeadStatusDto } from './dto/lead.dto';
 import { LeadStatus } from '@prisma/client';
-import { ScopedActor, leadScope } from '../../common/scope';
+import { ScopedActor, leadScope, agentScope } from '../../common/scope';
 
 @Injectable()
 export class LeadsService {
@@ -14,8 +14,21 @@ export class LeadsService {
     private auditService: AuditService,
   ) {}
 
-  async create(tenantId: string, dto: CreateLeadDto) {
-    const lead = await this.prisma.lead.create({ data: { ...dto, tenantId } });
+  async create(tenantId: string, dto: CreateLeadDto, actor?: ScopedActor) {
+    const { agentId, ...fields } = dto;
+    const data: any = { ...fields, tenantId };
+
+    if (agentId) {
+      const agent = await this.prisma.aIAgent.findFirst({
+        where: { id: agentId, tenantId, deletedAt: null, ...agentScope(actor) },
+        select: { id: true },
+      });
+      if (!agent) throw new ForbiddenException('Agent is not within your management scope');
+      data.assignedAgentId = agentId;
+    }
+    if (actor) data.assignedToId = actor.id;
+
+    const lead = await this.prisma.lead.create({ data });
 
     this.auditService.log({
       action: 'LEAD_CREATED',
@@ -28,7 +41,7 @@ export class LeadsService {
     return lead;
   }
 
-  async bulkImport(tenantId: string, dto: BulkImportLeadsDto) {
+  async bulkImport(tenantId: string, dto: BulkImportLeadsDto, actor?: ScopedActor) {
     if (!this.prisma.isConnected) {
       const mockLeads = dto.leads.map((l, i) => ({
         id: `mock-imported-lead-${i + 1}`,
@@ -47,6 +60,17 @@ export class LeadsService {
       };
     }
 
+    const requestedAgentIds = Array.from(new Set(dto.leads.map(l => l.agentId).filter((id): id is string => !!id)));
+    if (requestedAgentIds.length) {
+      const agents = await this.prisma.aIAgent.findMany({
+        where: { tenantId, deletedAt: null, id: { in: requestedAgentIds }, ...agentScope(actor) },
+        select: { id: true },
+      });
+      const found = new Set(agents.map(a => a.id));
+      const forbidden = requestedAgentIds.filter(id => !found.has(id));
+      if (forbidden.length) throw new ForbiddenException('One or more agents are not within your management scope');
+    }
+
     const data = dto.leads.map(l => ({
       name: l.name,
       phone: l.phone,
@@ -54,6 +78,7 @@ export class LeadsService {
       company: l.company || null,
       source: l.source || 'csv_import',
       status: (l.status as LeadStatus) || LeadStatus.new,
+      ...(l.agentId ? { assignedAgentId: l.agentId, assignedToId: actor?.id } : {}),
       tenantId,
     }));
 
@@ -152,11 +177,23 @@ export class LeadsService {
     });
     if (!existing) throw new NotFoundException('Lead not found');
 
+    const { agentId, ...fields } = dto as any;
+    const data: any = { ...fields };
+
+    if (agentId) {
+      const agent = await this.prisma.aIAgent.findFirst({
+        where: { id: agentId, tenantId, deletedAt: null, ...agentScope(actor) },
+        select: { id: true },
+      });
+      if (!agent) throw new ForbiddenException('Agent is not within your management scope');
+      data.assignedAgentId = agentId;
+    }
+
     const result = await this.prisma.tenantUpdate(
       this.prisma.lead,
       tenantId,
       id,
-      dto as any,
+      data,
     );
 
     this.auditService.log({

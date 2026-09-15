@@ -17,6 +17,12 @@ import { CALL_VIEW, CALL_INITIATE, RECORDING_VIEW } from '../../common/rbac/perm
 export class CallsController {
   constructor(private calls: CallsService) {}
 
+  private static readonly streamHost =
+    process.env.PUBLIC_WSS_HOST ||
+    process.env.PUBLIC_HOST ||
+    process.env.PUBLIC_BASE_URL?.replace(/^https?:\/\//, '') ||
+    'localhost:3001';
+
   @Post()
   @ApiBearerAuth('JWT')
   @Permissions(CALL_INITIATE)
@@ -79,13 +85,13 @@ export class CallsController {
   @Public()
   @Post('twilio/inbound')
   @ApiOperation({ summary: 'Twilio inbound call webhook' })
-  handleTwilioInbound(@Body() body: any, @Res() res: Response) {
+  handleTwilioInbound(@Res() res: Response) {
     res.type('text/xml');
     return res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Say voice="Polly.Aditi">Connecting you to your AI Voice Employee.</Say>
     <Connect>
-        <Stream url="wss://${body.Host || 'localhost:3001'}/calls/twilio/stream" />
+        <Stream url="wss://${CallsController.streamHost}/calls/twilio/stream" />
     </Connect>
 </Response>`);
   }

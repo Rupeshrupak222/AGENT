@@ -6,7 +6,7 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { TenantGuard } from '../../common/guards/tenant.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { ANALYTICS_VIEW } from '../../common/rbac/permissions';
+import { ANALYTICS_VIEW, ANALYTICS_EXPORT } from '../../common/rbac/permissions';
 
 @ApiTags('analytics')
 @ApiBearerAuth('JWT')
@@ -79,5 +79,13 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Lead priority score distribution' })
   priority(@CurrentUser() u: any) {
     return this.svc.getLeadPriorityStats(u.tenantId, u);
+  }
+
+  @Get('executive-report')
+  @Permissions(ANALYTICS_EXPORT)
+  @ApiOperation({ summary: 'Aggregated executive ROI & revenue analytics report payload (requires ANALYTICS_EXPORT)' })
+  @ApiQuery({ name: 'range', enum: ['today', 'week', 'month'], required: false })
+  executiveReport(@CurrentUser() u: any, @Query('range') range?: any) {
+    return this.svc.getExecutiveReport(u.tenantId, range ?? 'month', u);
   }
 }

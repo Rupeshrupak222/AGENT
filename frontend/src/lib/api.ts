@@ -332,6 +332,29 @@ export const analyticsApi = {
     );
     return res.data.data;
   },
+
+  executiveReport: async (
+    range: "today" | "week" | "month" = "month"
+  ): Promise<{
+    range: string;
+    dashboard: DashboardMetrics;
+    funnel: ConversionFunnelItem[];
+    sentiment: SentimentBucket[];
+    agentPerformance: AgentPerformanceItem[];
+    generatedAt: string;
+  }> => {
+    const res = await apiClient.get<ApiResponseWrapper<
+      {
+        range: string;
+        dashboard: DashboardMetrics;
+        funnel: ConversionFunnelItem[];
+        sentiment: SentimentBucket[];
+        agentPerformance: AgentPerformanceItem[];
+        generatedAt: string;
+      }
+    >>("/analytics/executive-report", { params: { range } });
+    return res.data.data;
+  },
 };
 
 // ── Calls API Contracts ───────────────────────────────────────────

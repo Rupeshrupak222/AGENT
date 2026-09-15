@@ -26,14 +26,14 @@ export class LeadsController {
   @Permissions(LEAD_CREATE)
   @ApiOperation({ summary: 'Create a lead' })
   create(@CurrentUser() u: any, @Body() dto: CreateLeadDto) {
-    return this.leads.create(u.tenantId, dto);
+    return this.leads.create(u.tenantId, dto, u);
   }
 
   @Post('bulk')
   @Permissions(LEAD_IMPORT)
   @ApiOperation({ summary: 'Bulk import leads' })
   bulkImport(@CurrentUser() u: any, @Body() dto: BulkImportLeadsDto) {
-    return this.leads.bulkImport(u.tenantId, dto);
+    return this.leads.bulkImport(u.tenantId, dto, u);
   }
 
   @Get('pipeline')

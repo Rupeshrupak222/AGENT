@@ -697,4 +697,21 @@ export class AnalyticsService {
 
     return alerts;
   }
+
+  async getExecutiveReport(tenantId: string, range: 'today' | 'week' | 'month' = 'month', actor?: ScopedActor) {
+    const [dashboard, funnel, sentiment, agentPerformance] = await Promise.all([
+      this.getDashboardMetrics(tenantId, range, actor),
+      this.getConversionFunnel(tenantId, actor),
+      this.getSentimentDistribution(tenantId, actor),
+      this.getAgentPerformance(tenantId, actor),
+    ]);
+    return {
+      range,
+      dashboard,
+      funnel,
+      sentiment,
+      agentPerformance,
+      generatedAt: new Date().toISOString(),
+    };
+  }
 }
