@@ -14,6 +14,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { MetricsService } from '../../common/services/metrics.service';
+import { callScope, campaignScope, ScopedActor } from '../../common/scope';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -146,21 +147,22 @@ export class CallsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { event: 'joined:call', status: 'ok', callId: data.callId };
     }
 
-    // Validate call belongs to this tenant
+    // Validate call belongs to this tenant and matches actor scope
+    const actor: ScopedActor = { id: client.userId!, role: client.role!, tenantId: client.tenantId };
     const call = await this.prisma.call.findFirst({
-      where: { id: data.callId, tenantId: client.tenantId },
+      where: { id: data.callId, tenantId: client.tenantId, ...callScope(actor) },
       select: { id: true, status: true },
     });
 
     if (!call) {
       this.logger.warn(
-        `Cross-tenant call join attempt: user ${client.userId} tried to join call ${data.callId} (tenant: ${client.tenantId})`,
+        `Cross-tenant or out-of-scope call join attempt: user ${client.userId} tried to join call ${data.callId} (tenant: ${client.tenantId})`,
       );
       await this.auditService.log({
         action: 'CROSS_TENANT_ACCESS_ATTEMPT',
         resource: 'call',
         resourceId: data.callId,
-        details: { reason: 'join:call rejected - cross-tenant' },
+        details: { reason: 'join:call rejected - out of scope or not found' },
         tenantId: client.tenantId,
         userId: client.userId,
       });
@@ -189,7 +191,7 @@ export class CallsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return { event: 'left:call', status: 'ok', callId: data.callId };
   }
 
-  // ── Campaign Room Handlers (tenant-isolated) ─────────────────────
+  // ── Campaign Room Handlers (tenant-isolated & scoped) ────────────
 
   @SubscribeMessage('join:campaign')
   async handleJoinCampaign(
@@ -210,21 +212,22 @@ export class CallsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { event: 'joined:campaign', status: 'ok', campaignId: data.campaignId };
     }
 
-    // Validate campaign belongs to this tenant
+    // Validate campaign belongs to this tenant and matches actor scope
+    const actor: ScopedActor = { id: client.userId!, role: client.role!, tenantId: client.tenantId };
     const campaign = await this.prisma.campaign.findFirst({
-      where: { id: data.campaignId, tenantId: client.tenantId },
+      where: { id: data.campaignId, tenantId: client.tenantId, ...campaignScope(actor) },
       select: { id: true, status: true },
     });
 
     if (!campaign) {
       this.logger.warn(
-        `Cross-tenant campaign join attempt: user ${client.userId} tried to join campaign ${data.campaignId} (tenant: ${client.tenantId})`,
+        `Cross-tenant or out-of-scope campaign join attempt: user ${client.userId} tried to join campaign ${data.campaignId} (tenant: ${client.tenantId})`,
       );
       await this.auditService.log({
         action: 'CROSS_TENANT_ACCESS_ATTEMPT',
         resource: 'campaign',
         resourceId: data.campaignId,
-        details: { reason: 'join:campaign rejected - cross-tenant or not found' },
+        details: { reason: 'join:campaign rejected - out of scope or not found' },
         tenantId: client.tenantId,
         userId: client.userId,
       });

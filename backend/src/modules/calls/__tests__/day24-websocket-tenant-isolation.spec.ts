@@ -88,6 +88,22 @@ describe('Day 24 WebSocket Tenant Isolation Suite', () => {
     expect(clientA.join).toHaveBeenCalledWith('campaign:camp-tenant-a');
   });
 
+  it('passes callScope to findFirst in handleJoinCall', async () => {
+    const client = tenantClient('tenant-a', 'agent');
+    mockPrisma.call.findFirst.mockResolvedValue({ id: 'call-1', status: 'completed' });
+
+    const res = await gateway.handleJoinCall(client, { callId: 'call-1' });
+    expect(res).toEqual({ event: 'joined:call', status: 'ok', callId: 'call-1' });
+    expect(mockPrisma.call.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'call-1',
+        tenantId: 'tenant-a',
+        agent: { operatorUser: { id: 'user-tenant-a' } },
+      },
+      select: { id: true, status: true },
+    });
+  });
+
   it('routes campaign events ONLY into the owning tenant rooms (no cross-tenant egress)', () => {
     gateway.broadcastCampaignStatus('camp-tenant-b', 'tenant-b', { status: 'running' });
     gateway.broadcastCampaignProgress('camp-tenant-b', 'tenant-b', { processed: 1, total: 2 });

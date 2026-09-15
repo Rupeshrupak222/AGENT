@@ -28,7 +28,7 @@ import {
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { agentsApi, normalizeApiError, AgentItem, CreateAgentInput } from "@/lib/api";
+import { agentsApi, teamApi, normalizeApiError, AgentItem, CreateAgentInput, TeamMember } from "@/lib/api";
 
 export interface AgentStudioModalProps {
   agent?: AgentItem | null;
@@ -107,6 +107,26 @@ export function EnterpriseAgentStudioModal({
   const [industry, setIndustry] = useState(agent?.settings?.industry || "B2B SaaS & Tech");
   const [tone, setTone] = useState(agent?.settings?.tone || "Professional, empathetic, and persuasive");
   const [description, setDescription] = useState(agent?.settings?.description || "");
+  const [operatorUserId, setOperatorUserId] = useState<string>(agent?.operatorUserId || "");
+  const [operators, setOperators] = useState<TeamMember[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    teamApi
+      .list()
+      .then((members) => {
+        if (mounted) {
+          const agentUsers = (members || []).filter(
+            (m) => m.role === "agent" && m.isActive !== false
+          );
+          setOperators(agentUsers);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // 2. Voice State
   const [voiceId, setVoiceId] = useState(agent?.voiceId || "priya-warm");
@@ -223,6 +243,7 @@ export function EnterpriseAgentStudioModal({
         openingScript: openingScript.trim() || undefined,
         qualificationRules: qualificationRules.trim() || undefined,
         knowledgeBase: knowledgeBase.trim() || undefined,
+        operatorUserId: operatorUserId ? operatorUserId : null,
         settings: {
           industry,
           tone,
@@ -443,6 +464,27 @@ export function EnterpriseAgentStudioModal({
                     className="w-full h-10 px-3 rounded-xl bg-black/40 border border-amber-500/20 text-xs text-white outline-none focus:border-amber-400"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-amber-100/90 mb-1">
+                  Human Operator Binding (Agent Role)
+                </label>
+                <select
+                  value={operatorUserId}
+                  onChange={(e) => setOperatorUserId(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl bg-[#180f0a] border border-amber-500/20 text-xs text-white outline-none focus:border-amber-400"
+                >
+                  <option value="">Unassigned (Admin Managed / Tenant Wide)</option>
+                  {operators.map((op) => (
+                    <option key={op.id} value={op.id}>
+                      {op.name} ({op.email})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-amber-200/50 mt-1">
+                  Optional: Binds this AI Agent to a human agent operator. Scopes calls, leads, and campaigns to this operator when logged in.
+                </p>
               </div>
             </div>
           )}

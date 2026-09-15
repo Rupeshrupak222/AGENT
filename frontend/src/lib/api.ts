@@ -558,6 +558,12 @@ export interface AgentItem {
   qualificationRules?: string;
   knowledgeBase?: string;
   settings?: Record<string, any>;
+  operatorUserId?: string | null;
+  operatorUser?: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
   tenant?: {
     id: string;
     name: string;
@@ -589,6 +595,7 @@ export interface CreateAgentInput {
   qualificationRules?: string;
   knowledgeBase?: string;
   settings?: Record<string, any>;
+  operatorUserId?: string | null;
 }
 
 export const agentsApi = {
@@ -810,6 +817,7 @@ export const leadsApi = {
 
 // ── Team / Users API Contracts ────────────────────────────────────
 export interface TeamMember extends AuthUser {
+  isActive?: boolean;
   createdAt?: string;
   lastLoginAt?: string | null;
 }

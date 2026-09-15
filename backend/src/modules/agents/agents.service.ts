@@ -46,7 +46,12 @@ export class AgentsService {
       data.operatorUserId = dto.operatorUserId;
     }
 
-    const agent = await this.prisma.aIAgent.create({ data });
+    const agent = await this.prisma.aIAgent.create({
+      data,
+      include: {
+        operatorUser: { select: { id: true, name: true, email: true } },
+      },
+    });
 
     this.auditService.log({
       action: 'AI_AGENT_CREATED',
@@ -74,7 +79,10 @@ export class AgentsService {
           ...(filters?.role && { role: filters.role as any }),
         },
         orderBy: { createdAt: 'desc' },
-        include: { _count: { select: { calls: true, campaigns: true } } },
+        include: {
+          _count: { select: { calls: true, campaigns: true } },
+          operatorUser: { select: { id: true, name: true, email: true } },
+        },
       });
     } catch (err: any) {
       this.logger.warn(`Failed to query agents: ${err.message}`);
@@ -94,6 +102,7 @@ export class AgentsService {
             select: { id: true, name: true, slug: true, plan: true },
           },
           _count: { select: { calls: true, campaigns: true } },
+          operatorUser: { select: { id: true, name: true, email: true } },
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -109,6 +118,7 @@ export class AgentsService {
       include: {
         _count: { select: { calls: true } },
         campaigns: { take: 5, orderBy: { createdAt: 'desc' } },
+        operatorUser: { select: { id: true, name: true, email: true } },
       },
     });
     if (!agent) throw new NotFoundException('Agent not found');
@@ -146,7 +156,15 @@ export class AgentsService {
       tenantId,
     });
 
-    return result;
+    const updated = await this.prisma.aIAgent.findFirst({
+      where: { id, tenantId },
+      include: {
+        _count: { select: { calls: true } },
+        operatorUser: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    return updated || result;
   }
 
   async remove(tenantId: string, id: string, actor?: ScopedActor) {

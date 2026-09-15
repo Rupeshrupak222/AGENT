@@ -20,6 +20,7 @@ import {
   Sliders,
   GitBranch,
   ShieldAlert,
+  UserCheck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/Card";
@@ -38,9 +39,11 @@ import { MultilingualCodeSwitchModal } from "@/components/agents/MultilingualCod
 import { KnowledgeCrawlerModal } from "@/components/knowledge/KnowledgeCrawlerModal";
 import {
   agentsApi,
+  teamApi,
   normalizeApiError,
   AgentItem,
   CreateAgentInput,
+  TeamMember,
 } from "@/lib/api";
 import {
   PageTransition,
@@ -154,6 +157,25 @@ function AgentBuilderModal({
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [operators, setOperators] = useState<TeamMember[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    teamApi
+      .list()
+      .then((members) => {
+        if (mounted) {
+          const agentUsers = (members || []).filter(
+            (m) => m.role === "agent" && m.isActive !== false
+          );
+          setOperators(agentUsers);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const [form, setForm] = useState<CreateAgentInput>({
     name: "",
@@ -164,6 +186,7 @@ function AgentBuilderModal({
     openingScript: "",
     qualificationRules: "",
     knowledgeBase: "",
+    operatorUserId: "",
   });
 
   const setField = (k: keyof CreateAgentInput, v: string) => {
@@ -185,6 +208,7 @@ function AgentBuilderModal({
         openingScript: form.openingScript?.trim() || undefined,
         qualificationRules: form.qualificationRules?.trim() || undefined,
         knowledgeBase: form.knowledgeBase?.trim() || undefined,
+        operatorUserId: form.operatorUserId?.trim() || undefined,
       });
       onSuccess();
       onClose();
@@ -434,6 +458,23 @@ function AgentBuilderModal({
                 <span className="text-slate-500 dark:text-white/40 block mb-1">Objective:</span>
                 <p className="text-slate-700 dark:text-white/80 italic">{form.businessGoal}</p>
               </div>
+              <div className="pt-2 border-t border-slate-200 dark:border-white/5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-white/80 mb-1">
+                  Assign Human Operator (Agent Role)
+                </label>
+                <select
+                  value={form.operatorUserId || ""}
+                  onChange={(e) => setField("operatorUserId", e.target.value)}
+                  className="w-full h-9 px-3 rounded-xl bg-white dark:bg-white/[0.05] border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white outline-none focus:border-brand-500"
+                >
+                  <option value="">Unassigned (Admin Managed / Tenant Wide)</option>
+                  {operators.map((op) => (
+                    <option key={op.id} value={op.id}>
+                      {op.name} ({op.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
         </div>
@@ -554,9 +595,20 @@ function AgentCardItem({
               <p className="font-bold text-slate-900 dark:text-white truncate max-w-[140px]">
                 {agent.name}
               </p>
-              <Badge variant={roleColors[agent.role] || "gray"} className="mt-0.5 text-[10px]">
-                {roleLabels[agent.role] || agent.role}
-              </Badge>
+              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                <Badge variant={roleColors[agent.role] || "gray"} className="text-[10px]">
+                  {roleLabels[agent.role] || agent.role}
+                </Badge>
+                {agent.operatorUser && (
+                  <span
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 max-w-[130px] truncate"
+                    title={`Operator: ${agent.operatorUser.name || agent.operatorUser.email}`}
+                  >
+                    <UserCheck className="w-2.5 h-2.5 flex-shrink-0" />
+                    <span className="truncate">{agent.operatorUser.name || agent.operatorUser.email}</span>
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
