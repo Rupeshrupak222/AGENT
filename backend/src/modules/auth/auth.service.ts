@@ -20,6 +20,26 @@ export class AuthService {
 
   // ── Register ────────────────────────────────────────────────
   async register(dto: RegisterDto) {
+    if (!this.prisma.isConnected && this.config.get('NODE_ENV') !== 'production') {
+      const mockUser: any = {
+        id: `user-dev-${Date.now()}`,
+        name: dto.name,
+        email: dto.email.toLowerCase(),
+        role: 'company_admin',
+        tenantId: `tenant-dev-${Date.now()}`,
+        isActive: true,
+      };
+      const mockTenant: any = {
+        id: mockUser.tenantId,
+        name: dto.companyName,
+        slug: `${dto.companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`,
+        plan: dto.plan || 'starter',
+        isActive: true,
+      };
+      const tokens = await this.generateTokens(mockUser);
+      return { ...tokens, user: this.sanitize(mockUser), tenant: mockTenant };
+    }
+
     const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (exists) throw new ConflictException('Email already registered');
 
