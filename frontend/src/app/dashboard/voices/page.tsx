@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import {
   Mic2, Play, Pause, Volume2, Sliders, Globe2,
-  Sparkles, Check, ArrowRight, Radio, Loader2
+  Check, ArrowRight, Radio, Loader2
 } from "lucide-react";
 import { WaveAnimation } from "@/components/ui/WaveAnimation";
 import { voicesApi, VoiceProfile as ApiVoiceProfile } from "@/lib/api";
@@ -112,7 +112,6 @@ export default function VoicesPage() {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" />
             Demo Preview · Browser TTS
           </span>
         </div>

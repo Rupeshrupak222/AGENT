@@ -120,6 +120,9 @@ async findAll(tenantId: string, query: {
     sortBy?: string; sortOrder?: 'asc' | 'desc';
     page?: number; limit?: number;
   }, actor?: ScopedActor) {
+    if (!this.prisma.isConnected) {
+      return { items: [], total: 0, page: Number(query?.page) || 1, limit: Number(query?.limit) || 20 };
+    }
     try {
       const pageNum  = Math.max(1, Number(query?.page) || 1);
       const limitNum = Math.max(1, Math.min(100, Number(query?.limit) || 20));
@@ -179,6 +182,16 @@ async findAll(tenantId: string, query: {
   }
 
   async getMetrics(tenantId: string, range: 'today' | 'week' | 'month' = 'today', actor?: ScopedActor) {
+    if (!this.prisma.isConnected) {
+      return {
+        total: 0,
+        completed: 0,
+        missed: 0,
+        failed: 0,
+        connectRate: '0',
+        avgDuration: 0,
+      };
+    }
     try {
       const now   = new Date();
       const start = range === 'today'

@@ -9,7 +9,6 @@ import {
   Volume2,
   VolumeX,
   Radio,
-  Sparkles,
   Send,
   Bot,
   User,
@@ -531,7 +530,6 @@ export function LiveVoiceSession({
 
       {supervisorNotice && (
         <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs">
-          <Sparkles className="w-4 h-4 flex-shrink-0" />
           <span>{supervisorNotice}</span>
         </div>
       )}
@@ -827,7 +825,7 @@ export function LiveVoiceSession({
                 onClick={stopAllAIAudio}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-600/20 border border-amber-500/40 hover:bg-amber-600/30 text-amber-300 font-semibold text-xs transition-all"
               >
-                <Sparkles className="w-3.5 h-3.5" /> Interrupt AI (Barge-in)
+                Interrupt AI (Barge-in)
               </button>
             )}
           </div>

@@ -61,6 +61,9 @@ export class AgentsService {
   }
 
   async findAll(tenantId: string, filters?: { status?: string; role?: string }, actor?: ScopedActor) {
+    if (!this.prisma.isConnected) {
+      return [];
+    }
     try {
       return await this.prisma.aIAgent.findMany({
         where: {
@@ -80,6 +83,9 @@ export class AgentsService {
   }
 
   async findAllPlatform() {
+    if (!this.prisma.isConnected) {
+      return [];
+    }
     try {
       return await this.prisma.aIAgent.findMany({
         where: { deletedAt: null },
@@ -215,6 +221,15 @@ export class AgentsService {
   }
 
   async getStats(tenantId: string, id: string, actor?: ScopedActor) {
+    if (!this.prisma.isConnected) {
+      return {
+        totalCalls: 0,
+        connectedCalls: 0,
+        qualifiedLeads: 0,
+        conversionRate: '0',
+        avgCallDuration: 0,
+      };
+    }
     try {
       await this.findOne(tenantId, id, actor);
       const [totalCalls, connectedCalls, qualifiedLeads] = await Promise.all([

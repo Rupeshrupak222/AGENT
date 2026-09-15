@@ -7,7 +7,6 @@ import {
   X,
   Bot,
   User,
-  Sparkles,
   CheckCircle2,
   AlertTriangle,
   Play,
@@ -231,7 +230,7 @@ export function ObjectionArenaModal({
               <div className="p-4 rounded-2xl bg-slate-950 border border-white/10 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Recommended Agent Prompt Instruction
+                    Recommended Agent Prompt Instruction
                   </span>
                   <button
                     type="button"

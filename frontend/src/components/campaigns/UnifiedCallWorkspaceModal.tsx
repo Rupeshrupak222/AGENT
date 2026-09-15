@@ -10,7 +10,6 @@ import {
   Mic,
   FileText,
   Brain,
-  Sparkles,
   CheckCircle2,
   XCircle,
   AlertCircle,
@@ -563,7 +562,6 @@ export function UnifiedCallWorkspaceModal({
                 <div className="lg:col-span-6 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-purple-500" />
                       <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-white/60">
                         Post-Call AI Intelligence (Gemini)
                       </h4>
@@ -734,7 +732,6 @@ export function UnifiedCallWorkspaceModal({
                             disabled={retryingAnalysis}
                             className="px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-medium text-xs flex items-center gap-1.5"
                           >
-                            <Sparkles className="w-3.5 h-3.5" />
                             <span>Analyze Now with Gemini</span>
                           </button>
                         )}

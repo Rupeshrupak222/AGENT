@@ -10,7 +10,6 @@ import {
   RotateCcw,
   Send,
   X,
-  Sparkles,
   Zap,
   Bot,
   User,
@@ -681,7 +680,7 @@ export function AgentVoiceSimulatorModal({
                       </button>
                       {m.latencyMs && (
                         <span className="text-[10px] font-mono text-white/40">
-                          ⚡ {m.latencyMs}ms
+                          {m.latencyMs}ms
                         </span>
                       )}
                     </div>
@@ -768,7 +767,7 @@ export function AgentVoiceSimulatorModal({
               onChange={(e) => setInputText(e.target.value)}
               placeholder={
                 isRecording
-                  ? "🎙️ Listening to your microphone... speak now"
+                  ? "Listening to your microphone... speak now"
                   : "Speak into mic or type a test message to agent..."
               }
               disabled={isProcessing}

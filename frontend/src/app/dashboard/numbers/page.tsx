@@ -14,7 +14,6 @@ import {
   Bot,
   Phone,
   Search,
-  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -235,7 +234,6 @@ export default function NumbersPage() {
             onClick={() => setShowGuide(true)}
             className="inline-flex items-center gap-2 h-10 px-3.5 rounded-xl text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-700 dark:text-amber-300 transition-colors"
           >
-            <Sparkles className="w-4 h-4 text-amber-500" />
             Provider Webhooks Guide
           </button>
           <button
@@ -376,7 +374,6 @@ export default function NumbersPage() {
             <div className="p-5 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-amber-500" />
                   Telephony Gateway & Webhooks Guide
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-white/50 mt-0.5">
@@ -396,7 +393,7 @@ export default function NumbersPage() {
               <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
-                    🇮🇳 Exotel Telephony (India DLT & Virtual Numbers)
+                    Exotel Telephony (India DLT & Virtual Numbers)
                   </span>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-200">
                     Recommended for India
@@ -423,7 +420,7 @@ export default function NumbersPage() {
               <div className="p-4 rounded-xl border border-sky-500/30 bg-sky-500/5 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
-                    🌐 Twilio Telephony (US & Global Numbers)
+                    Twilio Telephony (US & Global Numbers)
                   </span>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-800 dark:text-sky-200">
                     Global PSTN

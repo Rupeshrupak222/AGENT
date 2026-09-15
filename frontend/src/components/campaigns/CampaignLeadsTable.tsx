@@ -5,7 +5,6 @@ import {
   Phone,
   PhoneCall,
   Clock,
-  Sparkles,
   Search,
   Filter,
   ChevronLeft,
@@ -252,7 +251,6 @@ export function CampaignLeadsTable({
                           onClick={() => onSelectCall(cl.lastCallId!)}
                           className="px-2.5 py-1 rounded-lg text-xs font-semibold text-brand-600 dark:text-brand-400 bg-brand-500/10 hover:bg-brand-500/20 transition-colors inline-flex items-center gap-1"
                         >
-                          <Sparkles className="w-3 h-3" />
                           <span>Intelligence</span>
                         </button>
                       ) : (

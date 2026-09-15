@@ -707,19 +707,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {((user?.role || "").toLowerCase().includes("super") || (user?.role || "").toLowerCase() === "owner") && (
                   <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/40 shadow-sm shadow-amber-500/20">
                     <Shield className="w-3 h-3 text-amber-400" />
-                    👑 Super Admin (Platform Owner)
+                    Super Admin (Platform Owner)
                   </span>
                 )}
                 {(user?.role || "").toLowerCase().includes("admin") && !(user?.role || "").toLowerCase().includes("super") && (
                   <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-300 border border-rose-500/40 shadow-sm shadow-rose-500/20">
                     <Building2 className="w-3 h-3 text-rose-400" />
-                    🏢 Company Admin
+                    Company Admin
                   </span>
                 )}
                 {((user?.role || "").toLowerCase().includes("manager") || (user?.role || "").toLowerCase().includes("supervisor")) && (
                   <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/40 shadow-sm shadow-purple-500/20">
                     <Users className="w-3 h-3 text-purple-400" />
-                    👔 Operations Lead
+                    Operations Lead
                   </span>
                 )}
 

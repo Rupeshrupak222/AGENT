@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { Check, X, Scale, Sparkles } from "lucide-react";
+import { Check, X, Scale } from "lucide-react";
 
 interface ComparisonRow {
   feature: string;
@@ -97,7 +97,6 @@ export function ComparisonSection() {
               Operational Criteria
             </div>
             <div className="col-span-4 sm:col-span-4 text-center sm:text-left text-[#7F5539] flex items-center gap-1.5 justify-center sm:justify-start">
-              <Sparkles className="w-4 h-4 text-[#8B5A2B]" />
               <span className="font-extrabold text-sm sm:text-base">AgentCall AI</span>
             </div>
             <div className="col-span-4 sm:col-span-4 text-center sm:text-left text-slate-500 uppercase tracking-wider text-xs">

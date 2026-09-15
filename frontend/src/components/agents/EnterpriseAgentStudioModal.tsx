@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
   Bot,
-  Sparkles,
   Mic,
   Cpu,
   FileText,
@@ -871,7 +870,6 @@ export function EnterpriseAgentStudioModal({
             <div className="space-y-4 p-4 rounded-2xl bg-black/40 border border-amber-500/20">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-white flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-400" />
                   Live Conversational Tester
                 </span>
                 {testLatency && (

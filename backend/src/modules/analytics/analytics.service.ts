@@ -30,6 +30,7 @@ export class AnalyticsService {
 
   /** Agent IDs a manager supervises; null when the actor is not a manager (unscoped). */
   private async managedAgentIds(tenantId: string, actor?: ScopedActor | null): Promise<string[] | null> {
+    if (!this.prisma.isConnected) return null;
     if (!isManager(actor)) return null;
     const agents = await this.prisma.aIAgent.findMany({
       where: { tenantId, managerId: actor!.id, deletedAt: null },
@@ -46,6 +47,19 @@ export class AnalyticsService {
   }
 
   async getDashboardMetrics(tenantId: string, range: 'today' | 'week' | 'month' = 'week', actor?: ScopedActor) {
+    if (!this.prisma.isConnected) {
+      return {
+        totalCalls: 0,
+        connected: 0,
+        qualified: 0,
+        appointments: 0,
+        closedWon: 0,
+        connectRate: 0,
+        conversionRate: 0,
+        avgDuration: 0,
+        avgSentiment: 0,
+      };
+    }
     try {
       const now   = new Date();
       const start = range === 'today'
@@ -101,6 +115,7 @@ export class AnalyticsService {
   }
 
   async getCallTrend(tenantId: string, days = 7, actor?: ScopedActor) {
+    if (!this.prisma.isConnected) return [];
     try {
       const agentIds = await this.managedAgentIds(tenantId, actor);
       if (agentIds && agentIds.length === 0) return [];
@@ -126,6 +141,7 @@ export class AnalyticsService {
   }
 
   async getAgentPerformance(tenantId: string, actor?: ScopedActor) {
+    if (!this.prisma.isConnected) return [];
     try {
       const agents = await this.prisma.aIAgent.findMany({
         where: { tenantId, deletedAt: null, ...agentScope(actor) },
@@ -162,6 +178,7 @@ export class AnalyticsService {
   }
 
   async getConversionFunnel(tenantId: string, actor?: ScopedActor) {
+    if (!this.prisma.isConnected) return [];
     try {
       const statuses = ['new','contacted','interested','qualified','appointment','closed_won','closed_lost'];
       const counts   = await this.prisma.lead.groupBy({
@@ -342,6 +359,7 @@ export class AnalyticsService {
   }
 
   private async computeKpis(tenantId: string, range: DateRange, agentIds: string[] | null = null) {
+    if (!this.prisma.isConnected) return { ...this.EMPTY_KPIS };
     const agentFilter = agentIds ? { agentId: { in: agentIds } } : {};
     const leadFilter = agentIds ? { assignedAgentId: { in: agentIds } } : {};
     const where = { tenantId, ...agentFilter, startedAt: { gte: range.from, lte: range.to } };
@@ -389,6 +407,7 @@ export class AnalyticsService {
   }
 
   private async computeTimeSeries(tenantId: string, range: DateRange, granularity: DashboardGranularity, agentIds: string[] | null = null) {
+    if (!this.prisma.isConnected) return [];
     if (agentIds && agentIds.length === 0) return [];
     const sqlGranularity = GRANULARITY_SQL[granularity];
     const rows: any[] = await this.prisma.$queryRaw`
@@ -420,6 +439,7 @@ export class AnalyticsService {
   }
 
   private async computeOutcomes(tenantId: string, range: DateRange, agentIds: string[] | null = null) {
+    if (!this.prisma.isConnected) return [];
     const callWhere = { tenantId, ...(agentIds ? { agentId: { in: agentIds } } : {}), startedAt: { gte: range.from, lte: range.to }, outcome: { not: null, notIn: ['', 'unknown', 'unknown_outcome'] } };
     const [callOutcomes, analysisOutcomes] = await Promise.all([
       this.prisma.call.groupBy({
@@ -450,6 +470,7 @@ export class AnalyticsService {
   }
 
   private async computeAgentPerformance(tenantId: string, range: DateRange, agentIds: string[] | null = null) {
+    if (!this.prisma.isConnected) return [];
     if (agentIds && agentIds.length === 0) return [];
 
     const [agents, stats, qualifiedByAgent] = await Promise.all([
@@ -545,6 +566,7 @@ export class AnalyticsService {
   }
 
   private async computeActiveCampaigns(tenantId: string, agentIds: string[] | null = null) {
+    if (!this.prisma.isConnected) return [];
     const campaigns = await this.prisma.campaign.findMany({
       where: { tenantId, ...(agentIds ? { agentId: { in: agentIds } } : {}), status: { in: ['running', 'scheduled', 'paused'] } },
       select: {
@@ -590,6 +612,7 @@ export class AnalyticsService {
   }
 
   private async computeFacts(tenantId: string, agentIds: string[] | null = null) {
+    if (!this.prisma.isConnected) return { activeAgents: 0, teamMembers: 1 };
     const [activeAgents, teamMembers] = await Promise.all([
       this.prisma.aIAgent.count({ where: { tenantId, deletedAt: null, status: 'active', ...(agentIds ? { id: { in: agentIds } } : {}) } }),
       this.prisma.user.count({ where: { tenantId, isActive: true } }),
@@ -598,6 +621,7 @@ export class AnalyticsService {
   }
 
   private async computeAlerts(tenantId: string, agentIds: string[] | null = null) {
+    if (!this.prisma.isConnected) return [];
     const alerts: Array<{
       id: string; type: string; severity: DashboardSeverity; title: string; message: string; createdAt: string;
     }> = [];

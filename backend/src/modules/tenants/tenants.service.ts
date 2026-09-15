@@ -1,12 +1,22 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PLAN_LIMITS, isUnlimited } from '../../common/plans';
+import { Plan } from '@prisma/client';
 
 @Injectable()
 export class TenantsService {
   constructor(private prisma: PrismaService) {}
 
   async findOne(id: string) {
+    if (!this.prisma.isConnected) {
+      return {
+        id,
+        name: 'Demo Workspace',
+        slug: 'demo',
+        plan: 'growth',
+        _count: { users: 1, agents: 0 },
+      } as any;
+    }
     const t = await this.prisma.tenant.findUnique({
       where:   { id },
       include: { _count: { select: { users: true, agents: true } } },
@@ -21,6 +31,32 @@ export class TenantsService {
   }
 
   async getUsage(id: string) {
+    if (!this.prisma.isConnected) {
+      const plan = 'growth';
+      const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.growth;
+      return {
+        plan,
+        planName: limits.name,
+        agentCount: 0,
+        userCount: 1,
+        leadCount: 0,
+        campaignCount: 0,
+        appointmentCount: 0,
+        callCount: 0,
+        analysisCount: 0,
+        minutesUsed: 0,
+        limits: {
+          agents:  limits.agents,
+          members: limits.members,
+          calls:   limits.callsPerMonth,
+        },
+        usage: {
+          agents:  { used: 0, limit: limits.agents,  unlimited: isUnlimited(limits.agents),  pct: 0 },
+          members: { used: 1, limit: limits.members, unlimited: isUnlimited(limits.members), pct: 0 },
+          calls:   { used: 0, limit: limits.callsPerMonth, unlimited: isUnlimited(limits.callsPerMonth), pct: 0 },
+        },
+      };
+    }
     const tenant = await this.findOne(id);
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -36,7 +72,7 @@ export class TenantsService {
       this.prisma.campaign.count({ where: { tenantId: id, status: { not: 'cancelled' } } }),
     ]);
 
-    const plan = tenant.plan;
+    const plan: Plan = (tenant.plan as Plan) || 'growth';
     const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.growth;
 
     const minutesUsed = Math.round(((minutesAgg._sum.duration ?? 0) / 60) * 10) / 10;

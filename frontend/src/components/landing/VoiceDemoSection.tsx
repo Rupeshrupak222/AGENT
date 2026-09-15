@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, Volume2, Sparkles, PhoneCall, CheckCircle2, ShieldCheck, Zap } from "lucide-react";
+import { Play, Pause, Volume2, PhoneCall, CheckCircle2, ShieldCheck, Zap } from "lucide-react";
 
 interface Scenario {
   id: string;
@@ -142,7 +142,7 @@ export function VoiceDemoSection() {
         >
           <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold mb-5 border backdrop-blur-sm"
             style={{ background: "#F5EDE4", color: "#6F4428", borderColor: "#DDB892" }}>
-            <Sparkles className="w-3.5 h-3.5" style={{ color: "#8B5A2B" }}/>Interactive Audio Player
+            Interactive Audio Player
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-4 tracking-tight" style={{ color: "#1a1a1a" }}>
             Listen to Our AI in <span style={{ color: "#7F5539" }}>Real Conversations</span>

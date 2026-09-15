@@ -89,37 +89,46 @@ export class CampaignsService implements OnModuleInit {
 
   // ── 2. Find All Campaigns (Tenant-Scoped) ───────────────────
   async findAll(tenantId: string, query: CampaignQueryDto, actor?: ScopedActor) {
-    const page = Math.max(1, Number(query.page) || 1);
-    const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
+    const page = Math.max(1, Number(query?.page) || 1);
+    const limit = Math.max(1, Math.min(100, Number(query?.limit) || 20));
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      tenantId,
-      ...campaignScope(actor),
-      ...(query.status && { status: query.status }),
-      ...(query.search && {
-        OR: [
-          { name: { contains: query.search, mode: 'insensitive' } },
-          { description: { contains: query.search, mode: 'insensitive' } },
-        ],
-      }),
-    };
+    if (!this.prisma.isConnected) {
+      return { items: [], total: 0, page, limit };
+    }
 
-    const [items, total] = await Promise.all([
-      this.prisma.campaign.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          agent: { select: { id: true, name: true, role: true, status: true } },
-          _count: { select: { leads: true, calls: true } },
-        },
-      }),
-      this.prisma.campaign.count({ where }),
-    ]);
+    try {
+      const where: any = {
+        tenantId,
+        ...campaignScope(actor),
+        ...(query.status && { status: query.status }),
+        ...(query.search && {
+          OR: [
+            { name: { contains: query.search, mode: 'insensitive' } },
+            { description: { contains: query.search, mode: 'insensitive' } },
+          ],
+        }),
+      };
 
-    return { items, total, page, limit };
+      const [items, total] = await Promise.all([
+        this.prisma.campaign.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            agent: { select: { id: true, name: true, role: true, status: true } },
+            _count: { select: { leads: true, calls: true } },
+          },
+        }),
+        this.prisma.campaign.count({ where }),
+      ]);
+
+      return { items, total, page, limit };
+    } catch (err: any) {
+      this.logger.warn(`Failed to query campaigns: ${err.message}`);
+      return { items: [], total: 0, page, limit };
+    }
   }
 
   // ── 3. Find One Campaign ────────────────────────────────────
@@ -228,52 +237,61 @@ export class CampaignsService implements OnModuleInit {
 
   // ── 7. Get Campaign Leads ───────────────────────────────────
   async getLeads(tenantId: string, campaignId: string, query: { status?: string; page?: number; limit?: number }, actor?: ScopedActor) {
-    await this.findOne(tenantId, campaignId, actor);
-
-    const page = Math.max(1, Number(query.page) || 1);
-    const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
+    const page = Math.max(1, Number(query?.page) || 1);
+    const limit = Math.max(1, Math.min(100, Number(query?.limit) || 20));
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      campaignId,
-      ...(query.status && { status: query.status }),
-    };
+    if (!this.prisma.isConnected) {
+      return { items: [], total: 0, page, limit };
+    }
 
-    const [items, total] = await Promise.all([
-      this.prisma.campaignLead.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          lead: { select: { id: true, name: true, phone: true, email: true, company: true, status: true } },
-          lastCall: {
-            select: {
-              id: true,
-              status: true,
-              duration: true,
-              startedAt: true,
-              recordingUrl: true,
-              outcome: true,
-              analysis: {
-                select: {
-                  leadScore: true,
-                  intent: true,
-                  sentiment: true,
-                  summary: true,
-                  processingStatus: true,
-                  qualification: true,
-                  appointmentDetected: true,
+    try {
+      await this.findOne(tenantId, campaignId, actor);
+
+      const where: any = {
+        campaignId,
+        ...(query?.status && { status: query.status }),
+      };
+
+      const [items, total] = await Promise.all([
+        this.prisma.campaignLead.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            lead: { select: { id: true, name: true, phone: true, email: true, company: true, status: true } },
+            lastCall: {
+              select: {
+                id: true,
+                status: true,
+                duration: true,
+                startedAt: true,
+                recordingUrl: true,
+                outcome: true,
+                analysis: {
+                  select: {
+                    leadScore: true,
+                    intent: true,
+                    sentiment: true,
+                    summary: true,
+                    processingStatus: true,
+                    qualification: true,
+                    appointmentDetected: true,
+                  },
                 },
               },
             },
           },
-        },
-      }),
-      this.prisma.campaignLead.count({ where }),
-    ]);
+        }),
+        this.prisma.campaignLead.count({ where }),
+      ]);
 
-    return { items, total, page, limit };
+      return { items, total, page, limit };
+    } catch (err: any) {
+      this.logger.warn(`Failed to query campaign leads: ${err.message}`);
+      return { items: [], total: 0, page, limit };
+    }
   }
 
   // ── 8. Start Campaign ───────────────────────────────────────
@@ -854,27 +872,52 @@ export class CampaignsService implements OnModuleInit {
   }
 
   async getMetrics(tenantId: string, campaignId: string) {
-    const leads = await this.prisma.campaignLead.findMany({
-      where: { campaignId },
-      select: { status: true },
-    });
+    if (!this.prisma.isConnected) {
+      return {
+        totalLeads: 0,
+        completed: 0,
+        failed: 0,
+        skipped: 0,
+        calling: 0,
+        connectRate: 0,
+        conversionRate: 0,
+      };
+    }
 
-    const totalLeads = leads.length;
-    const completed = leads.filter((l) => l.status === 'completed').length;
-    const failed = leads.filter((l) => l.status === 'failed').length;
-    const skipped = leads.filter((l) => l.status === 'skipped').length;
-    const calling = leads.filter((l) => l.status === 'calling').length;
-    const connectRate = totalLeads > 0 ? Number(((completed / totalLeads) * 100).toFixed(1)) : 0;
-    const conversionRate = completed > 0 ? Number(((completed / totalLeads) * 100).toFixed(1)) : 0;
+    try {
+      const leads = await this.prisma.campaignLead.findMany({
+        where: { campaignId },
+        select: { status: true },
+      });
 
-    return {
-      totalLeads,
-      completed,
-      failed,
-      skipped,
-      calling,
-      connectRate,
-      conversionRate,
-    };
+      const totalLeads = leads.length;
+      const completed = leads.filter((l) => l.status === 'completed').length;
+      const failed = leads.filter((l) => l.status === 'failed').length;
+      const skipped = leads.filter((l) => l.status === 'skipped').length;
+      const calling = leads.filter((l) => l.status === 'calling').length;
+      const connectRate = totalLeads > 0 ? Number(((completed / totalLeads) * 100).toFixed(1)) : 0;
+      const conversionRate = completed > 0 ? Number(((completed / totalLeads) * 100).toFixed(1)) : 0;
+
+      return {
+        totalLeads,
+        completed,
+        failed,
+        skipped,
+        calling,
+        connectRate,
+        conversionRate,
+      };
+    } catch (err: any) {
+      this.logger.warn(`Failed to query campaign metrics: ${err.message}`);
+      return {
+        totalLeads: 0,
+        completed: 0,
+        failed: 0,
+        skipped: 0,
+        calling: 0,
+        connectRate: 0,
+        conversionRate: 0,
+      };
+    }
   }
 }

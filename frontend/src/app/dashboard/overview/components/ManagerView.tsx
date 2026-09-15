@@ -21,7 +21,6 @@ import {
   Download,
   Check,
   ShieldCheck,
-  Sparkles,
   Bot,
   Volume2,
   Play,
@@ -377,7 +376,7 @@ export function ManagerView({
               Operations Command Center
             </h1>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/30">
-              <Sparkles className="w-3 h-3" /> Manager
+              Manager
             </span>
           </div>
           <p className="text-sm text-slate-500 dark:text-white/50 mt-1">
@@ -893,10 +892,10 @@ export function ManagerView({
         {/* Shift Language Filter Tabs */}
         <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 overflow-x-auto">
           {[
-            { id: "all", label: "All Regional Shifts", flag: "🌐", count: shiftLanguageCounts.all },
-            { id: "english", label: "English Calling Queue", flag: "🇬🇧", count: shiftLanguageCounts.english },
-            { id: "hindi", label: "Hindi Calling Queue (हिन्दी)", flag: "🇮🇳", count: shiftLanguageCounts.hindi },
-            { id: "telugu", label: "Telugu Calling Queue (తెలుగు)", flag: "🇮🇳", count: shiftLanguageCounts.telugu },
+            { id: "all", label: "All Regional Shifts", count: shiftLanguageCounts.all },
+            { id: "english", label: "English Calling Queue", count: shiftLanguageCounts.english },
+            { id: "hindi", label: "Hindi Calling Queue (हिन्दी)", count: shiftLanguageCounts.hindi },
+            { id: "telugu", label: "Telugu Calling Queue (తెలుగు)", count: shiftLanguageCounts.telugu },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -907,7 +906,6 @@ export function ManagerView({
                   : "text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/5"
               }`}
             >
-              <span>{tab.flag}</span>
               <span>{tab.label}</span>
               <span
                 className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono ${
@@ -955,15 +953,15 @@ export function ManagerView({
                       {/* Language Badge */}
                       {isTelugu ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30 flex-shrink-0">
-                          🇮🇳 Telugu · తెలుగు
+                          Telugu · తెలుగు
                         </span>
                       ) : isHindi ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 flex-shrink-0">
-                          🇮🇳 Hindi · हिन्दी
+                          Hindi · हिन्दी
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/15 text-blue-600 dark:text-blue-300 border border-blue-500/30 flex-shrink-0">
-                          🇬🇧 English
+                          English
                         </span>
                       )}
                     </div>

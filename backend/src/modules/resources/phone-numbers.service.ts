@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -13,6 +14,8 @@ const PHONE_PROVIDERS = ['twilio', 'exotel', 'sandbox'];
 
 @Injectable()
 export class PhoneNumbersService {
+  private readonly logger = new Logger(PhoneNumbersService.name);
+
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
@@ -27,30 +30,40 @@ export class PhoneNumbersService {
   }) {
     const pageNum = Math.max(1, Number(query?.page) || 1);
     const limitNum = Math.max(1, Math.min(100, Number(query?.limit) || 50));
-    const where: Prisma.PhoneNumberWhereInput = { tenantId };
-    if (query?.status) where.status = query.status;
-    if (query?.provider) where.provider = query.provider;
-    if (query?.search?.trim()) {
-      where.OR = [
-        { number: { contains: query.search.trim() } },
-        { label: { contains: query.search.trim(), mode: 'insensitive' } },
-      ];
+
+    if (!this.prisma.isConnected) {
+      return { items: [], total: 0, page: pageNum, limit: limitNum };
     }
 
-    const [items, total] = await Promise.all([
-      this.prisma.phoneNumber.findMany({
-        where,
-        skip: (pageNum - 1) * limitNum,
-        take: limitNum,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          assignedAgent: { select: { id: true, name: true, role: true, status: true } },
-        },
-      }),
-      this.prisma.phoneNumber.count({ where }),
-    ]);
+    try {
+      const where: Prisma.PhoneNumberWhereInput = { tenantId };
+      if (query?.status) where.status = query.status;
+      if (query?.provider) where.provider = query.provider;
+      if (query?.search?.trim()) {
+        where.OR = [
+          { number: { contains: query.search.trim() } },
+          { label: { contains: query.search.trim(), mode: 'insensitive' } },
+        ];
+      }
 
-    return { items, total, page: pageNum, limit: limitNum };
+      const [items, total] = await Promise.all([
+        this.prisma.phoneNumber.findMany({
+          where,
+          skip: (pageNum - 1) * limitNum,
+          take: limitNum,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            assignedAgent: { select: { id: true, name: true, role: true, status: true } },
+          },
+        }),
+        this.prisma.phoneNumber.count({ where }),
+      ]);
+
+      return { items, total, page: pageNum, limit: limitNum };
+    } catch (err: any) {
+      this.logger?.warn?.(`Failed to query phone numbers: ${err.message}`);
+      return { items: [], total: 0, page: pageNum, limit: limitNum };
+    }
   }
 
   async create(tenantId: string, userId: string, dto: {

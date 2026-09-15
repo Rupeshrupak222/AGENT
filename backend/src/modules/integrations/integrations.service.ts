@@ -22,36 +22,45 @@ export class IntegrationsService {
    * List all configured integrations for tenant.
    */
   async listIntegrations(tenantId: string) {
-    const records = await this.prisma.integration.findMany({
-      where: { tenantId },
-      select: {
-        id: true,
-        provider: true,
-        isActive: true,
-        settings: true,
-        lastSyncAt: true,
-        createdAt: true,
-        updatedAt: true,
-        // Omit raw sensitive credentials for security; indicate presence
-        credentials: true,
-      },
-    });
+    if (!this.prisma.isConnected) {
+      return [];
+    }
 
-    return records.map((r) => {
-      const creds = (r.credentials as Record<string, any>) || {};
-      const hasKey = Boolean(creds.apiKey || creds.accessToken || creds.token);
-      return {
-        id: r.id,
-        provider: r.provider,
-        isActive: r.isActive,
-        settings: r.settings,
-        lastSyncAt: r.lastSyncAt,
-        createdAt: r.createdAt,
-        updatedAt: r.updatedAt,
-        isConfigured: hasKey,
-        maskedKey: hasKey ? '••••••••' : null,
-      };
-    });
+    try {
+      const records = await this.prisma.integration.findMany({
+        where: { tenantId },
+        select: {
+          id: true,
+          provider: true,
+          isActive: true,
+          settings: true,
+          lastSyncAt: true,
+          createdAt: true,
+          updatedAt: true,
+          // Omit raw sensitive credentials for security; indicate presence
+          credentials: true,
+        },
+      });
+
+      return records.map((r) => {
+        const creds = (r.credentials as Record<string, any>) || {};
+        const hasKey = Boolean(creds.apiKey || creds.accessToken || creds.token);
+        return {
+          id: r.id,
+          provider: r.provider,
+          isActive: r.isActive,
+          settings: r.settings,
+          lastSyncAt: r.lastSyncAt,
+          createdAt: r.createdAt,
+          updatedAt: r.updatedAt,
+          isConfigured: hasKey,
+          maskedKey: hasKey ? '••••••••' : null,
+        };
+      });
+    } catch (err: any) {
+      this.logger.warn(`Failed to query integrations: ${err.message}`);
+      return [];
+    }
   }
 
   /**

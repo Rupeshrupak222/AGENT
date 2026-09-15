@@ -382,24 +382,36 @@ export class AutomationsService {
     tenantId: string,
     query: { type?: string; status?: string; page?: number; limit?: number; leadId?: string },
   ) {
-    const { page = 1, limit = 20, type, status, leadId } = query;
-    const where: any = { tenantId };
-    if (type) where.type = type;
-    if (status) where.status = status;
-    if (leadId) where.leadId = leadId;
+    const pageNum = Math.max(1, Number(query?.page) || 1);
+    const limitNum = Math.max(1, Math.min(100, Number(query?.limit) || 20));
 
-    const [items, total] = await Promise.all([
-      this.prisma.automationLog.findMany({
-        where,
-        skip: (Math.max(1, Number(page) || 1) - 1) * Math.max(1, Math.min(100, Number(limit) || 20)),
-        take: Math.max(1, Math.min(100, Number(limit) || 20)),
-        orderBy: { createdAt: 'desc' },
-        include: { lead: { select: { id: true, name: true, phone: true, email: true } } },
-      }),
-      this.prisma.automationLog.count({ where }),
-    ]);
+    if (!this.prisma.isConnected) {
+      return { items: [], total: 0, page: pageNum, limit: limitNum };
+    }
 
-    return { items, total, page: Number(page) || 1, limit: Number(limit) || 20 };
+    try {
+      const { type, status, leadId } = query || {};
+      const where: any = { tenantId };
+      if (type) where.type = type;
+      if (status) where.status = status;
+      if (leadId) where.leadId = leadId;
+
+      const [items, total] = await Promise.all([
+        this.prisma.automationLog.findMany({
+          where,
+          skip: (pageNum - 1) * limitNum,
+          take: limitNum,
+          orderBy: { createdAt: 'desc' },
+          include: { lead: { select: { id: true, name: true, phone: true, email: true } } },
+        }),
+        this.prisma.automationLog.count({ where }),
+      ]);
+
+      return { items, total, page: pageNum, limit: limitNum };
+    } catch (err: any) {
+      this.logger.warn(`Failed to query automation logs: ${err.message}`);
+      return { items: [], total: 0, page: pageNum, limit: limitNum };
+    }
   }
 
   // ── Automation Rule CRUD ─────────────────────────────────────
@@ -420,10 +432,19 @@ export class AutomationsService {
   }
 
   async listRules(tenantId: string) {
-    return this.prisma.automationRule.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: 'desc' },
-    });
+    if (!this.prisma.isConnected) {
+      return [];
+    }
+
+    try {
+      return await this.prisma.automationRule.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (err: any) {
+      this.logger.warn(`Failed to query automation rules: ${err.message}`);
+      return [];
+    }
   }
 
   async updateRule(tenantId: string, id: string, dto: UpdateAutomationRuleDto) {

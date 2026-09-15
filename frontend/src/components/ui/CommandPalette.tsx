@@ -17,7 +17,6 @@ import {
   Radio,
   Plus,
   ArrowRight,
-  Sparkles,
   Shield,
   FileText,
   X,

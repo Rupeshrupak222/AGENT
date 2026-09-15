@@ -30,7 +30,6 @@ import {
   Play,
   Pause,
   ArrowRight,
-  Sparkles,
 } from "lucide-react";
 import {
   TenantItem,
@@ -722,10 +721,10 @@ export function SuperAdminView({
           {/* Multilingual Agent Filter Tabs */}
           <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-100/80 dark:bg-[#120a06]/80 border border-slate-200 dark:border-white/10 overflow-x-auto">
             {[
-              { id: "all", label: "All Languages", flag: "🌐", count: agentLanguageCounts.all },
-              { id: "english", label: "English", flag: "🇬🇧", count: agentLanguageCounts.english },
-              { id: "hindi", label: "Hindi · हिन्दी", flag: "🇮🇳", count: agentLanguageCounts.hindi },
-              { id: "telugu", label: "Telugu · తెలుగు", flag: "🇮🇳", count: agentLanguageCounts.telugu },
+              { id: "all", label: "All Languages", count: agentLanguageCounts.all },
+              { id: "english", label: "English", count: agentLanguageCounts.english },
+              { id: "hindi", label: "Hindi · हिन्दी", count: agentLanguageCounts.hindi },
+              { id: "telugu", label: "Telugu · తెలుగు", count: agentLanguageCounts.telugu },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -736,7 +735,6 @@ export function SuperAdminView({
                     : "text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/5"
                 }`}
               >
-                <span>{tab.flag}</span>
                 <span>{tab.label}</span>
                 <span
                   className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono ${
@@ -855,15 +853,15 @@ export function SuperAdminView({
                             <div className="mb-1">
                               {agent.language === "telugu" ? (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                                  <span>🇮🇳</span> Telugu · తెలుగు
+                                  Telugu · తెలుగు
                                 </span>
                               ) : agent.language === "hindi" ? (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                                  <span>🇮🇳</span> Hindi · हिन्दी
+                                  Hindi · हिन्दी
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30">
-                                  <span>🇬🇧</span> English
+                                  English
                                 </span>
                               )}
                             </div>

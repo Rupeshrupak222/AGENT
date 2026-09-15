@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -12,6 +13,8 @@ const KB_STATUSES = ['ready', 'processing', 'failed', 'outdated'];
 
 @Injectable()
 export class KnowledgeBaseService {
+  private readonly logger = new Logger(KnowledgeBaseService.name);
+
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
@@ -27,32 +30,42 @@ export class KnowledgeBaseService {
   }) {
     const pageNum = Math.max(1, Number(query?.page) || 1);
     const limitNum = Math.max(1, Math.min(100, Number(query?.limit) || 50));
-    const where: Prisma.KnowledgeSourceWhereInput = { tenantId };
-    if (query?.type) where.type = query.type;
-    if (query?.status) where.status = query.status;
-    if (query?.agentId) where.agentId = query.agentId;
-    if (query?.search?.trim()) {
-      where.OR = [
-        { name: { contains: query.search.trim(), mode: 'insensitive' } },
-        { content: { contains: query.search.trim(), mode: 'insensitive' } },
-      ];
+
+    if (!this.prisma.isConnected) {
+      return { items: [], total: 0, page: pageNum, limit: limitNum };
     }
 
-    const [items, total] = await Promise.all([
-      this.prisma.knowledgeSource.findMany({
-        where,
-        skip: (pageNum - 1) * limitNum,
-        take: limitNum,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          agent: { select: { id: true, name: true, role: true } },
-          createdBy: { select: { id: true, name: true, email: true } },
-        },
-      }),
-      this.prisma.knowledgeSource.count({ where }),
-    ]);
+    try {
+      const where: Prisma.KnowledgeSourceWhereInput = { tenantId };
+      if (query?.type) where.type = query.type;
+      if (query?.status) where.status = query.status;
+      if (query?.agentId) where.agentId = query.agentId;
+      if (query?.search?.trim()) {
+        where.OR = [
+          { name: { contains: query.search.trim(), mode: 'insensitive' } },
+          { content: { contains: query.search.trim(), mode: 'insensitive' } },
+        ];
+      }
 
-    return { items, total, page: pageNum, limit: limitNum };
+      const [items, total] = await Promise.all([
+        this.prisma.knowledgeSource.findMany({
+          where,
+          skip: (pageNum - 1) * limitNum,
+          take: limitNum,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            agent: { select: { id: true, name: true, role: true } },
+            createdBy: { select: { id: true, name: true, email: true } },
+          },
+        }),
+        this.prisma.knowledgeSource.count({ where }),
+      ]);
+
+      return { items, total, page: pageNum, limit: limitNum };
+    } catch (err: any) {
+      this.logger.warn(`Failed to query knowledge sources: ${err.message}`);
+      return { items: [], total: 0, page: pageNum, limit: limitNum };
+    }
   }
 
   async findOne(tenantId: string, id: string) {

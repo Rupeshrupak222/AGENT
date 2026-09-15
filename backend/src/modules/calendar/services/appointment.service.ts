@@ -478,31 +478,40 @@ export class AppointmentService {
   // ── Reads ────────────────────────────────────────────────────
 
   async findAll(tenantId: string, query: AppointmentQueryDto) {
-    const where: any = { tenantId };
-    if (query.status) where.status = query.status;
-    if (query.agentId) where.agentId = query.agentId;
-    if (query.leadId) where.leadId = query.leadId;
-
-    if (query.upcoming) {
-      where.OR = [
-        { startAt: { gte: new Date() } },
-        { startAt: null as any, date: { gte: new Date() } },
-      ];
+    if (!this.prisma.isConnected) {
+      return [];
     }
 
-    if (query.from || query.to) {
-      const dateRange: any = {};
-      if (query.from) dateRange.gte = new Date(query.from);
-      if (query.to) dateRange.lte = new Date(query.to);
-      where.date = dateRange;
+    try {
+      const where: any = { tenantId };
+      if (query?.status) where.status = query.status;
+      if (query?.agentId) where.agentId = query.agentId;
+      if (query?.leadId) where.leadId = query.leadId;
+
+      if (query?.upcoming) {
+        where.OR = [
+          { startAt: { gte: new Date() } },
+          { startAt: null as any, date: { gte: new Date() } },
+        ];
+      }
+
+      if (query?.from || query?.to) {
+        const dateRange: any = {};
+        if (query.from) dateRange.gte = new Date(query.from);
+        if (query.to) dateRange.lte = new Date(query.to);
+        where.date = dateRange;
+      }
+
+      const appointments = await this.prisma.appointment.findMany({
+        where,
+        orderBy: query?.upcoming ? { date: 'asc' } : { date: 'desc' },
+      });
+
+      return appointments.map((a) => ({ ...a, metadata: a.metadata as Record<string, any> }));
+    } catch (err: any) {
+      this.logger.warn(`Failed to query appointments: ${err.message}`);
+      return [];
     }
-
-    const appointments = await this.prisma.appointment.findMany({
-      where,
-      orderBy: query.upcoming ? { date: 'asc' } : { date: 'desc' },
-    });
-
-    return appointments.map((a) => ({ ...a, metadata: a.metadata as Record<string, any> }));
   }
 
   async findOne(tenantId: string, id: string) {
@@ -511,32 +520,65 @@ export class AppointmentService {
   }
 
   async overview(tenantId: string, query: { from?: string; to?: string }) {
-    const range: any = {};
-    if (query.from) range.gte = new Date(query.from);
-    if (query.to) range.lte = new Date(query.to);
+    if (!this.prisma.isConnected) {
+      return {
+        total: 0,
+        scheduled: 0,
+        pending: 0,
+        confirmed: 0,
+        completed: 0,
+        cancelled: 0,
+        noShow: 0,
+        rescheduled: 0,
+        failed: 0,
+        showUpRatio: '0',
+        avgDurationMins: 0,
+      };
+    }
 
-    const appointments = await this.prisma.appointment.findMany({
-      where: { tenantId, ...(Object.keys(range).length ? { date: range } : {}) },
-      select: { status: true, duration: true },
-    });
+    try {
+      const range: any = {};
+      if (query?.from) range.gte = new Date(query.from);
+      if (query?.to) range.lte = new Date(query.to);
 
-    const count = (s: string) => appointments.filter((a) => a.status === s).length;
-    const total = appointments.length;
-    const cancelledAndNoShow = count('cancelled') + count('no_show');
+      const appointments = await this.prisma.appointment.findMany({
+        where: { tenantId, ...(Object.keys(range).length ? { date: range } : {}) },
+        select: { status: true, duration: true },
+      });
 
-    return {
-      total,
-      scheduled: count('scheduled'),
-      pending: count('pending'),
-      confirmed: count('confirmed'),
-      completed: count('completed'),
-      cancelled: count('cancelled'),
-      noShow: count('no_show'),
-      rescheduled: count('rescheduled'),
-      failed: count('failed'),
-      showUpRatio: total ? (((total - cancelledAndNoShow) / total) * 100).toFixed(1) : '0',
-      avgDurationMins: total ? Math.round(appointments.reduce((s, a) => s + a.duration, 0) / total) : 0,
-    };
+      const count = (s: string) => appointments.filter((a) => a.status === s).length;
+      const total = appointments.length;
+      const cancelledAndNoShow = count('cancelled') + count('no_show');
+
+      return {
+        total,
+        scheduled: count('scheduled'),
+        pending: count('pending'),
+        confirmed: count('confirmed'),
+        completed: count('completed'),
+        cancelled: count('cancelled'),
+        noShow: count('no_show'),
+        rescheduled: count('rescheduled'),
+        failed: count('failed'),
+        showUpRatio: total ? (((total - cancelledAndNoShow) / total) * 100).toFixed(1) : '0',
+        avgDurationMins: total ? Math.round(appointments.reduce((s, a) => s + a.duration, 0) / total) : 0,
+      };
+    } catch (err: any) {
+      this.logger.warn(`Failed to query appointment overview: ${err.message}`);
+      return {
+        total: 0,
+        scheduled: 0,
+        pending: 0,
+        confirmed: 0,
+        completed: 0,
+        cancelled: 0,
+        noShow: 0,
+        rescheduled: 0,
+        failed: 0,
+        showUpRatio: '0',
+        avgDurationMins: 0,
+      };
+    }
   }
 
   async reminderStatus(tenantId: string, id: string) {

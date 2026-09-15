@@ -17,7 +17,6 @@ import {
   ChevronDown,
   Flame,
   Zap,
-  Sparkles,
   TrendingUp,
   CheckCircle2,
   ShieldCheck,

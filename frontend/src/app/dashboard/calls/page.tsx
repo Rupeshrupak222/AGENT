@@ -25,7 +25,6 @@ import {
   User,
   Plus,
   Volume2,
-  Sparkles,
   CheckCircle2,
   Pause,
   Download,
@@ -482,10 +481,10 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
         {/* Tab Selection */}
         <div className="flex items-center gap-2 px-6 py-2.5 bg-[#120a06] border-b border-amber-500/15 flex-shrink-0">
           {[
-            { id: "transcript", label: "🎧 Recording & Dialogue" },
-            { id: "analysis", label: "🧠 AI Intelligence" },
-            { id: "qa_whisper", label: "🎯 QA Auto-Grader & Whisper" },
-            { id: "ask_ai", label: "💬 Ask AI About This Call" },
+            { id: "transcript", label: "Recording & Dialogue" },
+            { id: "analysis", label: "AI Intelligence" },
+            { id: "qa_whisper", label: "QA Auto-Grader & Whisper" },
+            { id: "ask_ai", label: "Ask AI About This Call" },
           ].map((t) => (
             <button
               key={t.id}
@@ -761,7 +760,6 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                     {/* Executive Summary */}
                     <div className="p-4 rounded-2xl bg-black/40 border border-amber-500/20">
                       <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                         AI Executive Summary
                       </h4>
                       <p className="text-xs text-slate-200 leading-relaxed">
@@ -921,7 +919,7 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                     disabled={isAnswering || !questionInput.trim()}
                     className="px-4 h-10 rounded-xl bg-amber-600 hover:bg-amber-500 text-xs font-bold text-white transition-all flex items-center gap-1.5 disabled:opacity-50"
                   >
-                    {isAnswering ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                    {isAnswering && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                     <span>Ask AI</span>
                   </button>
                 </div>
@@ -1442,7 +1440,7 @@ function CallsPageContent() {
   const handleToggleListenIn = () => {
     setIsListeningIn(!isListeningIn);
     if (!isListeningIn) {
-      showToastSuccess("🎧 Silent Audio Monitor Connected — Listening in without notifying caller.");
+      showToastSuccess("Silent Audio Monitor Connected — Listening in without notifying caller.");
     } else {
       showToastSuccess("Audio monitor disconnected.");
     }
@@ -1453,13 +1451,13 @@ function CallsPageContent() {
     if (!whisperInput.trim()) return;
     setActiveWhisperSent(whisperInput.trim());
     setIsWhispering(false);
-    showToastSuccess(`🗣️ Whisper dispatched to AI Agent memory: "${whisperInput.trim()}"`);
+    showToastSuccess(`Whisper dispatched to AI Agent memory: "${whisperInput.trim()}"`);
     setWhisperInput("");
   };
 
   const handleBargeIn = () => {
     setIsBargedIn(true);
-    showToastSuccess("🛑 Supervisor Barge-In Active: AI muted. You are now speaking directly with caller.");
+    showToastSuccess("Supervisor Barge-In Active: AI muted. You are now speaking directly with caller.");
   };
 
   // Handle leadPhone query param from Agent Workstation

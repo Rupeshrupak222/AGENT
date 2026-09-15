@@ -5,7 +5,7 @@ import {
   MessageSquare, Mail, Webhook, PhoneCall, RefreshCw,
   Trash2, Loader2, Play, Eye, Clock, Check, X, ShieldAlert,
   Send, ChevronLeft, ChevronRight, HelpCircle, Layers,
-  Smartphone, CheckCheck, SendHorizontal, Sparkles, Bot, Smile,
+  Smartphone, CheckCheck, SendHorizontal, Bot, Smile,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -572,7 +572,7 @@ export default function AutomationsPage() {
               {/* Sample Lead Test Data Fields */}
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] space-y-3">
                 <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Live Simulation Variables
+                  Live Simulation Variables
                 </h4>
                 <div className="grid sm:grid-cols-2 gap-3 text-xs">
                   <div>

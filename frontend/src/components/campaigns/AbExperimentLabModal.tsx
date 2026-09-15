@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import {
-  FlaskConical, Sparkles, TrendingUp, CheckCircle2, ArrowRight,
+  FlaskConical, TrendingUp, CheckCircle2, ArrowRight,
   Sliders, Trophy, RefreshCw, X, ShieldCheck, Zap, BarChart3, Bot
 } from "lucide-react";
 
@@ -90,7 +90,7 @@ export const AbExperimentLabModal: React.FC<AbExperimentLabModalProps> = ({
               disabled={isPromoting || championPromoted}
               className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 shadow-md shadow-emerald-600/30 transition-all flex items-center gap-1.5 self-start sm:self-auto"
             >
-              {isPromoting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              {isPromoting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
               {championPromoted ? "Champion Deployed (100%)" : "Promote Variant B to Champion"}
             </button>
           </div>

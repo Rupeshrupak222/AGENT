@@ -16,7 +16,6 @@ import {
   RefreshCw,
   AlertTriangle,
   X,
-  Sparkles,
   Mic,
   Sliders,
   GitBranch,
@@ -43,6 +42,16 @@ import {
   AgentItem,
   CreateAgentInput,
 } from "@/lib/api";
+import {
+  PageTransition,
+  FadeIn,
+  SlideUp,
+  StaggerContainer,
+  StaggerItem,
+  AnimatedNumber,
+  LiveIndicator,
+} from "@/components/ui/motion";
+import { ErrorState } from "@/components/ui/ErrorState";
 
 const roleLabels: Record<string, string> = {
   telecaller: "Telecaller",
@@ -197,7 +206,6 @@ function AgentBuilderModal({
         <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/[0.06] dark:border-white/10">
           <div>
             <h2 className="text-lg font-bold flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-brand-500" />
               Build Autonomous AI Agent
             </h2>
             <p className="text-xs text-slate-500 dark:text-white/40">
@@ -632,15 +640,15 @@ function AgentCardItem({
           <div className="flex items-center gap-1.5">
             {agent.language === "telugu" ? (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30">
-                <span>🇮🇳</span> Telugu · తెలుగు
+                <span>Telugu · తెలుగు</span>
               </span>
             ) : agent.language === "hindi" ? (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30">
-                <span>🇮🇳</span> Hindi · हिन्दी
+                <span>Hindi · हिन्दी</span>
               </span>
             ) : agent.language === "english" ? (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/15 text-blue-600 dark:text-blue-300 border border-blue-500/30">
-                <span>🇬🇧</span> English
+                <span>English</span>
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-white/70">
@@ -766,211 +774,230 @@ export default function AgentsPage() {
   const totalCalls = agents.reduce((s, a) => s + (a._count?.calls ?? 0), 0);
 
   return (
-    <div className="flex flex-col min-h-full">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 pb-0">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-            AI Agent Studio
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-white/50 mt-1">
-            Build, train and deploy autonomous voice employees for your company
-          </p>
-        </div>
-        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-          <button
-            type="button"
-            onClick={() => setIsIvrModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-white border border-slate-200 dark:border-white/10 transition-all shadow-sm"
-          >
-            <GitBranch className="w-3.5 h-3.5 text-brand-500" />
-            <span>Inbound IVR Flow</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsVoiceCloneModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/30 transition-all shadow-sm"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-purple-500" />
-            <span>Voice Clone Studio</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsPolyglotModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-500/30 transition-all shadow-sm"
-          >
-            <Globe2 className="w-3.5 h-3.5 text-blue-500" />
-            <span>Multilingual & Dialects</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsKnowledgeModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 transition-all shadow-sm"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Knowledge Forge</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setArenaTargetAgent(agents[0] || null);
-              setIsArenaModalOpen(true);
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30 transition-all shadow-sm"
-          >
-            <ShieldAlert className="w-3.5 h-3.5" />
-            <span>Objection Arena</span>
-          </button>
-          <button
-            onClick={fetchAgents}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-100 dark:hover:bg-white/[0.12] border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/80 transition-all shadow-sm"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-brand-500" : ""}`} />
-            Refresh
-          </button>
-          {canCreateAgent && (
-          <button
-            onClick={() => {
-              setStudioAgent(null);
-              setStudioOpen(true);
-            }}
-            className="btn-red text-xs py-2 px-4 h-9 shadow-md shadow-brand-500/25 flex items-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            Create Agent
-          </button>
-          )}
-        </div>
-      </div>
-
-      <div className="flex-1 p-6 space-y-6">
-        {/* Error banner */}
-        {error && (
-          <div role="alert" className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-sm flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-              <span>{error}</span>
+    <PageTransition>
+      <div className="flex flex-col min-h-full space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 pb-0">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                AI Agent Studio
+              </h1>
+              <LiveIndicator color="emerald" label="VOICE DSP READY" />
             </div>
+            <p className="text-sm text-slate-500 dark:text-white/50 mt-1">
+              Build, train and deploy autonomous voice employees for your company
+            </p>
+          </div>
+          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+            <button
+              type="button"
+              onClick={() => setIsIvrModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-white border border-slate-200 dark:border-white/10 transition-all shadow-sm"
+            >
+              <GitBranch className="w-3.5 h-3.5 text-brand-500" />
+              <span>Inbound IVR Flow</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsVoiceCloneModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/30 transition-all shadow-sm"
+            >
+              <span>Voice Clone Studio</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsPolyglotModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-500/30 transition-all shadow-sm"
+            >
+              <Globe2 className="w-3.5 h-3.5 text-blue-500" />
+              <span>Multilingual & Dialects</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsKnowledgeModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 transition-all shadow-sm"
+            >
+              <span>Knowledge Forge</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setArenaTargetAgent(agents[0] || null);
+                setIsArenaModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30 transition-all shadow-sm"
+            >
+              <ShieldAlert className="w-3.5 h-3.5" />
+              <span>Objection Arena</span>
+            </button>
             <button
               onClick={fetchAgents}
-              className="px-3 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 font-semibold text-xs transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-100 dark:hover:bg-white/[0.12] border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/80 transition-all shadow-sm"
             >
-              Retry
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-brand-500" : ""}`} />
+              Refresh
             </button>
-          </div>
-        )}
-
-        {/* Real Summary Metrics */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <Card className="p-4 panel-card">
-            <p className="text-2xl font-black text-slate-900 dark:text-white font-mono">
-              {loading ? "—" : agents.length}
-            </p>
-            <p className="text-xs text-slate-500 dark:text-white/40 mt-1">Configured Agents</p>
-          </Card>
-          <Card className="p-4 panel-card">
-            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
-              {loading ? "—" : activeCount}
-            </p>
-            <p className="text-xs text-slate-500 dark:text-white/40 mt-1">Active in Production</p>
-          </Card>
-          <Card className="p-4 panel-card">
-            <p className="text-2xl font-black text-brand-600 dark:text-brand-400 font-mono">
-              {loading ? "—" : totalCalls.toLocaleString()}
-            </p>
-            <p className="text-xs text-slate-500 dark:text-white/40 mt-1">Total Handled Calls</p>
-          </Card>
-        </div>
-
-        {/* Filters & Search Toolbar */}
-        <div className="space-y-3">
-          {/* Language Selection Tabs */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider text-[10px]">Language:</span>
-            {[
-              { id: "all", label: "All Languages", flag: "🌐", count: languageCounts.all },
-              { id: "english", label: "English", flag: "🇬🇧", count: languageCounts.english },
-              { id: "hindi", label: "Hindi", flag: "🇮🇳", count: languageCounts.hindi },
-              { id: "telugu", label: "Telugu (తెలుగు)", flag: "🇮🇳", count: languageCounts.telugu },
-            ].map((lang) => (
-              <button
-                key={lang.id}
-                onClick={() => setLanguageFilter(lang.id)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                  languageFilter === lang.id
-                    ? "bg-brand-500/15 text-brand-600 dark:text-brand-400 border-brand-500/30 shadow-sm"
-                    : "bg-slate-100 dark:bg-white/[0.04] text-slate-600 dark:text-white/60 border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20"
-                }`}
-              >
-                <span>{lang.flag}</span>
-                <span>{lang.label}</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/5 dark:bg-white/10 font-mono">
-                  {lang.count}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-1 bg-slate-100/70 dark:bg-white/[0.08]/70 dark:bg-white/5 rounded-xl p-1">
-              {["all", "active", "paused", "draft", "archived"].map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
-                    filter === f
-                      ? "bg-brand-600 text-white shadow-sm"
-                      : "text-slate-500 dark:text-white/50 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex-1 min-w-[200px] max-w-xs relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by agent name, role, goal..."
-                className="w-full h-9 pl-9 pr-3 rounded-xl text-xs bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/30 outline-none focus:border-brand-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Agent Grid */}
-        {loading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {Array.from({ length: 3 }).map((_, idx) => (
-              <div
-                key={idx}
-                className="h-64 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/5 animate-pulse"
-              />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="p-12 text-center panel-card">
-            <Bot className="w-10 h-10 mx-auto mb-3 text-slate-400 dark:text-white/20" />
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              No AI Agents Configured
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-white/40 max-w-md mx-auto mt-1 mb-4">
-              Deploy your first autonomous conversational agent to start qualifying prospects and handling live phone calls.
-            </p>
             {canCreateAgent && (
             <button
               onClick={() => {
                 setStudioAgent(null);
                 setStudioOpen(true);
               }}
-              className="btn-red text-xs py-2 px-4 shadow-md shadow-brand-500/20"
+              className="btn-red text-xs py-2 px-4 h-9 shadow-md shadow-brand-500/25 flex items-center gap-1.5"
             >
-              Build New Agent
+              <Plus className="w-4 h-4" />
+              Create Agent
             </button>
             )}
           </div>
+        </div>
+
+        <div className="flex-1 p-6 space-y-6">
+          {/* Error banner */}
+          {error && (
+            <ErrorState
+              title="Agent Telemetry Unavailable"
+              message={error}
+              category={error.toLowerCase().includes("timeout") || error.toLowerCase().includes("network") ? "network" : "server"}
+              onRetry={fetchAgents}
+            />
+          )}
+
+          {/* Real Summary Metrics */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="p-4 rounded-2xl bg-white dark:bg-[#0F172A]/80 border border-slate-200 dark:border-white/[0.08] shadow-sm backdrop-blur-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-white/40 tracking-wider">Configured Agents</span>
+                <Bot className="w-4 h-4 text-brand-500" />
+              </div>
+              <p className="text-2xl font-black text-slate-900 dark:text-white font-mono mt-1">
+                <AnimatedNumber value={loading ? 0 : agents.length} />
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-white/40 mt-1">Autonomous voice workers</p>
+            </div>
+            <div className="p-4 rounded-2xl bg-white dark:bg-[#0F172A]/80 border border-slate-200 dark:border-white/[0.08] shadow-sm backdrop-blur-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-bold text-emerald-500/80 tracking-wider">Active Desks</span>
+                <LiveIndicator color="emerald" />
+              </div>
+              <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono mt-1">
+                <AnimatedNumber value={loading ? 0 : activeCount} />
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-white/40 mt-1">Handling live telephony queues</p>
+            </div>
+            <div className="p-4 rounded-2xl bg-white dark:bg-[#0F172A]/80 border border-slate-200 dark:border-white/[0.08] shadow-sm backdrop-blur-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-bold text-brand-500/80 tracking-wider">Total Handled Calls</span>
+                <Phone className="w-4 h-4 text-brand-500" />
+              </div>
+              <p className="text-2xl font-black text-brand-600 dark:text-brand-400 font-mono mt-1">
+                <AnimatedNumber value={loading ? 0 : totalCalls} />
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-white/40 mt-1">Lifetime conversational sessions</p>
+            </div>
+          </div>
+
+          {/* Filters & Search Toolbar */}
+          <div className="space-y-3">
+            {/* Language Selection Tabs */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider text-[10px]">Language:</span>
+              {[
+                { id: "all", label: "All Languages", count: languageCounts.all },
+                { id: "english", label: "English", count: languageCounts.english },
+                { id: "hindi", label: "Hindi", count: languageCounts.hindi },
+                { id: "telugu", label: "Telugu (తెలుగు)", count: languageCounts.telugu },
+              ].map((lang) => (
+                <button
+                  key={lang.id}
+                  onClick={() => setLanguageFilter(lang.id)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                    languageFilter === lang.id
+                      ? "bg-brand-500/15 text-brand-600 dark:text-brand-400 border-brand-500/30 shadow-sm"
+                      : "bg-slate-100 dark:bg-white/[0.04] text-slate-600 dark:text-white/60 border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20"
+                  }`}
+                >
+                  <span>{lang.label}</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/5 dark:bg-white/10 font-mono">
+                    {lang.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-1 bg-slate-100/70 dark:bg-white/[0.08]/70 dark:bg-white/5 rounded-xl p-1">
+                {["all", "active", "paused", "draft", "archived"].map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
+                      filter === f
+                        ? "bg-brand-600 text-white shadow-sm"
+                        : "text-slate-500 dark:text-white/50 hover:text-slate-900 dark:hover:text-white"
+                    }`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex-1 min-w-[200px] max-w-xs relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by agent name, role, goal..."
+                  className="w-full h-9 pl-9 pr-3 rounded-xl text-xs bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/30 outline-none focus:border-brand-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Agent Grid */}
+          {loading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {Array.from({ length: 3 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="h-64 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/5 animate-pulse"
+                />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="p-12 text-center rounded-2xl bg-white dark:bg-[#0F172A]/70 border border-slate-200 dark:border-white/[0.08] shadow-sm backdrop-blur-xl space-y-4">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-brand-500/10 border border-brand-500/20 text-brand-500 flex items-center justify-center shadow-inner">
+                <Bot className="w-7 h-7" />
+              </div>
+              <div className="max-w-md mx-auto">
+                <h3 className="text-base font-black text-slate-900 dark:text-white tracking-tight">
+                  No AI Voice Employees Deployed
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-white/50 mt-1 leading-relaxed">
+                  Deploy your first autonomous conversational agent with sub-250ms voice synthesis, objection deflection, and real-time CRM qualification.
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-2 flex-wrap text-[11px] font-mono text-slate-500 dark:text-white/40">
+                <span className="px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/5 border border-slate-200 dark:border-white/10">Edge-TTS 48kHz</span>
+                <span className="px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/5 border border-slate-200 dark:border-white/10">Groq Llama-3 70B</span>
+                <span className="px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/5 border border-slate-200 dark:border-white/10">WebRTC Telephony</span>
+              </div>
+              {canCreateAgent && (
+              <div className="pt-2">
+                <button
+                  onClick={() => {
+                    setStudioAgent(null);
+                    setStudioOpen(true);
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-lg shadow-brand-500/25 transition-all active:scale-95 inline-flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Build New Voice Agent</span>
+                </button>
+              </div>
+              )}
+            </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filtered.map((agent) => (
@@ -1091,5 +1118,6 @@ export default function AgentsPage() {
         )}
       </AnimatePresence>
     </div>
+    </PageTransition>
   );
 }

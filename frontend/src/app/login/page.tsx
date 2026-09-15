@@ -200,21 +200,21 @@ export default function LoginPage() {
                   onClick={() => quickLogin("superadmin@agentcall.ai", "Demo@1234")}
                   className="p-2 rounded-xl text-[11px] font-semibold text-slate-800 bg-white hover:bg-slate-100 border border-slate-200 transition-colors text-left flex items-center gap-1.5 shadow-2xs"
                 >
-                  👑 Super Admin
+                  Super Admin
                 </button>
                 <button
                   type="button"
                   onClick={() => quickLogin("admin@acmecorp.com", "Demo@1234")}
                   className="p-2 rounded-xl text-[11px] font-semibold text-slate-800 bg-white hover:bg-slate-100 border border-slate-200 transition-colors text-left flex items-center gap-1.5 shadow-2xs"
                 >
-                  🏢 Company Admin
+                  Company Admin
                 </button>
                 <button
                   type="button"
                   onClick={() => quickLogin("manager@acmecorp.com", "Demo@1234")}
                   className="p-2 rounded-xl text-[11px] font-semibold text-slate-800 bg-white hover:bg-slate-100 border border-slate-200 transition-colors text-left flex items-center gap-1.5 shadow-2xs"
                 >
-                  👔 Manager
+                  Manager
                 </button>
               </div>
             </div>

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import {
-  Globe, Languages, Sparkles, Sliders, Volume2, Play, Pause,
+  Globe, Languages, Sliders, Volume2, Play, Pause,
   CheckCircle2, X, ArrowRight, ShieldCheck, Zap, Layers, RefreshCw,
   MessageSquare, BookOpen, Plus, Trash2
 } from "lucide-react";
@@ -418,7 +418,7 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
               onClick={onClose}
               className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/30 transition-all flex items-center gap-2"
             >
-              <Sparkles className="w-4 h-4" /> Save Code-Switching Profile
+              Save Code-Switching Profile
             </button>
           </div>
         </div>

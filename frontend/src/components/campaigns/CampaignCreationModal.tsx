@@ -13,7 +13,6 @@ import {
   ChevronRight,
   ChevronLeft,
   AlertCircle,
-  Sparkles,
   Calendar,
   Layers,
   ArrowRight,

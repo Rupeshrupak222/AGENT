@@ -163,10 +163,10 @@ export default function AgentsPage() {
           <div className="flex items-center gap-2 flex-wrap pb-3 border-b border-slate-100 dark:border-white/[0.04]">
             <span className="text-[11px] font-bold text-slate-400 dark:text-white/40 uppercase tracking-wider">Language:</span>
             {[
-              { id: "all", label: "All Languages", flag: "🌐", count: languageCounts.all },
-              { id: "english", label: "English", flag: "🇬🇧", count: languageCounts.english },
-              { id: "hindi", label: "Hindi (हिन्दी)", flag: "🇮🇳", count: languageCounts.hindi },
-              { id: "telugu", label: "Telugu (తెలుగు)", flag: "🇮🇳", count: languageCounts.telugu },
+              { id: "all", label: "All Languages", count: languageCounts.all },
+              { id: "english", label: "English", count: languageCounts.english },
+              { id: "hindi", label: "Hindi (हिन्दी)", count: languageCounts.hindi },
+              { id: "telugu", label: "Telugu (తెలుగు)", count: languageCounts.telugu },
             ].map((lang) => (
               <button
                 key={lang.id}
@@ -178,7 +178,6 @@ export default function AgentsPage() {
                     : "bg-slate-50 dark:bg-white/[0.04] text-slate-600 dark:text-white/60 border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20"
                 )}
               >
-                <span>{lang.flag}</span>
                 <span>{lang.label}</span>
                 <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/5 dark:bg-white/10 font-mono">
                   {lang.count}
@@ -343,15 +342,15 @@ export default function AgentsPage() {
                           <td className="px-5 py-3.5 text-center">
                             {a.language === "telugu" ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                                <span>🇮🇳</span> Telugu · తెలుగు
+                                Telugu · తెలుగు
                               </span>
                             ) : a.language === "hindi" ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                                <span>🇮🇳</span> Hindi · हिन्दी
+                                Hindi · हिन्दी
                               </span>
                             ) : a.language === "english" ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30">
-                                <span>🇬🇧</span> English
+                                English
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-white/40 capitalize">

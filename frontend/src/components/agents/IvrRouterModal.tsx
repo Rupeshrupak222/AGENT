@@ -14,7 +14,6 @@ import {
   Save,
   Play,
   RotateCcw,
-  Sparkles,
   Layers,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
@@ -151,7 +150,7 @@ export function IvrRouterModal({ isOpen, onClose }: IvrRouterModalProps) {
           <div className="p-4 rounded-2xl bg-slate-800/50 border border-white/10 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-brand-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" /> Step 1: Auto-Attendant Greeting Prompt
+                Step 1: Auto-Attendant Greeting Prompt
               </span>
               <button
                 type="button"

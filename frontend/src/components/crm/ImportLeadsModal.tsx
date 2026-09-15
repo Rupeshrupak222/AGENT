@@ -10,7 +10,6 @@ import {
   AlertTriangle,
   ArrowRight,
   RefreshCw,
-  Sparkles,
   Layers,
   HelpCircle,
 } from "lucide-react";

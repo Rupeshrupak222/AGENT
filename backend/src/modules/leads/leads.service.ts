@@ -111,6 +111,9 @@ export class LeadsService {
     status?: string; search?: string; agentId?: string; assignedTo?: string;
     page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc';
   }, actor?: ScopedActor) {
+    if (!this.prisma.isConnected) {
+      return { items: [], total: 0, page: query?.page ?? 1, limit: query?.limit ?? 20, pages: 0 };
+    }
     try {
       const pageNum = Math.max(1, Number(query?.page) || 1);
       const limitNum = Math.max(1, Math.min(100, Number(query?.limit) || 20));

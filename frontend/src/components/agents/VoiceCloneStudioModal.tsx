@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Mic, MicOff, UploadCloud, Volume2, Sparkles, Sliders, CheckCircle2,
+  Mic, MicOff, UploadCloud, Volume2, Sliders, CheckCircle2,
   Play, Pause, RefreshCw, X, Radio, ArrowRight, ShieldCheck, Zap,
   Layers, Settings2, Info, Headphones
 } from "lucide-react";
@@ -126,9 +126,6 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
         {/* Header */}
         <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-purple-900/30 via-slate-900 to-brand-950/30">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-purple-500/20 border border-purple-500/40 text-purple-400 flex items-center justify-center shadow-lg shadow-purple-500/20">
-              <Sparkles className="w-5 h-5" />
-            </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-black text-white tracking-tight">AI Voice Clone Studio & Persona Forge</h2>
@@ -596,7 +593,7 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
                 onClick={handleSaveVoice}
                 className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-brand-600 hover:from-purple-500 hover:to-brand-500 shadow-lg shadow-purple-600/30 transition-all flex items-center gap-2"
               >
-                <Sparkles className="w-4 h-4" /> Save & Deploy Cloned Voice
+                Save & Deploy Cloned Voice
               </button>
             )}
           </div>

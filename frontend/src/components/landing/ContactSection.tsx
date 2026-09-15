@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, Phone, MapPin, Send, CheckCircle2, Clock, Sparkles } from "lucide-react";
+import { Mail, Phone, MapPin, Send, CheckCircle2, Clock } from "lucide-react";
 
 export function ContactSection() {
   const [submitted, setSubmitted] = useState(false);
@@ -46,7 +46,6 @@ export function ContactSection() {
             className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold mb-5 border backdrop-blur-sm"
             style={{ background: "#F5EDE4", color: "#6F4428", borderColor: "#DDB892" }}
           >
-            <Sparkles className="w-3.5 h-3.5" style={{ color: "#8B5A2B" }} />
             Direct Enterprise Consultation
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-4 tracking-tight" style={{ color: "#1a1a1a" }}>
