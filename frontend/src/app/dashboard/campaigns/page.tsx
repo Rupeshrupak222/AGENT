@@ -98,11 +98,15 @@ export default function CampaignOperationsPage() {
       setCampaigns(res.items);
 
       if (res.items.length > 0) {
-        if (selectId && res.items.some((c) => c.id === selectId)) {
-          setSelectedCampaignId(selectId);
-        } else if (!selectedCampaignId || !res.items.some((c) => c.id === selectedCampaignId)) {
-          setSelectedCampaignId(res.items[0].id);
-        }
+        setSelectedCampaignId((prev) => {
+          if (selectId && res.items.some((c) => c.id === selectId)) {
+            return selectId;
+          }
+          if (!prev || !res.items.some((c) => c.id === prev)) {
+            return res.items[0].id;
+          }
+          return prev;
+        });
       } else {
         setSelectedCampaignId(null);
       }
@@ -111,11 +115,11 @@ export default function CampaignOperationsPage() {
     } finally {
       setLoadingCampaigns(false);
     }
-  }, [selectedCampaignId, error]);
+  }, [error]);
 
   useEffect(() => {
     loadCampaigns();
-  }, []);
+  }, [loadCampaigns]);
 
   const activeCampaign = campaigns.find((c) => c.id === selectedCampaignId) || null;
 

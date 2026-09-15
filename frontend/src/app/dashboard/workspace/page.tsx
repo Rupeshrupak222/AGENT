@@ -1,10 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
 import {
-  Users, Trash2, UserPlus, Loader2
+  Users, Trash2, UserPlus, Loader2, Bot
 } from "lucide-react";
+import Link from "next/link";
 import { useAuthStore } from "@/store/auth.store";
-import { teamApi, TeamMember } from "@/lib/api";
+import { teamApi, agentsApi, TeamMember, AgentItem } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 
 function formatJoined(iso?: string | null): string {
@@ -21,21 +22,26 @@ function formatJoined(iso?: string | null): string {
 export default function WorkspacePage() {
   const currentUser = useAuthStore((s) => s.user);
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [agents, setAgents] = useState<AgentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [inviting, setInviting] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<any>("manager");
+  const [inviteRole, setInviteRole] = useState<any>("agent");
   const { success: toastSuccess, error: toastError } = useToast();
 
   const loadMembers = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await teamApi.list();
+      const [data, agentsData] = await Promise.all([
+        teamApi.list(),
+        agentsApi.list().catch(() => [] as AgentItem[]),
+      ]);
       setMembers(data);
+      setAgents(agentsData);
     } catch (err) {
       setError("Could not load team members. Please check your connection and retry.");
     } finally {
@@ -137,47 +143,70 @@ export default function WorkspacePage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {members.map((member) => (
-              <div
-                key={member.id}
-                className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06] flex items-center justify-between gap-4"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-600 to-purple-600 flex items-center justify-center font-bold text-sm text-white">
-                    {member.name[0]?.toUpperCase()}
+            {members.map((member) => {
+              const assignedAgents = agents.filter(
+                (a) => a.operatorUserId === member.id || (a as any).operatorUser?.id === member.id
+              );
+              return (
+                <div
+                  key={member.id}
+                  className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06] flex items-center justify-between gap-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-600 to-purple-600 flex items-center justify-center font-bold text-sm text-white flex-shrink-0">
+                      {member.name[0]?.toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{member.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-white/40 font-mono">{member.email}</p>
+                      {assignedAgents.length > 0 && (
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20">
+                            <Bot className="w-3 h-3" />
+                            {assignedAgents.length} {assignedAgents.length === 1 ? "Agent" : "Agents"}
+                          </span>
+                          {assignedAgents.slice(0, 2).map((a) => (
+                            <Link
+                              key={a.id}
+                              href="/dashboard/agents"
+                              className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-white dark:bg-white/[0.06] hover:bg-slate-100 dark:hover:bg-white/[0.12] text-slate-700 dark:text-white/80 border border-slate-200 dark:border-white/10 transition-colors"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              <span className="truncate max-w-[100px]">{a.name}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{member.name}</p>
-                    <p className="text-xs text-slate-500 dark:text-white/40 font-mono">{member.email}</p>
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-4">
-                  <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full capitalize ${
-                    member.role === "company_admin"
-                      ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-500/30"
-                      : member.role === "manager"
-                      ? "bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30"
-                      : member.role === "viewer"
-                      ? "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/60 border border-slate-200 dark:border-white/15"
-                      : "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30"
-                  }`}>
-                    {member.role.replace("_", " ")}
-                  </span>
-                  <span className="text-xs text-slate-400 dark:text-white/30 hidden sm:block">Joined {formatJoined(member.createdAt)}</span>
-                  {member.role !== "company_admin" && member.id !== currentUser?.id && (
-                    <button
-                      onClick={() => removeMember(member.id)}
-                      disabled={removingId === member.id}
-                      aria-label={`Remove ${member.name} from workspace`}
-                      className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 dark:text-white/30 hover:text-rose-500 dark:hover:text-rose-400 transition-colors disabled:opacity-50"
-                    >
-                      {removingId === member.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                    </button>
-                  )}
+                  <div className="flex items-center gap-4">
+                    <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full capitalize ${
+                      member.role === "company_admin"
+                        ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-500/30"
+                        : member.role === "manager"
+                        ? "bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30"
+                        : member.role === "viewer"
+                        ? "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/60 border border-slate-200 dark:border-white/15"
+                        : "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30"
+                    }`}>
+                      {member.role.replace("_", " ")}
+                    </span>
+                    <span className="text-xs text-slate-400 dark:text-white/30 hidden sm:block">Joined {formatJoined(member.createdAt)}</span>
+                    {member.role !== "company_admin" && member.id !== currentUser?.id && (
+                      <button
+                        onClick={() => removeMember(member.id)}
+                        disabled={removingId === member.id}
+                        aria-label={`Remove ${member.name} from workspace`}
+                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 dark:text-white/30 hover:text-rose-500 dark:hover:text-rose-400 transition-colors disabled:opacity-50"
+                      >
+                        {removingId === member.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -211,8 +240,10 @@ export default function WorkspacePage() {
                   onChange={e => setInviteRole(e.target.value as any)}
                   className="w-full h-10 rounded-xl px-3 text-xs bg-input border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
                 >
+                  <option value="agent">Agent (Operates assigned AI voice agents & calls)</option>
+                  <option value="manager">Manager (Can manage agents, team & campaigns)</option>
                   <option value="company_admin">Company Admin (Full workspace & billing access)</option>
-                  <option value="manager">Manager (Can manage agents & campaigns)</option>
+                  <option value="viewer">Viewer (Read-only access)</option>
                 </select>
               </div>
 

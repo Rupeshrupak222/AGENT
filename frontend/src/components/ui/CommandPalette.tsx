@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -226,6 +226,15 @@ export function CommandPalette({
     setSelectedIndex(0);
   }, [filteredCommands]);
 
+  const executeCommand = useCallback((cmd: CommandItem) => {
+    onClose();
+    if (cmd.href) {
+      router.push(cmd.href);
+    } else if (cmd.action) {
+      cmd.action();
+    }
+  }, [onClose, router]);
+
   // Keyboard navigation inside command palette
   useEffect(() => {
     if (!isOpen) return;
@@ -250,16 +259,7 @@ export function CommandPalette({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, filteredCommands, selectedIndex]);
-
-  const executeCommand = (cmd: CommandItem) => {
-    onClose();
-    if (cmd.href) {
-      router.push(cmd.href);
-    } else if (cmd.action) {
-      cmd.action();
-    }
-  };
+  }, [isOpen, filteredCommands, selectedIndex, executeCommand, onClose]);
 
   if (!isOpen) return null;
 

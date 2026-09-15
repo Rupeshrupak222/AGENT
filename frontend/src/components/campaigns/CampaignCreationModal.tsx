@@ -90,8 +90,8 @@ export function CampaignCreationModal({ onClose, onSuccess }: CampaignCreationMo
         setLoadingAgents(true);
         const res = await agentsApi.list();
         setAgents(res);
-        if (res.length > 0 && !selectedAgentId) {
-          setSelectedAgentId(res[0].id);
+        if (res.length > 0) {
+          setSelectedAgentId((prev) => prev || res[0].id);
         }
       } catch (err) {
         error(`Failed to load agents: ${normalizeApiError(err)}`);
@@ -99,7 +99,7 @@ export function CampaignCreationModal({ onClose, onSuccess }: CampaignCreationMo
         setLoadingAgents(false);
       }
     })();
-  }, []);
+  }, [error]);
 
   // 2. Fetch Leads when on Step 2
   useEffect(() => {
@@ -121,7 +121,7 @@ export function CampaignCreationModal({ onClose, onSuccess }: CampaignCreationMo
         setLoadingLeads(false);
       }
     })();
-  }, [step, leadPage, leadSearch, leadStatusFilter]);
+  }, [step, leadPage, leadSearch, leadStatusFilter, error]);
 
   // Toggle Lead Selection
   const toggleLead = (id: string) => {

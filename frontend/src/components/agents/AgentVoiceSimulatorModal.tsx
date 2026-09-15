@@ -66,6 +66,7 @@ export function AgentVoiceSimulatorModal({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recognitionRef = useRef<any>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const handleSendTurnRef = useRef<(text?: string) => Promise<void>>();
   const { success, error: toastError } = useToast();
 
   // Scroll to bottom of chat
@@ -182,7 +183,7 @@ export function AgentVoiceSimulatorModal({
         setIsRecording(false);
         // In hands-free mode, if we captured text, automatically submit turn
         if (handsFreeRef.current && finalRecognized.trim()) {
-          handleSendTurn(finalRecognized.trim());
+          handleSendTurnRef.current?.(finalRecognized.trim());
         }
       };
 
@@ -360,6 +361,7 @@ export function AgentVoiceSimulatorModal({
       setIsProcessing(false);
     }
   };
+  handleSendTurnRef.current = handleSendTurn;
 
   const handleRestart = () => {
     stopAudioPlayback();

@@ -13,11 +13,14 @@ import {
   ShieldCheck,
   Trash2,
   Crown,
+  Bot,
+  Radio,
 } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PERMISSIONS } from "@/lib/permissions";
-import { teamApi, normalizeApiError, TeamMember } from "@/lib/api";
+import { teamApi, agentsApi, normalizeApiError, TeamMember, AgentItem } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
 import { useToast } from "@/components/ui/Toast";
 
@@ -35,6 +38,7 @@ export default function TeamPage() {
   const { can } = usePermissions();
   const currentUser = useAuthStore((s) => s.user);
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [agents, setAgents] = useState<AgentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +61,12 @@ export default function TeamPage() {
     else setLoading(true);
     setError(null);
     try {
-      setMembers(await teamApi.list());
+      const [membersData, agentsData] = await Promise.all([
+        teamApi.list(),
+        agentsApi.list().catch(() => [] as AgentItem[]),
+      ]);
+      setMembers(membersData);
+      setAgents(agentsData);
     } catch (e) {
       setError(normalizeApiError(e));
     } finally {
@@ -208,6 +217,9 @@ export default function TeamPage() {
               .slice(0, 2)
               .join("")
               .toUpperCase();
+            const assignedAgents = agents.filter(
+              (a) => a.operatorUserId === m.id || (a as any).operatorUser?.id === m.id
+            );
             return (
               <div
                 key={m.id}
@@ -231,6 +243,29 @@ export default function TeamPage() {
                       )}
                     </div>
                     <p className="text-xs text-slate-400 dark:text-white/40 truncate">{m.email}</p>
+                    {assignedAgents.length > 0 && (
+                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20">
+                          <Bot className="w-3 h-3" />
+                          Operates {assignedAgents.length} {assignedAgents.length === 1 ? "Agent" : "Agents"}
+                        </span>
+                        {assignedAgents.slice(0, 2).map((a) => (
+                          <Link
+                            key={a.id}
+                            href="/dashboard/agents"
+                            className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.12] text-slate-700 dark:text-white/80 border border-slate-200 dark:border-white/10 transition-colors"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span className="truncate max-w-[110px]">{a.name}</span>
+                          </Link>
+                        ))}
+                        {assignedAgents.length > 2 && (
+                          <span className="text-[10px] text-slate-400 dark:text-white/40">
+                            +{assignedAgents.length - 2} more
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
