@@ -48,6 +48,7 @@ export const AI_KNOWLEDGE_MANAGE = 'ai_knowledge:manage' as const;
 export const CAMPAIGN_VIEW = 'campaign:view' as const;
 export const CAMPAIGN_CREATE = 'campaign:create' as const;
 export const CAMPAIGN_UPDATE = 'campaign:update' as const;
+export const CAMPAIGN_DELETE = 'campaign:delete' as const;
 export const CAMPAIGN_EXECUTE = 'campaign:execute' as const;
 export const CAMPAIGN_PAUSE = 'campaign:pause' as const;
 
@@ -117,7 +118,7 @@ export type Permission =
   | typeof AI_PROMPT_VIEW | typeof AI_PROMPT_UPDATE
   | typeof AI_VOICE_MANAGE | typeof AI_KNOWLEDGE_MANAGE
   | typeof CAMPAIGN_VIEW | typeof CAMPAIGN_CREATE | typeof CAMPAIGN_UPDATE
-  | typeof CAMPAIGN_EXECUTE | typeof CAMPAIGN_PAUSE
+  | typeof CAMPAIGN_DELETE | typeof CAMPAIGN_EXECUTE | typeof CAMPAIGN_PAUSE
   | typeof LEAD_VIEW | typeof LEAD_CREATE | typeof LEAD_UPDATE | typeof LEAD_DELETE
   | typeof LEAD_IMPORT | typeof LEAD_ASSIGN | typeof LEAD_EXPORT
   | typeof CALL_VIEW | typeof CALL_INITIATE | typeof CALL_MONITOR | typeof CALL_INTERVENE | typeof CALL_DISPOSITION

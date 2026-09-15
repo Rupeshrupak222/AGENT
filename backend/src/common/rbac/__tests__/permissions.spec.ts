@@ -5,7 +5,7 @@ import {
   BILLING_VIEW, BILLING_MANAGE,
   AI_AGENT_VIEW, AI_AGENT_CREATE, AI_AGENT_UPDATE, AI_AGENT_DELETE,
   AI_PROMPT_VIEW, AI_PROMPT_UPDATE,
-  CAMPAIGN_VIEW, CAMPAIGN_CREATE, CAMPAIGN_EXECUTE,
+  CAMPAIGN_VIEW, CAMPAIGN_CREATE, CAMPAIGN_DELETE, CAMPAIGN_EXECUTE,
   LEAD_VIEW, LEAD_CREATE, LEAD_UPDATE, LEAD_DELETE, LEAD_IMPORT, LEAD_ASSIGN, LEAD_EXPORT,
   CALL_VIEW, CALL_INITIATE, CALL_MONITOR, CALL_INTERVENE, CALL_DISPOSITION,
   RECORDING_VIEW, RECORDING_EXPORT,
@@ -52,6 +52,7 @@ describe('RBAC Permission System', () => {
         expect(hasPermission('company_admin', AI_AGENT_CREATE)).toBe(true);
         expect(hasPermission('company_admin', AI_AGENT_DELETE)).toBe(true);
         expect(hasPermission('company_admin', CAMPAIGN_CREATE)).toBe(true);
+        expect(hasPermission('company_admin', CAMPAIGN_DELETE)).toBe(true);
         expect(hasPermission('company_admin', CAMPAIGN_EXECUTE)).toBe(true);
       });
 
@@ -89,6 +90,7 @@ describe('RBAC Permission System', () => {
       it('should NOT have delete permissions', () => {
         expect(hasPermission('manager', AI_AGENT_DELETE)).toBe(false);
         expect(hasPermission('manager', LEAD_DELETE)).toBe(false);
+        expect(hasPermission('manager', CAMPAIGN_DELETE)).toBe(false);
       });
 
       it('should NOT have export permissions', () => {

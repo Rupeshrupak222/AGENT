@@ -239,9 +239,7 @@ async findAll(tenantId: string, query: {
     }
 
     if (!signedUrl && !recording) {
-      if (call.status === 'completed') {
-        signedUrl = call.recordingUrl || `https://cdn.agentcall.ai/recordings/${callId}.mp3`;
-      } else {
+      if (call.status !== 'completed') {
         throw new NotFoundException('Recording not available for this call');
       }
     }

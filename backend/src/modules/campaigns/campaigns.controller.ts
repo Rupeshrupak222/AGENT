@@ -29,6 +29,7 @@ import {
   CAMPAIGN_VIEW,
   CAMPAIGN_CREATE,
   CAMPAIGN_UPDATE,
+  CAMPAIGN_DELETE,
   CAMPAIGN_EXECUTE,
   CAMPAIGN_PAUSE,
 } from '../../common/rbac/permissions';
@@ -83,7 +84,7 @@ export class CampaignsController {
   }
 
   @Delete(':id')
-  @Permissions(CAMPAIGN_UPDATE)
+  @Permissions(CAMPAIGN_DELETE)
   @ApiOperation({ summary: 'Delete or archive a campaign' })
   delete(@CurrentUser() user: any, @Param('id') id: string) {
     return this.campaignsService.delete(user.tenantId, id, user);
