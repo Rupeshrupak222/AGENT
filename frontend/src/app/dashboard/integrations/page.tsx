@@ -206,14 +206,14 @@ export default function IntegrationsPage() {
       {/* Header Strip */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+          <div className="w-9 h-9 rounded-xl bg-brand-500/10 dark:bg-brand-500/20 border border-brand-500/20 dark:border-brand-500/30 flex items-center justify-center text-brand-600 dark:text-brand-400">
             <Plug className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
               Enterprise Integrations Marketplace
             </h1>
-            <p className="text-xs text-amber-200/60 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Automated handshakes with CRM pipelines, calendar booking, messaging, and data sinks
             </p>
           </div>
@@ -226,54 +226,54 @@ export default function IntegrationsPage() {
             onClick={() => load(true)}
             disabled={refreshing}
           >
-            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${refreshing ? "animate-spin text-amber-400" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${refreshing ? "animate-spin text-brand-500" : ""}`} />
             <span>Sync</span>
           </Button>
         </div>
       </div>
 
       {error && (
-        <div role="alert" className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+        <div role="alert" className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-300 text-xs flex items-center gap-2">
           <AlertCircle className="w-4 h-4 flex-shrink-0" /> {error}
         </div>
       )}
 
       {/* Connection Status Telemetry Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="p-4 rounded-xl bg-[#140b07] border border-amber-500/15">
-          <div className="flex items-center justify-between text-xs text-amber-200/60 mb-1">
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
             <span>Active Connectors</span>
-            <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+            <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
           </div>
-          <p className="text-2xl font-bold font-mono text-emerald-400">{activeCount}</p>
-          <p className="text-[10px] text-white/40 mt-1">Live streaming telemetry</p>
+          <p className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">{activeCount}</p>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Live streaming telemetry</p>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#140b07] border border-amber-500/15">
-          <div className="flex items-center justify-between text-xs text-amber-200/60 mb-1">
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
             <span>Configured Hubs</span>
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+            <ShieldCheck className="w-3.5 h-3.5 text-brand-500" />
           </div>
-          <p className="text-2xl font-bold font-mono text-white">{configuredCount}</p>
-          <p className="text-[10px] text-white/40 mt-1">Authenticated integrations</p>
+          <p className="text-2xl font-bold font-mono text-slate-900 dark:text-white">{configuredCount}</p>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Authenticated integrations</p>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#140b07] border border-amber-500/15">
-          <div className="flex items-center justify-between text-xs text-amber-200/60 mb-1">
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
             <span>Catalog Connectors</span>
-            <Plug className="w-3.5 h-3.5 text-sky-400" />
+            <Plug className="w-3.5 h-3.5 text-sky-500" />
           </div>
-          <p className="text-2xl font-bold font-mono text-sky-400">{CATALOG_ORDER.length}</p>
-          <p className="text-[10px] text-white/40 mt-1">Plug-and-play supported</p>
+          <p className="text-2xl font-bold font-mono text-sky-600 dark:text-sky-400">{CATALOG_ORDER.length}</p>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Plug-and-play supported</p>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#140b07] border border-amber-500/15">
-          <div className="flex items-center justify-between text-xs text-amber-200/60 mb-1">
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
             <span>Average Sync Latency</span>
-            <Zap className="w-3.5 h-3.5 text-emerald-400" />
+            <Zap className="w-3.5 h-3.5 text-emerald-500" />
           </div>
-          <p className="text-2xl font-bold font-mono text-emerald-400">~210ms</p>
-          <p className="text-[10px] text-white/40 mt-1">Sub-second webhook dispatch</p>
+          <p className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">~210ms</p>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Sub-second webhook dispatch</p>
         </div>
       </div>
 
@@ -282,17 +282,17 @@ export default function IntegrationsPage() {
           role="status"
           className={`p-3.5 rounded-xl border text-xs flex items-center justify-between gap-2 ${
             testResult.ok
-              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-              : "border-rose-500/30 bg-rose-500/10 text-rose-300"
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+              : "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300"
           }`}
         >
           <div className="flex items-center gap-2">
-            {testResult.ok ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : <XCircle className="w-4 h-4 text-rose-400" />}
+            {testResult.ok ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <XCircle className="w-4 h-4 text-rose-500" />}
             <span>
               <strong>{humanize(testResult.provider)}:</strong> {testResult.msg}
             </span>
           </div>
-          <button onClick={() => setTestResult(null)} className="text-white/40 hover:text-white">
+          <button onClick={() => setTestResult(null)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -307,8 +307,8 @@ export default function IntegrationsPage() {
               onClick={() => setActiveCategory(cat.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                 activeCategory === cat.id
-                  ? "bg-amber-600 text-white shadow-md shadow-amber-900/30"
-                  : "bg-white/5 hover:bg-white/10 text-white/50 hover:text-white"
+                  ? "bg-brand-600 text-white shadow-md shadow-brand-900/30"
+                  : "bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-white/50 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
               {cat.label}
@@ -317,12 +317,12 @@ export default function IntegrationsPage() {
         </div>
 
         <div className="relative sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/40" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-white/40" />
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search connectors…"
-            className="w-full h-9 pl-8 pr-3 rounded-lg text-xs bg-black/40 border border-amber-500/20 text-white outline-none focus:border-amber-400"
+            className="w-full h-9 pl-8 pr-3 rounded-lg text-xs bg-white dark:bg-black/40 border border-slate-200 dark:border-amber-500/20 text-slate-900 dark:text-white outline-none focus:border-brand-500 shadow-xs"
           />
         </div>
       </div>
@@ -331,7 +331,7 @@ export default function IntegrationsPage() {
       {loading && integrations.length === 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[0, 1, 2, 3, 4, 5].map((p) => (
-            <div key={p} className="h-44 rounded-xl bg-white/[0.03] animate-pulse border border-white/5" />
+            <div key={p} className="h-44 rounded-xl bg-slate-100 dark:bg-slate-900/60 animate-pulse border border-slate-200 dark:border-slate-800" />
           ))}
         </div>
       ) : (
@@ -345,7 +345,7 @@ export default function IntegrationsPage() {
             return (
               <div
                 key={provider}
-                className="rounded-xl p-5 bg-[#120a06] border border-amber-500/15 hover:border-amber-500/30 flex flex-col justify-between transition-all"
+                className="rounded-xl p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-brand-500/40 dark:hover:border-brand-500/40 flex flex-col justify-between transition-all shadow-sm"
               >
                 <div>
                   <div className="flex items-start justify-between mb-3 gap-2">
@@ -355,60 +355,60 @@ export default function IntegrationsPage() {
                     {item ? (
                       item.isConfigured ? (
                         item.isActive ? (
-                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                             <CheckCircle className="w-3 h-3" /> Live
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
                             <AlertTriangle className="w-3 h-3" /> Standby
                           </span>
                         )
                       ) : (
-                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-white/5 text-white/40 border border-white/10">
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-white/40 border border-slate-200 dark:border-white/10">
                           <XCircle className="w-3 h-3" /> Unconfigured
                         </span>
                       )
                     ) : (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-white/5 text-white/40 border border-white/10">
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-white/40 border border-slate-200 dark:border-white/10">
                         <XCircle className="w-3 h-3" /> Ready to Connect
                       </span>
                     )}
                   </div>
 
-                  <h3 className="text-sm font-bold text-white mb-1">{humanize(provider)}</h3>
-                  <p className="text-xs text-white/50 line-clamp-2 leading-relaxed">{cfg.description}</p>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">{humanize(provider)}</h3>
+                  <p className="text-xs text-slate-500 dark:text-white/50 line-clamp-2 leading-relaxed">{cfg.description}</p>
 
                   {item?.lastSyncAt && (
-                    <p className="text-[10px] font-mono text-amber-200/50 mt-2">
+                    <p className="text-[10px] font-mono text-slate-400 dark:text-amber-200/50 mt-2">
                       Last sync: {new Date(item.lastSyncAt).toLocaleTimeString()}
                     </p>
                   )}
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between gap-2">
+                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between gap-2">
                   {canManage ? (
                     <div className="flex items-center gap-2 w-full justify-between">
                       {item?.isConfigured && (
                         <button
                           onClick={() => handleTest(provider)}
                           disabled={isTestingThis}
-                          className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-semibold text-white/70 hover:text-white transition-colors flex items-center gap-1 disabled:opacity-50"
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-[11px] font-semibold text-slate-700 dark:text-white/70 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center gap-1 disabled:opacity-50"
                         >
-                          {isTestingThis ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3 text-amber-400" />}
+                          {isTestingThis ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3 text-brand-500" />}
                           <span>Test Handshake</span>
                         </button>
                       )}
 
                       <button
                         onClick={() => openConfig(provider)}
-                        className="ml-auto px-3 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-[11px] font-semibold text-amber-300 transition-colors flex items-center gap-1"
+                        className="ml-auto px-3 py-1 rounded-lg bg-brand-500/10 dark:bg-amber-500/15 hover:bg-brand-500/20 dark:hover:bg-amber-500/25 border border-brand-500/20 dark:border-amber-500/30 text-[11px] font-semibold text-brand-700 dark:text-amber-300 transition-colors flex items-center gap-1"
                       >
                         <Settings2 className="w-3 h-3" />
                         <span>{item?.isConfigured ? "Manage" : "Configure"}</span>
                       </button>
                     </div>
                   ) : (
-                    <span className="text-[11px] text-white/40 italic">View Only</span>
+                    <span className="text-[11px] text-slate-400 dark:text-white/40 italic">View Only</span>
                   )}
                 </div>
               </div>
@@ -419,26 +419,26 @@ export default function IntegrationsPage() {
 
       {/* Configuration Slide-over Modal */}
       {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => setEditing(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm" onClick={() => setEditing(null)}>
           <div
-            className="w-full max-w-md rounded-2xl p-6 bg-[#0e0805] border border-amber-500/20 shadow-2xl space-y-5"
+            className="w-full max-w-md rounded-2xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-5"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-white">Configure {humanize(editing)}</h3>
-                <p className="text-xs text-amber-200/60 mt-0.5">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Configure {humanize(editing)}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Enter authentication parameters for real-time bidirectional syncing.
                 </p>
               </div>
-              <button onClick={() => setEditing(null)} className="p-1.5 rounded-lg text-white/40 hover:text-white transition-colors">
+              <button onClick={() => setEditing(null)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:text-white/40 dark:hover:text-white transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-amber-100/90 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   {PROVIDER_CONFIG[editing]?.credLabel || "API Credential Token"}
                 </label>
                 <div className="relative">
@@ -451,12 +451,12 @@ export default function IntegrationsPage() {
                         ? "•••••••••••••••• (Leave blank to keep existing)"
                         : "Enter token or webhook secret…"
                     }
-                    className="w-full h-10 pl-3 pr-10 rounded-lg text-xs font-mono bg-black/40 border border-amber-500/20 text-white outline-none focus:border-amber-400"
+                    className="w-full h-10 pl-3 pr-10 rounded-lg text-xs font-mono bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-brand-500 shadow-xs"
                   />
                   <button
                     type="button"
                     onClick={() => setShowSecret(!showSecret)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-white/40 hover:text-white"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 dark:text-white/40 dark:hover:text-white"
                   >
                     {showSecret ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
@@ -464,22 +464,22 @@ export default function IntegrationsPage() {
               </div>
 
               <div className="pt-2">
-                <label className="flex items-center justify-between p-3 rounded-xl border border-white/10 bg-black/30 cursor-pointer">
+                <label className="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 cursor-pointer">
                   <div>
-                    <p className="text-xs font-bold text-white">Enable Real-Time Dispatch</p>
-                    <p className="text-[10px] text-white/40">Activate immediate webhook & record updates</p>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">Enable Real-Time Dispatch</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">Activate immediate webhook & record updates</p>
                   </div>
                   <input
                     type="checkbox"
                     checked={active}
                     onChange={(e) => setActive(e.target.checked)}
-                    className="accent-amber-500 w-4 h-4"
+                    className="accent-brand-600 w-4 h-4"
                   />
                 </label>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 justify-end pt-3 border-t border-white/10">
+            <div className="flex items-center gap-2 justify-end pt-3 border-t border-slate-200 dark:border-slate-800">
               <Button
                 variant="secondary"
                 size="sm"

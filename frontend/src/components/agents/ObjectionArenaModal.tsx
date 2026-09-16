@@ -128,34 +128,34 @@ export function ObjectionArenaModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl bg-slate-900 border border-white/10 shadow-2xl overflow-hidden"
+        className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden text-slate-900 dark:text-white"
       >
         {/* Header */}
-        <div className="p-5 border-b border-white/10 bg-slate-950 flex items-center justify-between">
+        <div className="p-5 border-b border-slate-200 dark:border-white/10 bg-slate-50/90 dark:bg-slate-950 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
               <ShieldAlert className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-white">AI Objection Handling & Coaching Arena</h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">AI Objection Handling & Coaching Arena</h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                   Stress-Test Mode
                 </span>
               </div>
-              <p className="text-xs text-white/50 mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-white/50 mt-0.5">
                 Benchmark {agent?.name || "AI Agent"} against difficult sales resistance, price pushback, and competitor comparisons.
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:text-white/40 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -178,11 +178,11 @@ export function ObjectionArenaModal({
                     onClick={() => handleTestScenario(sc)}
                     className={`p-3 rounded-xl border text-left transition-all ${
                       isActive
-                        ? "border-amber-500 bg-amber-500/20 shadow-md shadow-amber-500/10 text-white scale-[1.02]"
-                        : "border-white/10 bg-slate-800/40 hover:border-white/20 text-white/70"
+                        ? "border-amber-500 bg-amber-500/15 dark:bg-amber-500/20 shadow-md shadow-amber-500/10 text-slate-900 dark:text-white scale-[1.02]"
+                        : "border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-800/40 hover:border-brand-500/40 text-slate-700 dark:text-white/70"
                     }`}
                   >
-                    <span className="text-[10px] font-bold text-amber-400 block mb-1 uppercase tracking-wider">
+                    <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 block mb-1 uppercase tracking-wider">
                       {sc.category}
                     </span>
                     <p className="text-xs font-semibold line-clamp-2 leading-snug">

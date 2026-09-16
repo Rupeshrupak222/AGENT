@@ -108,30 +108,30 @@ export const KnowledgeCrawlerModal: React.FC<KnowledgeCrawlerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-      <div className="relative w-full max-w-4xl bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in">
+      <div className="relative w-full max-w-4xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] text-slate-900 dark:text-white">
         
         {/* Header */}
-        <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-emerald-900/30 via-slate-900 to-teal-950/30">
+        <div className="px-6 py-5 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-emerald-50/70 dark:bg-gradient-to-r dark:from-emerald-900/30 dark:via-slate-900 dark:to-teal-950/30">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-500/10">
               <Database className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-black text-white tracking-tight">Self-Service Knowledge Crawler & FAQ Forge</h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Self-Service Knowledge Crawler & FAQ Forge</h2>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
                   Vector RAG Ingestion
                 </span>
               </div>
-              <p className="text-xs text-white/50">
+              <p className="text-xs text-slate-500 dark:text-white/50">
                 Crawl company websites, help documentation, or PDFs to auto-generate ground-truth knowledge for all voice agents.
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:text-white/40 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -141,9 +141,9 @@ export const KnowledgeCrawlerModal: React.FC<KnowledgeCrawlerModalProps> = ({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
           {/* Section 1: URL & Sitemap Crawler Input */}
-          <div className="p-5 rounded-2xl bg-black/40 border border-white/10 space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Globe className="w-4 h-4 text-emerald-400" />
+          <div className="p-5 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 space-y-4">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Globe className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
               Website URL & Sitemap Ingestion
             </h3>
 
@@ -153,14 +153,14 @@ export const KnowledgeCrawlerModal: React.FC<KnowledgeCrawlerModalProps> = ({
                 placeholder="https://yourcompany.com/faqs"
                 value={targetUrl}
                 onChange={(e) => setTargetUrl(e.target.value)}
-                className="flex-1 w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-xs text-white placeholder-white/30 focus:outline-none focus:border-emerald-500 font-mono"
+                className="flex-1 w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/50 border border-slate-200 dark:border-white/15 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 font-mono shadow-xs"
               />
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <select
                   value={crawlDepth}
                   onChange={(e) => setCrawlDepth(e.target.value as any)}
-                  className="px-3 py-2.5 rounded-xl bg-black/50 border border-white/15 text-xs text-white font-semibold"
+                  className="px-3 py-2.5 rounded-xl bg-white dark:bg-black/50 border border-slate-200 dark:border-white/15 text-xs text-slate-900 dark:text-white font-semibold shadow-xs"
                 >
                   <option value="1">Depth 1: Single Page</option>
                   <option value="2">Depth 2: Linked Docs</option>

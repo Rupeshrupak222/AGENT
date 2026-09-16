@@ -326,42 +326,42 @@ export function EnterpriseAgentStudioModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 15 }}
-        className="w-full max-w-5xl max-h-[92vh] flex flex-col rounded-2xl bg-[#0d0907] border border-amber-500/20 shadow-2xl overflow-hidden text-slate-100"
+        className="w-full max-w-5xl max-h-[92vh] flex flex-col rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden text-slate-900 dark:text-slate-100"
       >
         {/* Header Strip */}
-        <div className="px-6 py-4 border-b border-amber-500/15 bg-gradient-to-r from-[#180f0a] via-[#120805] to-[#0a0503] flex items-center justify-between flex-shrink-0">
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900/90 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <div className="w-10 h-10 rounded-xl bg-brand-500/10 dark:bg-brand-500/20 border border-brand-500/20 dark:border-brand-500/30 flex items-center justify-center text-brand-600 dark:text-brand-400">
               <Bot className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-white tracking-tight">
-                  {isEditing ? `Configure Agent: ${name || agent?.name}` : "Build Autonomous Voice Bot"}
+                <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+                  {isEditing ? `Configure Agent: ${name || agent?.name}` : "Build Autonomous AI Call Employee"}
                 </h2>
-                <Badge variant="warning" className="text-[10px] font-mono">
-                  8-Step Studio
-                </Badge>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-brand-500/10 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300 border border-brand-500/20">
+                  Enterprise Studio
+                </span>
               </div>
-              <p className="text-xs text-amber-200/60">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Step {currentStepIndex + 1} of {STEPS.length}: {STEPS[currentStepIndex].title}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-lg bg-black/40 border border-white/10 text-xs">
-              <ShieldCheck className={`w-3.5 h-3.5 ${passedChecksCount === checks.length ? "text-emerald-400" : "text-amber-400"}`} />
-              <span className="text-white/60 font-mono text-[11px]">{passedChecksCount}/{checks.length} Checks</span>
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs">
+              <ShieldCheck className={`w-3.5 h-3.5 ${passedChecksCount === checks.length ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500 dark:text-amber-400"}`} />
+              <span className="text-slate-600 dark:text-slate-300 font-mono text-[11px]">{passedChecksCount}/{checks.length} Checks</span>
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -369,9 +369,8 @@ export function EnterpriseAgentStudioModal({
         </div>
 
         {/* 8-Step Stepper Ribbon */}
-        <div className="px-4 py-2.5 bg-[#120a06] border-b border-amber-500/15 flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
+        <div className="px-4 py-2.5 bg-slate-100/70 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
           {STEPS.map((s, idx) => {
-            const Icon = s.icon;
             const active = activeStep === s.id;
             const completed = idx < currentStepIndex;
 
@@ -381,14 +380,14 @@ export function EnterpriseAgentStudioModal({
                 onClick={() => setActiveStep(s.id)}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                   active
-                    ? "bg-amber-600 text-white shadow-md shadow-amber-900/40"
+                    ? "bg-brand-600 text-white shadow-sm shadow-brand-500/20"
                     : completed
-                    ? "text-amber-300/80 hover:text-amber-200 bg-amber-500/5 hover:bg-amber-500/10"
-                    : "text-white/40 hover:text-white/70 hover:bg-white/5"
+                    ? "text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-500/10 hover:bg-brand-100 dark:hover:bg-brand-500/20 border border-brand-200/60 dark:border-brand-500/20"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/5"
                 }`}
               >
                 <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-mono ${
-                  active ? "bg-white text-black font-bold" : completed ? "bg-amber-500/20 text-amber-300" : "bg-white/10 text-white/40"
+                  active ? "bg-white text-brand-600 font-bold" : completed ? "bg-brand-200 text-brand-800 dark:bg-brand-500/30 dark:text-brand-300" : "bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400"
                 }`}>
                   {completed ? <Check className="w-2.5 h-2.5" /> : s.stepNumber}
                 </div>
@@ -400,7 +399,7 @@ export function EnterpriseAgentStudioModal({
 
         {/* Error notification */}
         {error && (
-          <div className="mx-6 mt-3 p-3 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+          <div className="mx-6 mt-3 p-3 rounded-lg bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
@@ -413,24 +412,24 @@ export function EnterpriseAgentStudioModal({
             <div className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-amber-100/90 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Agent Name *
                   </label>
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Priya - Enterprise Sales"
-                    className="w-full h-10 px-3 rounded-lg bg-black/40 border border-amber-500/20 text-sm text-white outline-none focus:border-amber-400"
+                    className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-brand-500 focus:bg-white dark:focus:bg-slate-800 transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-amber-100/90 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Industry Domain
                   </label>
                   <select
                     value={industry}
                     onChange={(e) => setIndustry(e.target.value)}
-                    className="w-full h-10 px-3 rounded-lg bg-[#180f0a] border border-amber-500/20 text-xs text-white outline-none focus:border-amber-400"
+                    className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white outline-none focus:border-brand-500 transition-colors"
                   >
                     {INDUSTRY_OPTIONS.map((ind) => (
                       <option key={ind} value={ind}>
@@ -442,37 +441,40 @@ export function EnterpriseAgentStudioModal({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-amber-100/90 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Agent Role Persona *
                 </label>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                  {ROLE_OPTIONS.map((r) => (
-                    <button
-                      type="button"
-                      key={r.value}
-                      onClick={() => setRole(r.value)}
-                      className={`p-3 rounded-xl text-left border transition-all ${
-                        role === r.value
-                          ? "border-amber-500 bg-amber-500/15 text-white shadow-sm"
-                          : "border-white/10 bg-black/30 hover:border-white/20 text-white/70"
-                      }`}
-                    >
-                      <p className="text-xs font-bold text-white">{r.label}</p>
-                      <p className="text-[11px] text-white/50 mt-0.5">{r.desc}</p>
-                    </button>
-                  ))}
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                  {ROLE_OPTIONS.map((r) => {
+                    const isSelected = role === r.value;
+                    return (
+                      <button
+                        type="button"
+                        key={r.value}
+                        onClick={() => setRole(r.value)}
+                        className={`p-3 rounded-xl text-left border transition-all ${
+                          isSelected
+                            ? "border-brand-500 bg-brand-50/80 dark:bg-brand-500/15 ring-1 ring-brand-500/40 text-slate-900 dark:text-white shadow-sm"
+                            : "border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300"
+                        }`}
+                      >
+                        <p className={`text-xs font-bold ${isSelected ? "text-brand-700 dark:text-brand-300" : "text-slate-900 dark:text-white"}`}>{r.label}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{r.desc}</p>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-amber-100/90 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Primary Language / Dialect
                   </label>
                   <select
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
-                    className="w-full h-10 px-3 rounded-lg bg-[#180f0a] border border-amber-500/20 text-xs text-white outline-none focus:border-amber-400"
+                    className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white outline-none focus:border-brand-500 transition-colors"
                   >
                     <option value="hindi">Hindi</option>
                     <option value="english">Indian English</option>
@@ -488,26 +490,26 @@ export function EnterpriseAgentStudioModal({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-amber-100/90 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Personality & Conversational Tone
                   </label>
                   <input
                     value={tone}
                     onChange={(e) => setTone(e.target.value)}
                     placeholder="e.g. Consultative, warm, concise, professional"
-                    className="w-full h-10 px-3 rounded-lg bg-black/40 border border-amber-500/20 text-xs text-white outline-none focus:border-amber-400"
+                    className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-brand-500 focus:bg-white dark:focus:bg-slate-800 transition-colors"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-amber-100/90 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Human Operator Binding (Scoped Agent Role)
                 </label>
                 <select
                   value={operatorUserId}
                   onChange={(e) => setOperatorUserId(e.target.value)}
-                  className="w-full h-10 px-3 rounded-lg bg-[#180f0a] border border-amber-500/20 text-xs text-white outline-none focus:border-amber-400"
+                  className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white outline-none focus:border-brand-500 transition-colors"
                 >
                   <option value="">Unassigned (Admin Managed / Tenant Wide)</option>
                   {operators.map((op) => (
@@ -516,7 +518,7 @@ export function EnterpriseAgentStudioModal({
                     </option>
                   ))}
                 </select>
-                <p className="text-[11px] text-amber-200/50 mt-1">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                   Optional: Binds this autonomous agent to a human team member. Scopes calls and lead CRM ownership to this user.
                 </p>
               </div>
@@ -527,7 +529,7 @@ export function EnterpriseAgentStudioModal({
           {activeStep === "reasoning" && (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-amber-100/90 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Core Business Goal / Objective * (Min 10 characters)
                 </label>
                 <textarea
@@ -535,42 +537,45 @@ export function EnterpriseAgentStudioModal({
                   value={businessGoal}
                   onChange={(e) => setBusinessGoal(e.target.value)}
                   placeholder="e.g. Qualify inbound inquiries, discover current call volumes, and book qualified 15-minute product demos."
-                  className="w-full p-3 rounded-lg bg-black/40 border border-amber-500/20 text-xs text-white outline-none focus:border-amber-400 resize-none font-mono"
+                  className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-brand-500 focus:bg-white dark:focus:bg-slate-800 resize-none font-mono transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-amber-100/90 mb-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
                   Select Conversational Reasoning Engine
                 </label>
                 <div className="grid sm:grid-cols-2 gap-3">
-                  {MODEL_OPTIONS.map((m) => (
-                    <div
-                      key={m.id}
-                      onClick={() => setModel(m.id)}
-                      className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
-                        model === m.id
-                          ? "border-amber-500 bg-amber-500/15 shadow-sm"
-                          : "border-white/10 bg-black/30 hover:border-white/20"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-bold text-white">{m.name}</p>
-                        <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                          {m.latency}
-                        </span>
+                  {MODEL_OPTIONS.map((m) => {
+                    const isSelected = model === m.id;
+                    return (
+                      <div
+                        key={m.id}
+                        onClick={() => setModel(m.id)}
+                        className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                          isSelected
+                            ? "border-brand-500 bg-brand-50/80 dark:bg-brand-500/15 ring-1 ring-brand-500/40 shadow-sm"
+                            : "border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-600"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className={`text-xs font-bold ${isSelected ? "text-brand-700 dark:text-brand-300" : "text-slate-900 dark:text-white"}`}>{m.name}</p>
+                          <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                            {m.latency}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{m.desc}</p>
                       </div>
-                      <p className="text-[11px] text-white/50 mt-1">{m.desc}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-4 pt-3 border-t border-white/10">
+              <div className="grid sm:grid-cols-2 gap-4 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <div>
-                  <div className="flex justify-between text-xs font-semibold text-amber-100/90 mb-1">
+                  <div className="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     <span>Temperature (Determinism vs Creativity)</span>
-                    <span className="font-mono text-amber-300">{temperature}</span>
+                    <span className="font-mono text-brand-600 dark:text-brand-400">{temperature}</span>
                   </div>
                   <input
                     type="range"
@@ -579,15 +584,15 @@ export function EnterpriseAgentStudioModal({
                     step="0.05"
                     value={temperature}
                     onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                    className="w-full accent-amber-500 cursor-pointer"
+                    className="w-full accent-brand-600 dark:accent-brand-500 cursor-pointer"
                   />
-                  <p className="text-[10px] text-white/40 mt-1">Lower = strictly adheres to script rules.</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Lower = strictly adheres to script rules.</p>
                 </div>
 
                 <div>
-                  <div className="flex justify-between text-xs font-semibold text-amber-100/90 mb-1">
+                  <div className="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     <span>Max Tokens Per Response Turn</span>
-                    <span className="font-mono text-amber-300">{maxTokens} tokens</span>
+                    <span className="font-mono text-brand-600 dark:text-brand-400">{maxTokens} tokens</span>
                   </div>
                   <input
                     type="range"
@@ -596,21 +601,21 @@ export function EnterpriseAgentStudioModal({
                     step="10"
                     value={maxTokens}
                     onChange={(e) => setMaxTokens(parseInt(e.target.value))}
-                    className="w-full accent-amber-500 cursor-pointer"
+                    className="w-full accent-brand-600 dark:accent-brand-500 cursor-pointer"
                   />
-                  <p className="text-[10px] text-white/40 mt-1">Crisp turns maintain sub-second voice latency.</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Crisp turns maintain sub-second voice latency.</p>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-amber-100/90 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   System Guardrails & Conversational Restrictions
                 </label>
                 <textarea
                   rows={3}
                   value={guardrails}
                   onChange={(e) => setGuardrails(e.target.value)}
-                  className="w-full p-3 rounded-lg bg-black/40 border border-amber-500/20 text-xs text-white outline-none focus:border-amber-400 resize-none font-mono"
+                  className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-brand-500 focus:bg-white dark:focus:bg-slate-800 resize-none font-mono transition-colors"
                 />
               </div>
             </div>
@@ -620,41 +625,44 @@ export function EnterpriseAgentStudioModal({
           {activeStep === "voice" && (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-amber-100/90 mb-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
                   Synthetic Neural Voice Profile
                 </label>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                  {VOICE_PROFILES.map((v) => (
-                    <div
-                      key={v.id}
-                      onClick={() => setVoiceId(v.id)}
-                      className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
-                        voiceId === v.id
-                          ? "border-amber-500 bg-amber-500/15 shadow-md shadow-amber-900/20"
-                          : "border-white/10 bg-black/30 hover:border-white/20"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Volume2 className="w-4 h-4 text-amber-400" />
-                          <p className="text-xs font-bold text-white">{v.name}</p>
+                  {VOICE_PROFILES.map((v) => {
+                    const isSelected = voiceId === v.id;
+                    return (
+                      <div
+                        key={v.id}
+                        onClick={() => setVoiceId(v.id)}
+                        className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                          isSelected
+                            ? "border-brand-500 bg-brand-50/80 dark:bg-brand-500/15 ring-1 ring-brand-500/40 shadow-sm"
+                            : "border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-600"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Volume2 className={`w-4 h-4 ${isSelected ? "text-brand-600 dark:text-brand-400" : "text-slate-500 dark:text-slate-400"}`} />
+                            <p className={`text-xs font-bold ${isSelected ? "text-brand-700 dark:text-brand-300" : "text-slate-900 dark:text-white"}`}>{v.name}</p>
+                          </div>
+                          <Badge variant="gray" className="text-[10px]">
+                            {v.gender}
+                          </Badge>
                         </div>
-                        <Badge variant="gray" className="text-[10px]">
-                          {v.gender}
-                        </Badge>
+                        <p className="text-[11px] text-brand-600 dark:text-brand-400 mt-1 font-mono font-medium">{v.lang}</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{v.desc}</p>
                       </div>
-                      <p className="text-[11px] text-amber-300/80 mt-1 font-mono">{v.lang}</p>
-                      <p className="text-[10px] text-white/40 mt-0.5">{v.desc}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="grid sm:grid-cols-3 gap-4 pt-3 border-t border-white/10">
+              <div className="grid sm:grid-cols-3 gap-4 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <div>
-                  <div className="flex justify-between text-xs font-semibold text-amber-100/90 mb-1">
+                  <div className="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     <span>Speech Speed Rate</span>
-                    <span className="font-mono text-amber-300">{speed}x</span>
+                    <span className="font-mono text-brand-600 dark:text-brand-400">{speed}x</span>
                   </div>
                   <input
                     type="range"
@@ -663,14 +671,14 @@ export function EnterpriseAgentStudioModal({
                     step="0.05"
                     value={speed}
                     onChange={(e) => setSpeed(parseFloat(e.target.value))}
-                    className="w-full accent-amber-500 cursor-pointer"
+                    className="w-full accent-brand-600 dark:accent-brand-500 cursor-pointer"
                   />
                 </div>
 
                 <div>
-                  <div className="flex justify-between text-xs font-semibold text-amber-100/90 mb-1">
+                  <div className="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     <span>Voice Pitch Modulation</span>
-                    <span className="font-mono text-amber-300">{pitch > 0 ? `+${pitch}` : pitch}Hz</span>
+                    <span className="font-mono text-brand-600 dark:text-brand-400">{pitch > 0 ? `+${pitch}` : pitch}Hz</span>
                   </div>
                   <input
                     type="range"
@@ -679,18 +687,18 @@ export function EnterpriseAgentStudioModal({
                     step="1"
                     value={pitch}
                     onChange={(e) => setPitch(parseInt(e.target.value))}
-                    className="w-full accent-amber-500 cursor-pointer"
+                    className="w-full accent-brand-600 dark:accent-brand-500 cursor-pointer"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-amber-100/90 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Barge-in Interruption Sensitivity
                   </label>
                   <select
                     value={bargeIn}
                     onChange={(e) => setBargeIn(e.target.value)}
-                    className="w-full h-9 px-3 rounded-lg bg-[#180f0a] border border-amber-500/20 text-xs text-white outline-none"
+                    className="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white outline-none focus:border-brand-500 transition-colors"
                   >
                     <option value="instant">Instantaneous Barge-in</option>
                     <option value="medium">Balanced (Recommended)</option>
@@ -705,7 +713,7 @@ export function EnterpriseAgentStudioModal({
           {activeStep === "knowledge" && (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-amber-100/90 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Company Knowledge Base & FAQs
                 </label>
                 <textarea
@@ -713,21 +721,21 @@ export function EnterpriseAgentStudioModal({
                   value={knowledgeBase}
                   onChange={(e) => setKnowledgeBase(e.target.value)}
                   placeholder="Paste FAQ questions, pricing models, service descriptions, and objection handling matrices..."
-                  className="w-full p-3.5 rounded-lg bg-black/40 border border-amber-500/20 text-xs text-white outline-none focus:border-amber-400 resize-none font-mono"
+                  className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-brand-500 focus:bg-white dark:focus:bg-slate-800 resize-none font-mono transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-amber-100/90 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Website Knowledge Sync URL
                 </label>
                 <input
                   value={websiteUrl}
                   onChange={(e) => setWebsiteUrl(e.target.value)}
                   placeholder="https://yourcompany.com/faq"
-                  className="w-full h-10 px-3 rounded-lg bg-black/40 border border-amber-500/20 text-xs text-white outline-none focus:border-amber-400"
+                  className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-brand-500 focus:bg-white dark:focus:bg-slate-800 transition-colors"
                 />
-                <p className="text-[11px] text-amber-200/50 mt-1">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                   The crawler will periodically index this URL and chunk paragraphs into embedding vectors.
                 </p>
               </div>
@@ -738,19 +746,19 @@ export function EnterpriseAgentStudioModal({
           {activeStep === "flow" && (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-amber-100/90 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Opening Hook Script
                 </label>
                 <input
                   value={openingScript}
                   onChange={(e) => setOpeningScript(e.target.value)}
                   placeholder="e.g. Hello! This is Priya from Acme Corp calling regarding your inquiry..."
-                  className="w-full h-10 px-3 rounded-lg bg-black/40 border border-amber-500/20 text-xs text-white outline-none focus:border-amber-400"
+                  className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-brand-500 focus:bg-white dark:focus:bg-slate-800 transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-amber-100/90 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Mandatory Lead Qualification Criteria (BANT)
                 </label>
                 <textarea
@@ -758,26 +766,26 @@ export function EnterpriseAgentStudioModal({
                   value={qualificationRules}
                   onChange={(e) => setQualificationRules(e.target.value)}
                   placeholder="Budget > $5,000, Target deployment < 30 days, Decision maker present"
-                  className="w-full p-3 rounded-lg bg-black/40 border border-amber-500/20 text-xs text-white outline-none focus:border-amber-400 resize-none font-mono"
+                  className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-brand-500 focus:bg-white dark:focus:bg-slate-800 resize-none font-mono transition-colors"
                 />
               </div>
 
               <div className="space-y-2.5 pt-2">
-                <span className="text-xs font-semibold text-amber-100/90 block">4-Stage Dialogue Pipeline</span>
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">4-Stage Dialogue Pipeline</span>
                 {[
                   { stage: "Stage 1: Greeting & Attention Hook", val: flowGreeting, set: setFlowGreeting },
                   { stage: "Stage 2: Discovery & Value Proposition", val: flowDiscovery, set: setFlowDiscovery },
                   { stage: "Stage 3: Qualification Questions", val: flowQualify, set: setFlowQualify },
                   { stage: "Stage 4: Appointment Action & Closing", val: flowClosing, set: setFlowClosing },
                 ].map((s) => (
-                  <div key={s.stage} className="p-3 rounded-xl bg-black/30 border border-white/10">
-                    <span className="text-[11px] font-bold text-amber-300 block mb-1">
+                  <div key={s.stage} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80">
+                    <span className="text-[11px] font-bold text-brand-600 dark:text-brand-400 block mb-1">
                       {s.stage}
                     </span>
                     <input
                       value={s.val}
                       onChange={(e) => s.set(e.target.value)}
-                      className="w-full h-9 px-3 rounded-lg bg-black/40 border border-white/10 text-xs text-white outline-none focus:border-amber-400"
+                      className="w-full h-9 px-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white outline-none focus:border-brand-500 transition-colors"
                     />
                   </div>
                 ))}
@@ -788,7 +796,7 @@ export function EnterpriseAgentStudioModal({
           {/* STEP 6: SAFETY & TOOLS */}
           {activeStep === "tools" && (
             <div className="space-y-4">
-              <label className="block text-xs font-semibold text-amber-100/90 mb-1">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Autonomous AI Tool Integrations
               </label>
 
@@ -827,16 +835,18 @@ export function EnterpriseAgentStudioModal({
                     key={tool.id}
                     onClick={tool.toggle}
                     className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
-                      tool.checked ? "border-amber-500/50 bg-amber-500/10" : "border-white/10 bg-black/30"
+                      tool.checked
+                        ? "border-brand-500 bg-brand-50/70 dark:bg-brand-500/10 ring-1 ring-brand-500/30"
+                        : "border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-600"
                     }`}
                   >
                     <div>
-                      <p className="text-xs font-bold text-white">{tool.title}</p>
-                      <p className="text-[11px] text-white/40 mt-0.5">{tool.desc}</p>
+                      <p className={`text-xs font-bold ${tool.checked ? "text-brand-700 dark:text-brand-300" : "text-slate-900 dark:text-white"}`}>{tool.title}</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{tool.desc}</p>
                     </div>
                     <div
-                      className={`w-5 h-5 rounded-md flex items-center justify-center border ${
-                        tool.checked ? "bg-amber-500 border-amber-400 text-black" : "border-white/20"
+                      className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors ${
+                        tool.checked ? "bg-brand-600 border-brand-600 text-white" : "border-slate-300 dark:border-slate-600"
                       }`}
                     >
                       {tool.checked && <CheckCircle2 className="w-4 h-4" />}
@@ -847,27 +857,27 @@ export function EnterpriseAgentStudioModal({
 
               {toolTransfer && (
                 <div className="pt-2">
-                  <label className="block text-xs font-semibold text-amber-200 mb-1">
+                  <label className="block text-xs font-semibold text-brand-600 dark:text-brand-300 mb-1">
                     Escalation Transfer Phone Number
                   </label>
                   <input
                     value={transferPhone}
                     onChange={(e) => setTransferPhone(e.target.value)}
                     placeholder="+91 98765 43210"
-                    className="w-full h-10 px-3 rounded-lg bg-black/40 border border-amber-500/20 text-xs text-white outline-none"
+                    className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white outline-none focus:border-brand-500 transition-colors"
                   />
                 </div>
               )}
 
-              <div className="grid sm:grid-cols-2 gap-4 pt-3 border-t border-white/10">
+              <div className="grid sm:grid-cols-2 gap-4 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <div>
-                  <label className="block text-xs font-semibold text-amber-100/90 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Maximum Call Duration
                   </label>
                   <select
                     value={maxDurationMinutes}
                     onChange={(e) => setMaxDurationMinutes(parseInt(e.target.value))}
-                    className="w-full h-10 px-3 rounded-lg bg-[#180f0a] border border-amber-500/20 text-xs text-white outline-none"
+                    className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white outline-none focus:border-brand-500 transition-colors"
                   >
                     <option value={5}>5 minutes</option>
                     <option value={10}>10 minutes (Recommended)</option>
@@ -877,13 +887,13 @@ export function EnterpriseAgentStudioModal({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-amber-100/90 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Silence Timeout
                   </label>
                   <select
                     value={silenceTimeoutSec}
                     onChange={(e) => setSilenceTimeoutSec(parseInt(e.target.value))}
-                    className="w-full h-10 px-3 rounded-lg bg-[#180f0a] border border-amber-500/20 text-xs text-white outline-none"
+                    className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white outline-none focus:border-brand-500 transition-colors"
                   >
                     <option value={3}>3 seconds (Snappy)</option>
                     <option value={4}>4 seconds (Balanced)</option>
@@ -893,29 +903,29 @@ export function EnterpriseAgentStudioModal({
               </div>
 
               <div className="space-y-2 pt-2">
-                <label className="flex items-center gap-3 p-3 rounded-xl border border-white/10 bg-black/30 cursor-pointer">
+                <label className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800/40 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={amdEnabled}
                     onChange={(e) => setAmdEnabled(e.target.checked)}
-                    className="accent-amber-500 w-4 h-4"
+                    className="accent-brand-600 w-4 h-4"
                   />
                   <div>
-                    <p className="text-xs font-bold text-white">Answering Machine Detection (AMD)</p>
-                    <p className="text-[11px] text-white/40">Automatically disengage when voicemail is detected.</p>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">Answering Machine Detection (AMD)</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Automatically disengage when voicemail is detected.</p>
                   </div>
                 </label>
 
-                <label className="flex items-center gap-3 p-3 rounded-xl border border-white/10 bg-black/30 cursor-pointer">
+                <label className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800/40 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={recordingConsent}
                     onChange={(e) => setRecordingConsent(e.target.checked)}
-                    className="accent-amber-500 w-4 h-4"
+                    className="accent-brand-600 w-4 h-4"
                   />
                   <div>
-                    <p className="text-xs font-bold text-white">Automated Recording Disclosure</p>
-                    <p className="text-[11px] text-white/40">Mandatory compliance disclosure at start of call.</p>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">Automated Recording Disclosure</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Mandatory compliance disclosure at start of call.</p>
                   </div>
                 </label>
               </div>
@@ -925,34 +935,34 @@ export function EnterpriseAgentStudioModal({
           {/* STEP 7: LIVE SIMULATOR */}
           {activeStep === "simulator" && (
             <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-black/40 border border-amber-500/20 space-y-3">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Play className="w-4 h-4 text-amber-400" />
-                    <span className="text-xs font-bold text-white">
+                    <Play className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">
                       In-Studio Dialogue Simulation
                     </span>
                   </div>
                   {testLatency && (
-                    <span className="text-[11px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                    <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                       Round-trip Latency: {testLatency}ms
                     </span>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-white/60 mb-1">Prospect Query / Input:</label>
+                  <label className="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">Prospect Query / Input:</label>
                   <div className="flex gap-2">
                     <input
                       value={testInput}
                       onChange={(e) => setTestInput(e.target.value)}
                       placeholder="Type a customer query to test the prompt..."
-                      className="flex-1 h-9 px-3 rounded-lg bg-black/50 border border-white/10 text-xs text-white outline-none focus:border-amber-400"
+                      className="flex-1 h-9 px-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white outline-none focus:border-brand-500 transition-colors"
                     />
                     <button
                       onClick={handleRunTestTurn}
                       disabled={testingInTab}
-                      className="px-4 h-9 rounded-lg bg-amber-600 hover:bg-amber-500 text-xs font-semibold text-white transition-all flex items-center gap-1.5 disabled:opacity-50"
+                      className="px-4 h-9 rounded-lg bg-brand-600 hover:bg-brand-500 text-xs font-semibold text-white transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-sm"
                     >
                       {testingInTab ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
                       <span>Execute Turn</span>
@@ -962,7 +972,7 @@ export function EnterpriseAgentStudioModal({
 
                 {/* Quick Prompts */}
                 <div className="flex items-center gap-2 flex-wrap text-[11px]">
-                  <span className="text-white/40">Quick prompts:</span>
+                  <span className="text-slate-500 dark:text-slate-400">Quick prompts:</span>
                   {[
                     "What services do you offer?",
                     "How much does your solution cost?",
@@ -973,7 +983,7 @@ export function EnterpriseAgentStudioModal({
                       key={p}
                       type="button"
                       onClick={() => setTestInput(p)}
-                      className="px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 text-amber-200/70 border border-white/5"
+                      className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors"
                     >
                       {p}
                     </button>
@@ -981,14 +991,14 @@ export function EnterpriseAgentStudioModal({
                 </div>
 
                 {testResponse && (
-                  <div className="p-3.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-xs">
+                  <div className="p-3.5 rounded-lg bg-brand-50/70 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/25 text-xs">
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">
+                      <p className="text-[10px] font-bold text-brand-700 dark:text-brand-300 uppercase tracking-wider">
                         AI Output ({voiceId}):
                       </p>
-                      <span className="text-[10px] font-mono text-white/40">{model}</span>
+                      <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{model}</span>
                     </div>
-                    <p className="text-white leading-relaxed">{testResponse}</p>
+                    <p className="text-slate-800 dark:text-slate-200 leading-relaxed">{testResponse}</p>
                   </div>
                 )}
               </div>
@@ -999,9 +1009,9 @@ export function EnterpriseAgentStudioModal({
           {activeStep === "deploy" && (
             <div className="space-y-5">
               {/* Readiness Matrix */}
-              <div className="p-4 rounded-xl bg-black/30 border border-white/10 space-y-3">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/80 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-sm text-white">Pre-Flight Readiness Checklist</h4>
+                  <h4 className="font-bold text-sm text-slate-900 dark:text-white">Pre-Flight Readiness Checklist</h4>
                   <Badge variant={passedChecksCount === checks.length ? "success" : "warning"} className="text-xs">
                     {passedChecksCount}/{checks.length} Verified
                   </Badge>
@@ -1009,10 +1019,10 @@ export function EnterpriseAgentStudioModal({
                 <div className="grid sm:grid-cols-2 gap-2 text-xs">
                   {checks.map((chk, i) => (
                     <div key={i} className="flex items-center gap-2 py-1">
-                      <div className={`w-4 h-4 rounded-full flex items-center justify-center ${chk.valid ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"}`}>
+                      <div className={`w-4 h-4 rounded-full flex items-center justify-center ${chk.valid ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-rose-500/15 text-rose-600 dark:text-rose-400"}`}>
                         {chk.valid ? <Check className="w-2.5 h-2.5" /> : <X className="w-2.5 h-2.5" />}
                       </div>
-                      <span className={chk.valid ? "text-white/80" : "text-rose-300 font-semibold"}>
+                      <span className={chk.valid ? "text-slate-700 dark:text-slate-300" : "text-rose-600 dark:text-rose-300 font-semibold"}>
                         {chk.label}
                       </span>
                     </div>
@@ -1021,36 +1031,36 @@ export function EnterpriseAgentStudioModal({
               </div>
 
               {/* Carrier Number Binding */}
-              <div className="p-4 rounded-xl bg-black/30 border border-white/10 space-y-2">
-                <label className="block text-xs font-semibold text-amber-100/90">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/80 space-y-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                   Assigned Virtual Telephony DID
                 </label>
                 <input
                   value={assignedNumber}
                   onChange={(e) => setAssignedNumber(e.target.value)}
                   placeholder="+91 (80) 4567-8901 (Primary)"
-                  className="w-full h-10 px-3 rounded-lg bg-black/40 border border-amber-500/20 text-xs font-mono text-emerald-400 outline-none"
+                  className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono text-emerald-600 dark:text-emerald-400 outline-none focus:border-brand-500 transition-colors"
                 />
-                <p className="text-[11px] text-white/40">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   Inbound and outbound calls routed through this number will trigger this agent&apos;s neural graph.
                 </p>
               </div>
 
               {/* Status Toggle */}
-              <div className="flex items-center justify-between p-4 rounded-xl bg-black/30 border border-amber-500/20">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/80">
                 <div>
-                  <p className="text-xs font-bold text-white">Deployment Lifecycle Status</p>
-                  <p className="text-[11px] text-white/50">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white">Deployment Lifecycle Status</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     {status === "active" ? "Agent is live and accepts telephony traffic." : "Agent is saved in draft mode."}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setStatus(status === "active" ? "draft" : "active")}
-                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                     status === "active"
-                      ? "bg-emerald-500 text-black shadow-md shadow-emerald-900/30"
-                      : "bg-white/10 text-white/70 hover:bg-white/20"
+                      ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20"
+                      : "bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200"
                   }`}
                 >
                   {status === "active" ? "✓ Active (Live)" : "Draft Mode"}
@@ -1061,45 +1071,45 @@ export function EnterpriseAgentStudioModal({
         </div>
 
         {/* Modal Footer Controls */}
-        <div className="px-6 py-4 border-t border-amber-500/20 bg-[#120a06] flex items-center justify-between flex-shrink-0">
+        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900/90 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
+            <button
+              type="button"
               onClick={onClose}
               disabled={submitting}
+              className="px-4 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors disabled:opacity-50"
             >
               Cancel
-            </Button>
+            </button>
             {currentStepIndex > 0 && (
-              <Button
-                variant="secondary"
-                size="sm"
+              <button
+                type="button"
                 onClick={handlePrevStep}
                 disabled={submitting}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors disabled:opacity-50 flex items-center gap-1"
               >
                 <ArrowLeft className="w-3.5 h-3.5 mr-1" />
                 <span>Back</span>
-              </Button>
+              </button>
             )}
           </div>
 
           <div className="flex items-center gap-3">
             {currentStepIndex < STEPS.length - 1 ? (
-              <Button
-                variant="primary"
-                size="sm"
+              <button
+                type="button"
                 onClick={handleNextStep}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white dark:border-slate-700 transition-colors flex items-center gap-1.5 shadow-sm"
               >
                 <span>Next: {STEPS[currentStepIndex + 1].label}</span>
                 <ArrowRight className="w-3.5 h-3.5 ml-1" />
-              </Button>
+              </button>
             ) : null}
 
             <button
               onClick={handleSave}
               disabled={submitting}
-              className="px-5 py-2 rounded-lg text-xs font-bold bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white shadow-lg shadow-amber-900/40 transition-all flex items-center gap-1.5 disabled:opacity-50"
+              className="px-5 py-2 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-500 text-white shadow-lg shadow-brand-500/25 transition-all flex items-center gap-1.5 disabled:opacity-50"
             >
               <Rocket className="w-3.5 h-3.5" />
               <span>{submitting ? "Saving Agent..." : isEditing ? "Save Agent Changes" : "Deploy AI Agent"}</span>

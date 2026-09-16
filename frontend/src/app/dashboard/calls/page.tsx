@@ -450,23 +450,23 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 15 }}
-        className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl bg-[#0f0b09] border border-amber-500/25 shadow-2xl overflow-hidden text-slate-100"
+        className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl bg-white dark:bg-[#0f0b09] border border-slate-200 dark:border-amber-500/25 shadow-2xl overflow-hidden text-slate-900 dark:text-slate-100"
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-amber-500/20 bg-gradient-to-r from-[#180f0a] via-[#120805] to-[#0a0503] flex items-center justify-between flex-shrink-0">
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-amber-500/20 bg-slate-50/90 dark:bg-gradient-to-r dark:from-[#180f0a] dark:via-[#120805] dark:to-[#0a0503] flex items-center justify-between flex-shrink-0">
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-white">Call Session Intelligence</h3>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Call Session Intelligence</h3>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-brand-500/10 dark:bg-amber-500/20 text-brand-700 dark:text-amber-300 border border-brand-500/20 dark:border-amber-500/30 font-semibold">
                 {callId.slice(0, 12)}...
               </span>
             </div>
-            <p className="text-xs text-amber-200/50 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-amber-200/50 mt-0.5">
               Multi-speaker audio telemetry, NLP intelligence & interactive assistant
             </p>
           </div>
@@ -478,14 +478,14 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
               onClose();
             }}
             aria-label="Close call session details"
-            className="p-1.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:text-white/40 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Selection */}
-        <div className="flex items-center gap-2 px-6 py-2.5 bg-[#120a06] border-b border-amber-500/15 flex-shrink-0">
+        <div className="flex items-center gap-2 px-6 py-2.5 bg-slate-100/70 dark:bg-[#120a06] border-b border-slate-200 dark:border-amber-500/15 flex-shrink-0 overflow-x-auto">
           {[
             { id: "transcript", label: "Recording & Dialogue" },
             { id: "analysis", label: "AI Intelligence" },
@@ -495,10 +495,10 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id as any)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                 activeTab === t.id
-                  ? "bg-amber-600 text-white shadow-md shadow-amber-900/40"
-                  : "text-white/50 hover:text-white hover:bg-white/5"
+                  ? "bg-brand-600 text-white shadow-md shadow-brand-500/20"
+                  : "text-slate-600 dark:text-white/50 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/5"
               }`}
             >
               {t.label}

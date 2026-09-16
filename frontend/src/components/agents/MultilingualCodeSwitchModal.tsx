@@ -115,30 +115,30 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-      <div className="relative w-full max-w-4xl bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in">
+      <div className="relative w-full max-w-4xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] text-slate-900 dark:text-white">
         
         {/* Header */}
-        <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-blue-900/30 via-slate-900 to-indigo-950/30">
+        <div className="px-6 py-5 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-blue-50/70 dark:bg-gradient-to-r dark:from-blue-900/30 dark:via-slate-900 dark:to-indigo-950/30">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-blue-500/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <div className="w-10 h-10 rounded-2xl bg-blue-500/20 border border-blue-500/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-lg shadow-blue-500/10">
               <Languages className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-black text-white tracking-tight">Real-Time Multilingual Code-Switching & Dialect Engine</h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Real-Time Multilingual Code-Switching & Dialect Engine</h2>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-500/30">
                   Zero-Latency Polyglot
                 </span>
               </div>
-              <p className="text-xs text-white/50">
+              <p className="text-xs text-slate-500 dark:text-white/50">
                 Allows voice agents to detect and mirror mid-sentence language switches with cultural nuance and vernacular fidelity.
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:text-white/40 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -148,20 +148,20 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
           {/* Section 1: Live Code-Switching Dialogue Audition Console */}
-          <div className="p-5 rounded-2xl bg-black/40 border border-white/10 space-y-4">
+          <div className="p-5 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-blue-400" />
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-blue-500 dark:text-blue-400" />
                   Bilingual Dialogue Audition Console
                 </h3>
-                <p className="text-xs text-white/50">
+                <p className="text-xs text-slate-500 dark:text-white/50">
                   Observe how the AI agent smoothly transitions languages without restarting session context.
                 </p>
               </div>
 
               {/* Scenario Toggle */}
-              <div className="flex items-center gap-1.5 bg-black/50 p-1 rounded-xl border border-white/10">
+              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-black/50 p-1 rounded-xl border border-slate-200 dark:border-white/10">
                 {(["hinglish", "spanglish", "telugu"] as const).map((sc) => (
                   <button
                     key={sc}

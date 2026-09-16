@@ -447,41 +447,41 @@ export function AgentVoiceSimulatorModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="w-full max-w-2xl h-[90vh] max-h-[780px] flex flex-col rounded-2xl bg-[#140b08] border border-[#8B5A2B]/40 shadow-2xl overflow-hidden"
+        className="w-full max-w-2xl h-[90vh] max-h-[780px] flex flex-col rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden text-slate-900 dark:text-slate-100"
       >
         {/* ── Modal Header ────────────────────────────────────── */}
-        <div className="p-4 sm:p-5 border-b border-white/[0.08] bg-gradient-to-r from-[#20100a] via-[#1a0c07] to-[#120704] flex items-center justify-between flex-shrink-0">
+        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900/90 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#8B5A2B] to-[#5c3817] flex items-center justify-center text-white font-bold text-base shadow-lg shadow-[#8B5A2B]/20">
-                <Bot className="w-6 h-6 text-amber-200" />
+              <div className="w-11 h-11 rounded-2xl bg-brand-500/10 dark:bg-brand-500/20 border border-brand-500/20 dark:border-brand-500/30 flex items-center justify-center text-brand-600 dark:text-brand-400 font-bold text-base shadow-sm">
+                <Bot className="w-6 h-6" />
               </div>
               {isPlayingAudio && (
-                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 animate-ping" />
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 animate-ping" />
               )}
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-base font-bold text-white tracking-tight">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
                   {agent.name}
                 </h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-brand-500/10 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300 border border-brand-500/20">
                   {agent.role.replace(/_/g, " ")}
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.06] text-white/70 border border-white/10 capitalize">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-white/70 border border-slate-200 dark:border-white/10 capitalize">
                   {agent.language}
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border border-emerald-500/20 flex items-center gap-1">
                   <Zap className="w-2.5 h-2.5" /> 230ms WebRTC
                 </span>
               </div>
-              <p className="text-xs text-white/50 mt-0.5 flex items-center gap-1.5">
-                <Radio className="w-3 h-3 text-emerald-400" />
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
+                <Radio className="w-3 h-3 text-emerald-500 dark:text-emerald-400" />
                 Live Two-Way Voice Testing Console · Multi-lingual Speech-to-Speech
               </p>
             </div>
@@ -503,11 +503,11 @@ export function AgentVoiceSimulatorModal({
               title={handsFree ? "Disable Hands-Free Mode" : "Enable Hands-Free Voice Mode"}
               className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
                 handsFree
-                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm shadow-emerald-500/20 animate-pulse"
-                  : "bg-white/[0.06] text-white/60 hover:text-white border border-white/10"
+                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 shadow-sm shadow-emerald-500/20 animate-pulse"
+                  : "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/10"
               }`}
             >
-              <Mic className={`w-3.5 h-3.5 ${handsFree ? "text-emerald-300" : ""}`} />
+              <Mic className={`w-3.5 h-3.5 ${handsFree ? "text-emerald-600 dark:text-emerald-300" : ""}`} />
               <span className="hidden sm:inline">Hands-Free</span>
             </button>
             <button
@@ -515,8 +515,8 @@ export function AgentVoiceSimulatorModal({
               title={isMuted ? "Unmute Audio" : "Mute Audio"}
               className={`p-2 rounded-xl text-xs font-semibold transition-colors ${
                 isMuted
-                  ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
-                  : "bg-white/[0.06] text-white/70 hover:text-white border border-white/10"
+                  ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
+                  : "bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/10"
               }`}
             >
               {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
@@ -524,20 +524,20 @@ export function AgentVoiceSimulatorModal({
             <button
               onClick={handleRestart}
               title="Restart Conversation"
-              className="p-2 rounded-xl text-xs font-semibold bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/[0.12] border border-white/10 transition-colors"
+              className="p-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-white/[0.12] border border-slate-200 dark:border-white/10 transition-colors"
             >
               <RotateCcw className="w-4 h-4" />
             </button>
             <button
               onClick={handleCopyTranscript}
               title="Copy Transcript"
-              className="p-2 rounded-xl text-xs font-semibold bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/[0.12] border border-white/10 transition-colors"
+              className="p-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-white/[0.12] border border-slate-200 dark:border-white/10 transition-colors"
             >
               <Copy className="w-4 h-4" />
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/[0.08] transition-colors ml-1"
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-white/40 dark:hover:text-white dark:hover:bg-white/10 transition-colors ml-1"
             >
               <X className="w-5 h-5" />
             </button>
@@ -637,7 +637,7 @@ export function AgentVoiceSimulatorModal({
         )}
 
         {/* ── Chat Messages Stream ─────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 text-xs">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 text-xs bg-slate-50/50 dark:bg-slate-950/40">
           {messages.map((m) => {
             const isAgent = m.role === "assistant";
             return (
@@ -646,7 +646,7 @@ export function AgentVoiceSimulatorModal({
                 className={`flex gap-3 ${isAgent ? "justify-start" : "justify-end"}`}
               >
                 {isAgent && (
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#8B5A2B] to-[#4a2b12] flex items-center justify-center text-amber-200 flex-shrink-0 mt-0.5 border border-amber-500/30 shadow-sm">
+                  <div className="w-8 h-8 rounded-xl bg-brand-500/10 dark:bg-brand-500/20 border border-brand-500/20 flex items-center justify-center text-brand-600 dark:text-brand-400 flex-shrink-0 mt-0.5 shadow-sm">
                     <Bot className="w-4 h-4" />
                   </div>
                 )}
@@ -654,34 +654,34 @@ export function AgentVoiceSimulatorModal({
                 <div
                   className={`max-w-[82%] sm:max-w-[75%] rounded-2xl p-3.5 leading-relaxed ${
                     isAgent
-                      ? "bg-white/[0.04] border border-white/10 text-white/90 shadow-sm"
-                      : "bg-gradient-to-r from-[#8B5A2B] to-[#71441c] text-white shadow-md shadow-[#8B5A2B]/20"
+                      ? "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 shadow-sm"
+                      : "bg-brand-600 text-white shadow-sm shadow-brand-500/20"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300/80">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isAgent ? "text-brand-600 dark:text-brand-300" : "text-white/80"}`}>
                       {isAgent ? agent.name : "You"}
                     </span>
-                    <span className="text-[10px] opacity-40 font-mono">
+                    <span className={`text-[10px] font-mono ${isAgent ? "text-slate-400 dark:text-white/40" : "text-white/60"}`}>
                       {m.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
 
-                  <p className="text-sm font-normal text-slate-100 whitespace-pre-wrap">
+                  <p className="text-sm font-normal whitespace-pre-wrap">
                     {m.content}
                   </p>
 
                   {isAgent && m.audioBase64 && (
-                    <div className="mt-2.5 pt-2 border-t border-white/[0.08] flex items-center justify-between">
+                    <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-white/[0.08] flex items-center justify-between">
                       <button
                         onClick={() => playAgentAudio(m.audioBase64)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-200 transition-colors"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-brand-50 hover:bg-brand-100 dark:bg-brand-500/15 dark:hover:bg-brand-500/25 border border-brand-200 dark:border-brand-500/30 text-brand-700 dark:text-brand-200 transition-colors"
                       >
-                        <Play className="w-3 h-3 fill-amber-200" />
+                        <Play className="w-3 h-3 fill-brand-600 dark:fill-brand-200" />
                         Play Voice
                       </button>
                       {m.latencyMs && (
-                        <span className="text-[10px] font-mono text-white/40">
+                        <span className="text-[10px] font-mono text-slate-400 dark:text-white/40">
                           {m.latencyMs}ms
                         </span>
                       )}
@@ -690,7 +690,7 @@ export function AgentVoiceSimulatorModal({
                 </div>
 
                 {!isAgent && (
-                  <div className="w-8 h-8 rounded-xl bg-white/[0.08] flex items-center justify-center text-white/80 flex-shrink-0 mt-0.5 border border-white/15">
+                  <div className="w-8 h-8 rounded-xl bg-slate-200 dark:bg-white/[0.08] border border-slate-300 dark:border-white/15 flex items-center justify-center text-slate-700 dark:text-white/80 flex-shrink-0 mt-0.5">
                     <User className="w-4 h-4" />
                   </div>
                 )}
@@ -700,14 +700,14 @@ export function AgentVoiceSimulatorModal({
 
           {isProcessing && (
             <div className="flex gap-3 justify-start">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#8B5A2B] to-[#4a2b12] flex items-center justify-center text-amber-200 flex-shrink-0 mt-0.5 border border-amber-500/30">
+              <div className="w-8 h-8 rounded-xl bg-brand-500/10 dark:bg-brand-500/20 border border-brand-500/20 flex items-center justify-center text-brand-600 dark:text-brand-400 flex-shrink-0 mt-0.5">
                 <Bot className="w-4 h-4 animate-spin" />
               </div>
-              <div className="rounded-2xl p-3.5 bg-white/[0.04] border border-white/10 text-white/70 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce" />
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce [animation-delay:150ms]" />
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce [animation-delay:300ms]" />
-                <span className="text-xs font-mono ml-1 text-white/50">
+              <div className="rounded-2xl p-3.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-white/70 flex items-center gap-2 shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-brand-500 animate-bounce" />
+                <span className="w-2 h-2 rounded-full bg-brand-500 animate-bounce [animation-delay:150ms]" />
+                <span className="w-2 h-2 rounded-full bg-brand-500 animate-bounce [animation-delay:300ms]" />
+                <span className="text-xs font-mono ml-1 text-slate-500 dark:text-white/50">
                   Synthesizing vocal response...
                 </span>
               </div>
@@ -718,8 +718,8 @@ export function AgentVoiceSimulatorModal({
         </div>
 
         {/* ── Quick Prompt Starters ────────────────────────────── */}
-        <div className="px-4 py-2 border-t border-white/[0.06] bg-black/20 flex items-center gap-1.5 overflow-x-auto flex-shrink-0 scrollbar-none">
-          <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider whitespace-nowrap mr-1">
+        <div className="px-4 py-2 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 flex items-center gap-1.5 overflow-x-auto flex-shrink-0 scrollbar-none">
+          <span className="text-[10px] font-bold text-slate-400 dark:text-white/40 uppercase tracking-wider whitespace-nowrap mr-1">
             Test Starters:
           </span>
           {quickPrompts.map((q) => (
@@ -727,7 +727,7 @@ export function AgentVoiceSimulatorModal({
               key={q}
               onClick={() => handleSendTurn(q)}
               disabled={isProcessing}
-              className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white/[0.04] hover:bg-white/[0.1] border border-white/10 text-white/70 hover:text-white whitespace-nowrap transition-colors disabled:opacity-40"
+              className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white whitespace-nowrap transition-colors disabled:opacity-40 shadow-sm"
             >
               {q}
             </button>
@@ -735,7 +735,7 @@ export function AgentVoiceSimulatorModal({
         </div>
 
         {/* ── Voice & Text Input Controls ──────────────────────── */}
-        <div className="p-3 sm:p-4 border-t border-white/[0.08] bg-[#1a0e0a] flex-shrink-0">
+        <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900/90 flex-shrink-0">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -752,13 +752,13 @@ export function AgentVoiceSimulatorModal({
               className={`relative p-3 rounded-xl font-bold flex items-center justify-center transition-all flex-shrink-0 ${
                 isRecording
                   ? "bg-rose-600 text-white shadow-lg shadow-rose-600/40 animate-pulse scale-105"
-                  : "bg-gradient-to-r from-amber-500 to-[#8B5A2B] hover:from-amber-400 hover:to-amber-600 text-slate-950 shadow-md shadow-[#8B5A2B]/20"
+                  : "bg-brand-600 hover:bg-brand-500 text-white shadow-md shadow-brand-500/20"
               }`}
             >
               {isRecording ? (
                 <MicOff className="w-5 h-5 text-white" />
               ) : (
-                <Mic className="w-5 h-5 text-slate-950 stroke-[2.5]" />
+                <Mic className="w-5 h-5 text-white stroke-[2.5]" />
               )}
             </button>
 
@@ -773,20 +773,20 @@ export function AgentVoiceSimulatorModal({
                   : "Speak into mic or type a test message to agent..."
               }
               disabled={isProcessing}
-              className="flex-1 h-11 px-4 rounded-xl text-xs sm:text-sm bg-white/[0.05] border border-white/10 text-white placeholder:text-white/30 outline-none focus:border-amber-500/60 transition-colors"
+              className="flex-1 h-11 px-4 rounded-xl text-xs sm:text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-brand-500 transition-colors"
             />
 
             {/* Send Button */}
             <button
               type="submit"
               disabled={!inputText.trim() || isProcessing}
-              className="h-11 px-4 rounded-xl font-bold text-xs text-white bg-[#8B5A2B] hover:bg-[#a36b33] disabled:opacity-40 transition-colors flex items-center gap-1.5 flex-shrink-0 shadow-md shadow-[#8B5A2B]/20"
+              className="h-11 px-4 rounded-xl font-bold text-xs text-white bg-brand-600 hover:bg-brand-500 disabled:opacity-40 transition-colors flex items-center gap-1.5 flex-shrink-0 shadow-md shadow-brand-500/20"
             >
               <Send className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Send</span>
             </button>
           </form>
-          <div className="flex items-center justify-between text-[10px] text-white/40 mt-2 px-1">
+          <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-white/40 mt-2 px-1">
             <span>Click the microphone to talk naturally or type your prompt</span>
             <span>Edge-TTS Neural Voice · Sub-second roundtrip</span>
           </div>
