@@ -309,12 +309,14 @@ function CallDetailModal({
   const handleTriggerOmni = async () => {
     if (!detail) return;
     setIsDispatchingOmni(true);
+    let dispatched = false;
     try {
-      try {
-        await automationsApi.postCall(detail.id);
-      } catch {
-        // Fallback gracefully for local/mock
-      }
+      const res = await automationsApi.postCall(detail.id);
+      dispatched = res ? (typeof res.triggered === "number" && res.triggered >= 0) : true;
+    } catch {
+      dispatched = false;
+    }
+    if (dispatched) {
       setOmniStatus({
         whatsapp: "sent",
         sms: "sent",
@@ -322,11 +324,15 @@ function CallDetailModal({
         dispatchedAt: new Date().toLocaleTimeString(),
       });
       success("Post-call omnichannel follow-up dispatched (WhatsApp, SMS & Email)!");
-    } catch {
-      toastError("Failed to dispatch omnichannel follow-up.");
-    } finally {
-      setIsDispatchingOmni(false);
+    } else {
+      setOmniStatus({
+        whatsapp: "failed",
+        sms: "failed",
+        email: "failed",
+      });
+      toastError("Post-call omnichannel follow-up could not be dispatched. Please retry.");
     }
+    setIsDispatchingOmni(false);
   };
 
   // Toggle audio playback

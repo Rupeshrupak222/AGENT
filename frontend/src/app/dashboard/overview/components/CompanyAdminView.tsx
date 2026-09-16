@@ -5,7 +5,6 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   PhoneCall,
-  PhoneMissed,
   Target,
   Bot,
   Clock,
@@ -33,7 +32,6 @@ import {
   FileText,
   Volume2,
   Play,
-  Mic,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { AgentVoiceSimulatorModal } from "@/components/agents/AgentVoiceSimulatorModal";
@@ -170,6 +168,136 @@ function DeltaPill({
   );
 }
 
+// ── Executive KPI Card — "Telemetry Tile" ────────────────────
+const KPI_THEMES = {
+  sky: {
+    rail: "from-sky-400 to-blue-600",
+    chip: "from-sky-500/20 to-sky-600/5 border-sky-500/40",
+    glow: "hover:shadow-sky-500/20",
+    bar: "bg-gradient-to-r from-sky-500 to-blue-600",
+  },
+  emerald: {
+    rail: "from-emerald-400 to-teal-600",
+    chip: "from-emerald-500/20 to-emerald-600/5 border-emerald-500/40",
+    glow: "hover:shadow-emerald-500/20",
+    bar: "bg-gradient-to-r from-emerald-500 to-teal-600",
+  },
+  violet: {
+    rail: "from-violet-400 to-purple-600",
+    chip: "from-violet-500/20 to-violet-600/5 border-violet-500/40",
+    glow: "hover:shadow-violet-500/20",
+    bar: "bg-gradient-to-r from-violet-500 to-purple-600",
+  },
+  purple: {
+    rail: "from-purple-400 to-fuchsia-600",
+    chip: "from-purple-500/20 to-purple-600/5 border-purple-500/40",
+    glow: "hover:shadow-purple-500/20",
+    bar: "bg-gradient-to-r from-purple-500 to-fuchsia-600",
+  },
+  amber: {
+    rail: "from-amber-400 to-orange-600",
+    chip: "from-amber-500/20 to-amber-600/5 border-amber-500/40",
+    glow: "hover:shadow-amber-500/20",
+    bar: "bg-gradient-to-r from-amber-500 to-orange-600",
+  },
+  brand: {
+    rail: "from-brand-500 to-brand-700",
+    chip: "from-brand-500/20 to-brand-700/5 border-brand-500/40",
+    glow: "hover:shadow-brand-500/20",
+    bar: "bg-gradient-to-r from-brand-500 to-brand-700",
+  },
+} as const;
+
+type KpiTheme = keyof typeof KPI_THEMES;
+
+function ExecutiveKpiCard({
+  index,
+  label,
+  value,
+  icon,
+  theme,
+  delta,
+  subtext,
+  loading = false,
+  bar,
+  barLabel,
+}: {
+  index: string;
+  label: string;
+  value: React.ReactNode;
+  icon: React.ReactNode;
+  theme: KpiTheme;
+  delta?: { current: number; previous: number; invert?: boolean };
+  subtext: string;
+  loading?: boolean;
+  bar?: number;
+  barLabel?: string;
+}) {
+  const t = KPI_THEMES[theme];
+  return (
+    <motion.div
+      whileHover={{ y: -5, scale: 1.018 }}
+      whileTap={{ scale: 0.975 }}
+      transition={{ type: "spring", stiffness: 340, damping: 22 }}
+      className={`relative group rounded-2xl overflow-hidden bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 p-3.5 flex flex-col justify-between cursor-default shadow-sm hover:shadow-xl ${t.glow} transition-shadow`}
+    >
+      <span
+        aria-hidden
+        className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${t.rail} opacity-70 group-hover:h-1 group-hover:opacity-100 transition-all duration-300 ease-out`}
+      />
+      <span
+        aria-hidden
+        className="absolute -top-2 -right-2 w-10 h-10 rounded-full bg-gradient-to-br from-white/60 to-transparent dark:from-white/[0.04] blur-xl group-hover:from-white/80 dark:group-hover:from-white/[0.08] transition-colors duration-300"
+      />
+      <span className="absolute top-2.5 right-3 font-mono text-[10px] font-bold tracking-widest text-slate-300 dark:text-white/20 group-hover:text-brand-500 dark:group-hover:text-brand-400 transition-colors">
+        {index}
+      </span>
+
+      <div className="flex items-center justify-between gap-2 mb-2.5">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-white/50 group-hover:text-brand-600 dark:group-hover:text-brand-300 transition-colors">
+          {label}
+        </span>
+        <div
+          className={`w-9 h-9 rounded-xl bg-gradient-to-br ${t.chip} border flex items-center justify-center shadow-sm group-hover:-rotate-6 group-hover:scale-110 group-hover:shadow-md transition-all duration-300 ease-out`}
+        >
+          {icon}
+        </div>
+      </div>
+
+      <p className="text-[22px] font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none">
+        {loading ? (
+          <span className="inline-block h-5 w-14 rounded bg-slate-200/70 dark:bg-white/10 animate-pulse align-middle" />
+        ) : (
+          value
+        )}
+      </p>
+
+      <div className="flex items-center justify-between gap-2 mt-2">
+        <span className="text-[10px] text-slate-400 dark:text-white/40 truncate">{subtext}</span>
+        {!loading && delta && (
+          <DeltaPill current={delta.current} previous={delta.previous} invert={delta.invert} />
+        )}
+      </div>
+
+      {typeof bar === "number" && (
+        <div className="mt-2.5 h-1 rounded-full bg-slate-100 dark:bg-white/[0.06] overflow-hidden">
+          <motion.div
+            className={`h-full rounded-full ${t.bar}`}
+            initial={{ width: 0 }}
+            animate={{ width: `${Math.min(100, Math.max(0, bar))}%` }}
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          />
+        </div>
+      )}
+      {barLabel && (
+        <p className="text-[9px] font-mono text-slate-400 dark:text-white/35 mt-1 truncate">
+          {barLabel}
+        </p>
+      )}
+    </motion.div>
+  );
+}
+
 const SEVERITY_STYLES: Record<CompanyAlert["severity"], { icon: any; cls: string; ring: string }> = {
   critical: { icon: AlertTriangle, cls: "border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-300", ring: "text-rose-500" },
   warning: { icon: AlertTriangle, cls: "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-300", ring: "text-amber-500" },
@@ -179,7 +307,7 @@ const SEVERITY_STYLES: Record<CompanyAlert["severity"], { icon: any; cls: string
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-[#180406] dark:bg-modal shadow-lg px-3 py-2 text-xs">
+    <div className="rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-modal shadow-lg px-3 py-2 text-xs">
       <p className="font-bold text-slate-900 dark:text-white mb-1">{label}</p>
       {payload.map((p: any) => (
         <div key={p.dataKey} className="flex items-center justify-between gap-4 py-0.5">
@@ -361,98 +489,6 @@ export function CompanyAdminView({
 
   const periodLabel = dashboard?.period?.label ?? fmtRangeLabel(range);
 
-  const kpiCards: Array<{
-    key: string;
-    label: string;
-    value: string | number;
-    icon: React.ReactNode;
-    accent: string;
-    delta?: { current: number; previous: number; invert?: boolean };
-    subtext?: string;
-  }> = [
-    {
-      key: "totalCalls",
-      label: "Total Calls",
-      value: isLoading ? "…" : formatNumber(kpis?.totalCalls ?? 0),
-      icon: <PhoneCall className="w-5 h-5 text-sky-500" />,
-      accent: "from-sky-500/15 to-sky-600/5 border-sky-500/30",
-      delta: kpis && prev ? { current: kpis.totalCalls, previous: prev.totalCalls } : undefined,
-      subtext: "Dialed this period",
-    },
-    {
-      key: "connected",
-      label: "Connected",
-      value: isLoading ? "…" : formatNumber(kpis?.connectedCalls ?? 0),
-      icon: <CheckCircle2 className="w-5 h-5 text-emerald-500" />,
-      accent: "from-emerald-500/15 to-emerald-600/5 border-emerald-500/30",
-      delta: kpis && prev ? { current: kpis.connectedCalls, previous: prev.connectedCalls } : undefined,
-      subtext: `${(kpis?.connectRate ?? 0).toFixed(1)}% connect rate`,
-    },
-    {
-      key: "missedFailed",
-      label: "Missed / Failed",
-      value: isLoading ? "…" : formatNumber((kpis?.missedCalls ?? 0) + (kpis?.failedCalls ?? 0)),
-      icon: <PhoneMissed className="w-5 h-5 text-rose-500" />,
-      accent: "from-rose-500/15 to-rose-600/5 border-rose-500/30",
-      delta:
-        kpis && prev
-          ? {
-              current: (kpis.missedCalls ?? 0) + (kpis.failedCalls ?? 0),
-              previous: (prev.missedCalls ?? 0) + (prev.failedCalls ?? 0),
-              invert: true,
-            }
-          : undefined,
-      subtext: "Unsuccessful attempts",
-    },
-    {
-      key: "avgDuration",
-      label: "Avg Duration",
-      value: isLoading ? "…" : formatDuration(kpis?.avgDuration ?? 0),
-      icon: <Clock className="w-5 h-5 text-cyan-500" />,
-      accent: "from-cyan-500/15 to-cyan-600/5 border-cyan-500/30",
-      delta: kpis && prev ? { current: kpis.avgDuration, previous: prev.avgDuration, invert: false } : undefined,
-      subtext: "Per completed call",
-    },
-    {
-      key: "minutes",
-      label: "Voice Minutes",
-      value: isLoading ? "…" : formatNumber(kpis?.totalMinutes ?? 0),
-      icon: <Timer className="w-5 h-5 text-violet-500" />,
-      accent: "from-violet-500/15 to-violet-600/5 border-violet-500/30",
-      delta: kpis && prev ? { current: kpis.totalMinutes, previous: prev.totalMinutes } : undefined,
-      subtext: "Consumed this period",
-    },
-    {
-      key: "qualified",
-      label: "Qualified Leads",
-      value: isLoading ? "…" : formatNumber(kpis?.qualifiedLeads ?? 0),
-      icon: <Target className="w-5 h-5 text-purple-500" />,
-      accent: "from-purple-500/15 to-purple-600/5 border-purple-500/30",
-      delta: kpis && prev ? { current: kpis.qualifiedLeads, previous: prev.qualifiedLeads } : undefined,
-      subtext: `${(kpis?.conversionRate ?? 0).toFixed(1)}% conversion`,
-    },
-    {
-      key: "appointments",
-      label: "Appointments",
-      value: isLoading ? "…" : formatNumber(kpis?.appointments ?? 0),
-      icon: <Zap className="w-5 h-5 text-amber-500" />,
-      accent: "from-amber-500/15 to-amber-600/5 border-amber-500/30",
-      delta: kpis && prev ? { current: kpis.appointments, previous: prev.appointments } : undefined,
-      subtext: `${(kpis?.appointmentRate ?? 0).toFixed(1)}% appointment rate`,
-    },
-    {
-      key: "analyses",
-      label: "AI Analyses",
-      value: isLoading ? "…" : formatNumber(kpis?.aiAnalyses ?? 0),
-      icon: <Brain className="w-5 h-5 text-brand-500 dark:text-brand-400" />,
-      accent: "from-brand-500/15 to-brand-600/5 border-brand-500/30",
-      delta: kpis && prev ? { current: kpis.aiAnalyses, previous: prev.aiAnalyses } : undefined,
-      subtext: "Sentiment & quality engines",
-    },
-  ];
-
-  const hasAnyData = kpis ? kpis.totalCalls > 0 || kpis.qualifiedLeads > 0 || kpis.appointments > 0 || kpis.aiAnalyses > 0 : false;
-
   const callsLimit = tenantUsage?.limits?.calls ?? -1;
   const callsUsed = tenantUsage?.usage?.calls?.used ?? tenantUsage?.callCount ?? 0;
   const callsPct = tenantUsage?.usage?.calls?.pct ?? null;
@@ -463,6 +499,11 @@ export function CompanyAdminView({
   const membersUsed = tenantUsage?.usage?.members?.used ?? tenantUsage?.userCount ?? 0;
   const membersLimit = tenantUsage?.limits?.members ?? -1;
   const membersUnlimited = tenantUsage?.usage?.members?.unlimited ?? membersLimit === -1;
+
+  // Derived live telemetry (no synthetic values)
+  const queuedDepth = (dashboard?.activeCampaigns ?? []).reduce((s, c) => s + (c.pending ?? 0), 0);
+  const speechQuality = kpis ? Math.min(100, Math.max(0, (kpis.avgSentiment / 5) * 100)) : 0;
+  const desiredBars = speechQuality > 0 ? Math.min(6, Math.max(1, Math.round(speechQuality / 16.7))) : 0;
 
   return (
     <div className="space-y-8">
@@ -579,118 +620,97 @@ export function CompanyAdminView({
         </div>
       )}
 
-      {/* ── Top Executive Intelligence Strip ───────────────────── */}
-      <section aria-label="Executive Intelligence Strip">
+      {/* ── Top Executive Telemetry Strip ─────────────────────── */}
+      <section aria-label="Executive Telemetry Strip">
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2.5 sm:gap-3">
           {/* Total Calls */}
-          <div className="rounded-2xl p-3.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] flex flex-col justify-between hover:border-brand-500/30 transition-all">
-            <div className="flex items-center justify-between gap-1 text-[11px] text-slate-500 dark:text-white/50 mb-1">
-              <span className="font-semibold uppercase tracking-wider text-[10px]">Calls Handled</span>
-              <PhoneCall className="w-3.5 h-3.5 text-sky-500" />
-            </div>
-            {isLoading ? (
-              <Skeleton className="h-6 w-16 my-1" />
-            ) : (
-              <p className="text-xl font-black text-slate-900 dark:text-white font-mono tracking-tight my-0.5">
-                <AnimatedNumber value={kpis?.totalCalls ?? 0} />
-              </p>
-            )}
-            <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-white/40 mt-1">
-              <span>Dialed this period</span>
-              {kpis && prev && <DeltaPill current={kpis.totalCalls} previous={prev.totalCalls} />}
-            </div>
-          </div>
+          <ExecutiveKpiCard
+            index="01"
+            label="Calls Handled"
+            theme="sky"
+            icon={<PhoneCall className="w-[18px] h-[18px] text-sky-500" />}
+            value={<AnimatedNumber value={kpis?.totalCalls ?? 0} />}
+            subtext="Dialed this period"
+            loading={isLoading}
+            delta={kpis && prev ? { current: kpis.totalCalls, previous: prev.totalCalls } : undefined}
+            bar={(kpis?.connectRate ?? 0) / 100}
+            barLabel={`${(kpis?.connectRate ?? 0).toFixed(1)}% answered by AI`}
+          />
 
           {/* Connect Rate */}
-          <div className="rounded-2xl p-3.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] flex flex-col justify-between hover:border-brand-500/30 transition-all">
-            <div className="flex items-center justify-between gap-1 text-[11px] text-slate-500 dark:text-white/50 mb-1">
-              <span className="font-semibold uppercase tracking-wider text-[10px]">Connect Rate</span>
-              <Activity className="w-3.5 h-3.5 text-emerald-500" />
-            </div>
-            {isLoading ? (
-              <Skeleton className="h-6 w-16 my-1" />
-            ) : (
-              <p className="text-xl font-black text-slate-900 dark:text-white font-mono tracking-tight my-0.5">
-                {(kpis?.connectRate ?? 0).toFixed(1)}%
-              </p>
-            )}
-            <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-white/40 mt-1">
-              <span>Target: 70% min SLA</span>
-              {kpis && prev && <DeltaPill current={kpis.connectRate} previous={prev.connectRate} />}
-            </div>
-          </div>
+          <ExecutiveKpiCard
+            index="02"
+            label="Connect Rate"
+            theme="emerald"
+            icon={<Activity className="w-[18px] h-[18px] text-emerald-500" />}
+            value={`${(kpis?.connectRate ?? 0).toFixed(1)}%`}
+            subtext="Target: 70% min SLA"
+            loading={isLoading}
+            delta={kpis && prev ? { current: kpis.connectRate, previous: prev.connectRate } : undefined}
+            bar={(kpis?.connectedCalls ?? 0) / Math.max(1, kpis?.totalCalls ?? 1)}
+            barLabel={`${kpis?.connectedCalls ?? 0} of ${kpis?.totalCalls ?? 0} connected`}
+          />
 
           {/* AI Voice Minutes */}
-          <div className="rounded-2xl p-3.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] flex flex-col justify-between hover:border-brand-500/30 transition-all">
-            <div className="flex items-center justify-between gap-1 text-[11px] text-slate-500 dark:text-white/50 mb-1">
-              <span className="font-semibold uppercase tracking-wider text-[10px]">AI Minutes</span>
-              <Timer className="w-3.5 h-3.5 text-violet-500" />
-            </div>
-            {isLoading ? (
-              <Skeleton className="h-6 w-16 my-1" />
-            ) : (
-              <p className="text-xl font-black text-slate-900 dark:text-white font-mono tracking-tight my-0.5">
-                <AnimatedNumber value={kpis?.totalMinutes ?? 0} />m
-              </p>
-            )}
-            <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-white/40 mt-1">
-              <span>Compute duration</span>
-              {kpis && prev && <DeltaPill current={kpis.totalMinutes} previous={prev.totalMinutes} />}
-            </div>
-          </div>
+          <ExecutiveKpiCard
+            index="03"
+            label="AI Minutes"
+            theme="violet"
+            icon={<Timer className="w-[18px] h-[18px] text-violet-500" />}
+            value={<AnimatedNumber value={kpis?.totalMinutes ?? 0} />}
+            subtext="Compute duration"
+            loading={isLoading}
+            delta={kpis && prev ? { current: kpis.totalMinutes, previous: prev.totalMinutes } : undefined}
+            bar={(kpis?.avgSentiment ?? 0) / 5}
+            barLabel={`${(kpis?.avgSentiment ?? 0).toFixed(2)}/5 sentiment`}
+          />
 
           {/* Qualified Leads */}
-          <div className="rounded-2xl p-3.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] flex flex-col justify-between hover:border-brand-500/30 transition-all">
-            <div className="flex items-center justify-between gap-1 text-[11px] text-slate-500 dark:text-white/50 mb-1">
-              <span className="font-semibold uppercase tracking-wider text-[10px]">Qualified Leads</span>
-              <Target className="w-3.5 h-3.5 text-purple-500" />
-            </div>
-            {isLoading ? (
-              <Skeleton className="h-6 w-16 my-1" />
-            ) : (
-              <p className="text-xl font-black text-slate-900 dark:text-white font-mono tracking-tight my-0.5">
-                <AnimatedNumber value={kpis?.qualifiedLeads ?? 0} />
-              </p>
-            )}
-            <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-white/40 mt-1">
-              <span>{(kpis?.conversionRate ?? 0).toFixed(1)}% conversion</span>
-              {kpis && prev && <DeltaPill current={kpis.qualifiedLeads} previous={prev.qualifiedLeads} />}
-            </div>
-          </div>
+          <ExecutiveKpiCard
+            index="04"
+            label="Qualified Leads"
+            theme="purple"
+            icon={<Target className="w-[18px] h-[18px] text-purple-500" />}
+            value={<AnimatedNumber value={kpis?.qualifiedLeads ?? 0} />}
+            subtext="Sales qualified contacts"
+            loading={isLoading}
+            delta={kpis && prev ? { current: kpis.qualifiedLeads, previous: prev.qualifiedLeads } : undefined}
+            bar={(kpis?.conversionRate ?? 0) / 100}
+            barLabel={`${(kpis?.conversionRate ?? 0).toFixed(1)}% conversion`}
+          />
 
           {/* Appointments Booked */}
-          <div className="rounded-2xl p-3.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] flex flex-col justify-between hover:border-brand-500/30 transition-all">
-            <div className="flex items-center justify-between gap-1 text-[11px] text-slate-500 dark:text-white/50 mb-1">
-              <span className="font-semibold uppercase tracking-wider text-[10px]">Appointments</span>
-              <Zap className="w-3.5 h-3.5 text-amber-500" />
-            </div>
-            {isLoading ? (
-              <Skeleton className="h-6 w-16 my-1" />
-            ) : (
-              <p className="text-xl font-black text-slate-900 dark:text-white font-mono tracking-tight my-0.5">
-                <AnimatedNumber value={kpis?.appointments ?? 0} />
-              </p>
-            )}
-            <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-white/40 mt-1">
-              <span>{(kpis?.appointmentRate ?? 0).toFixed(1)}% booked</span>
-              {kpis && prev && <DeltaPill current={kpis.appointments} previous={prev.appointments} />}
-            </div>
-          </div>
+          <ExecutiveKpiCard
+            index="05"
+            label="Appointments"
+            theme="amber"
+            icon={<Zap className="w-[18px] h-[18px] text-amber-500" />}
+            value={<AnimatedNumber value={kpis?.appointments ?? 0} />}
+            subtext="Booked this period"
+            loading={isLoading}
+            delta={kpis && prev ? { current: kpis.appointments, previous: prev.appointments } : undefined}
+            bar={(kpis?.appointmentRate ?? 0) / 100}
+            barLabel={`${(kpis?.appointmentRate ?? 0).toFixed(1)}% appointment rate`}
+          />
 
-          {/* SLI Telemetry Latency */}
-          <div className="rounded-2xl p-3.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] flex flex-col justify-between hover:border-brand-500/30 transition-all">
-            <div className="flex items-center justify-between gap-1 text-[11px] text-slate-500 dark:text-white/50 mb-1">
-              <span className="font-semibold uppercase tracking-wider text-[10px]">SLI Audio Latency</span>
-              <Radio className="w-3.5 h-3.5 text-emerald-500" />
-            </div>
-            <p className="text-xl font-black text-slate-900 dark:text-white font-mono tracking-tight my-0.5">
-              142<span className="text-xs font-normal text-slate-400">ms</span>
-            </p>
-            <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-white/40 mt-1">
-              <span>P99: 188ms</span>
-              <span className="text-emerald-500 font-mono font-semibold">Opus HD</span>
-            </div>
-          </div>
+          {/* Voice Sentiment (replaces hardcoded SLI latency) */}
+          <ExecutiveKpiCard
+            index="06"
+            label="Voice Sentiment"
+            theme="brand"
+            icon={<Brain className="w-[18px] h-[18px] text-brand-500 dark:text-brand-400" />}
+            value={
+              <>
+                {(kpis?.avgSentiment ?? 0).toFixed(2)}
+                <span className="text-xs font-normal text-slate-400 dark:text-white/40"> / 5</span>
+              </>
+            }
+            subtext="Avg analyzer score"
+            loading={isLoading}
+            delta={kpis && prev ? { current: kpis.avgSentiment, previous: prev.avgSentiment } : undefined}
+            bar={(kpis?.avgSentiment ?? 0) / 5}
+            barLabel={`${(kpis?.aiAnalyses ?? 0)} AI analyses run`}
+          />
         </div>
       </section>
 
@@ -735,12 +755,16 @@ export function CompanyAdminView({
 
           {/* Live Fleet Indicators Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-4">
-            <div className="p-3 rounded-xl bg-white/[0.04] border border-white/5">
+            <motion.div
+              whileHover={{ y: -3 }}
+              transition={{ type: "spring", stiffness: 320, damping: 22 }}
+              className="p-3 rounded-xl bg-white/[0.04] border border-white/5 hover:border-emerald-500/40 hover:bg-emerald-500/[0.06] transition-colors group/fleet"
+            >
               <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
                 <span>Active Channels</span>
                 <span className="text-emerald-400 font-mono font-semibold">Ready</span>
               </div>
-              <p className="text-lg font-bold font-mono text-white">
+              <p className="text-lg font-bold font-mono text-white group-hover/fleet:text-emerald-300 transition-colors">
                 {kpis?.totalCalls ? Math.min(12, Math.max(1, Math.round(kpis.totalCalls * 0.05))) : 0}
                 <span className="text-xs font-normal text-slate-500 font-sans ml-1">in flight</span>
               </p>
@@ -748,55 +772,76 @@ export function CompanyAdminView({
                 {[1, 2, 3, 4, 5, 6, 7].map((bar, idx) => (
                   <div
                     key={bar}
-                    className={`h-1.5 flex-1 rounded-full ${
+                    className={`h-1.5 flex-1 rounded-full transition-colors ${
                       idx < 4 ? "bg-emerald-500" : "bg-white/10"
                     }`}
                   />
                 ))}
               </div>
-            </div>
+            </motion.div>
 
-            <div className="p-3 rounded-xl bg-white/[0.04] border border-white/5">
+            <motion.div
+              whileHover={{ y: -3 }}
+              transition={{ type: "spring", stiffness: 320, damping: 22 }}
+              className="p-3 rounded-xl bg-white/[0.04] border border-white/5 hover:border-amber-400/40 hover:bg-amber-400/[0.06] transition-colors group/fleet"
+            >
               <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
                 <span>Swarm Buffer Depth</span>
-                <span className="text-amber-400 font-mono font-semibold">Tier 1</span>
+                <span className={`font-mono font-semibold ${queuedDepth > 0 ? "text-amber-400" : "text-emerald-400"}`}>
+                  {queuedDepth > 0 ? "Queued" : "Empty"}
+                </span>
               </div>
-              <p className="text-lg font-bold font-mono text-white">
-                0<span className="text-xs font-normal text-slate-500 font-sans ml-1">queued</span>
+              <p className="text-lg font-bold font-mono text-white group-hover/fleet:text-amber-300 transition-colors">
+                {queuedDepth}
+                <span className="text-xs font-normal text-slate-500 font-sans ml-1">leads queued</span>
               </p>
               <div className="flex gap-1 mt-2">
                 {[1, 2, 3, 4, 5].map((bar, idx) => (
                   <div
                     key={bar}
-                    className={`h-1.5 flex-1 rounded-full ${
-                      idx === 0 ? "bg-amber-400" : "bg-white/10"
+                    className={`h-1.5 flex-1 rounded-full transition-colors ${
+                      queuedDepth > 0 ? (idx === 0 ? "bg-amber-400" : "bg-white/10") : "bg-white/10"
                     }`}
                   />
                 ))}
               </div>
-            </div>
+            </motion.div>
 
-            <div className="p-3 rounded-xl bg-white/[0.04] border border-white/5">
+            <motion.div
+              whileHover={{ y: -3 }}
+              transition={{ type: "spring", stiffness: 320, damping: 22 }}
+              className="p-3 rounded-xl bg-white/[0.04] border border-white/5 hover:border-cyan-400/40 hover:bg-cyan-400/[0.06] transition-colors group/fleet"
+            >
               <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                <span>Autonomous Speech DSP</span>
-                <span className="text-cyan-400 font-mono font-semibold">Opus HD</span>
+                <span>Speech Sentiment DSP</span>
+                <span className="text-cyan-400 font-mono font-semibold">Analyzer</span>
               </div>
-              <p className="text-lg font-bold font-mono text-white">
-                99.8%<span className="text-xs font-normal text-slate-500 font-sans ml-1">clarity</span>
+              <p className="text-lg font-bold font-mono text-white group-hover/fleet:text-cyan-300 transition-colors">
+                {speechQuality.toFixed(0)}%
+                <span className="text-xs font-normal text-slate-500 font-sans ml-1">positive</span>
               </p>
               <div className="flex gap-1 mt-2">
-                {[1, 2, 3, 4, 5, 6].map((bar) => (
-                  <div key={bar} className="h-1.5 flex-1 rounded-full bg-cyan-400" />
+                {[1, 2, 3, 4, 5, 6].map((bar, idx) => (
+                  <div
+                    key={bar}
+                    className={`h-1.5 flex-1 rounded-full transition-colors ${
+                      idx < desiredBars ? "bg-cyan-400" : "bg-white/10"
+                    }`}
+                  />
                 ))}
               </div>
-            </div>
+            </motion.div>
 
-            <div className="p-3 rounded-xl bg-white/[0.04] border border-white/5">
+            <motion.div
+              whileHover={{ y: -3 }}
+              transition={{ type: "spring", stiffness: 320, damping: 22 }}
+              className="p-3 rounded-xl bg-white/[0.04] border border-white/5 hover:border-purple-400/40 hover:bg-purple-400/[0.06] transition-colors group/fleet"
+            >
               <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
                 <span>Autonomous Desks</span>
                 <span className="text-purple-400 font-mono font-semibold">EN · HI · TE</span>
               </div>
-              <p className="text-lg font-bold font-mono text-white">
+              <p className="text-lg font-bold font-mono text-white group-hover/fleet:text-purple-300 transition-colors">
                 {agentLanguageCounts.all || 0}
                 <span className="text-xs font-normal text-slate-500 font-sans ml-1">agents active</span>
               </p>
@@ -804,13 +849,13 @@ export function CompanyAdminView({
                 {[1, 2, 3, 4].map((bar, idx) => (
                   <div
                     key={bar}
-                    className={`h-1.5 flex-1 rounded-full ${
+                    className={`h-1.5 flex-1 rounded-full transition-colors ${
                       idx < 3 ? "bg-purple-400" : "bg-white/10"
                     }`}
                   />
                 ))}
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -892,20 +937,27 @@ export function CompanyAdminView({
               const isHindi = ag.language === "hindi";
 
               return (
-                <div
+                <motion.div
                   key={ag.id}
-                  className="rounded-2xl p-4 sm:p-5 bg-white dark:bg-[#120a06]/90 border border-slate-200 dark:border-white/10 hover:border-brand-500/40 transition-all flex flex-col justify-between gap-4 shadow-sm"
+                  whileHover={{ y: -5 }}
+                  whileTap={{ scale: 0.99 }}
+                  transition={{ type: "spring", stiffness: 320, damping: 22 }}
+                  className="group relative rounded-2xl p-4 sm:p-5 bg-white dark:bg-[#120a06]/90 border border-slate-200 dark:border-white/10 hover:border-brand-500/40 hover:shadow-xl hover:shadow-brand-500/10 transition-all flex flex-col justify-between gap-4 shadow-sm overflow-hidden"
                 >
+                  <span
+                    aria-hidden
+                    className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-brand-500 to-amber-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  />
                   <div className="space-y-3">
                     {/* Card Header */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-brand-600 to-amber-700 flex items-center justify-center text-sm font-bold text-white shadow-md flex-shrink-0">
+                        <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-brand-600 to-amber-700 flex items-center justify-center text-sm font-bold text-white shadow-md flex-shrink-0 group-hover:-rotate-3 group-hover:scale-105 transition-transform duration-300">
                           {ag.name.slice(0, 2).toUpperCase()}
                           <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-[#120a06]" />
                         </div>
                         <div className="min-w-0">
-                          <h4 className="font-bold text-slate-900 dark:text-white text-sm truncate flex items-center gap-1.5">
+                          <h4 className="font-bold text-slate-900 dark:text-white text-sm truncate flex items-center gap-1.5 group-hover:text-brand-600 dark:group-hover:text-brand-300 transition-colors">
                             {ag.name}
                           </h4>
                           <span className="text-[11px] text-slate-500 dark:text-white/40 truncate block capitalize">
@@ -965,7 +1017,7 @@ export function CompanyAdminView({
                       Configure
                     </Link>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -1176,7 +1228,7 @@ export function CompanyAdminView({
                   <Link
                     key={agent.id}
                     href={`/dashboard/agents?agentId=${agent.id}`}
-                    className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06] hover:border-brand-500/40 hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-all group"
+                    className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06] hover:border-brand-500/40 hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-500/5 transition-all duration-200 group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
@@ -1271,10 +1323,10 @@ export function CompanyAdminView({
                 return (
                   <div
                     key={member.id}
-                    className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06]"
+                    className="group flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06] hover:border-brand-500/40 hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-500/5 transition-all duration-200"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-[11px] font-bold text-brand-600 dark:text-brand-400 flex-shrink-0">
+                      <div className="w-9 h-9 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-[11px] font-bold text-brand-600 dark:text-brand-400 flex-shrink-0 group-hover:bg-brand-500/20 group-hover:scale-105 transition-all duration-200">
                         {initials}
                       </div>
                       <div className="min-w-0">
@@ -1340,7 +1392,7 @@ export function CompanyAdminView({
                   <Link
                     key={camp.id}
                     href={`/dashboard/campaigns?campaignId=${camp.id}`}
-                    className="block p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06] hover:border-brand-500/40 hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-all group"
+                    className="block p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06] hover:border-brand-500/40 hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-500/5 transition-all duration-200 group"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
                       <div className="flex items-center gap-2 min-w-0">
@@ -1410,7 +1462,7 @@ export function CompanyAdminView({
                   <Link
                     key={call.id}
                     href={`/dashboard/calls?callId=${call.id}`}
-                    className="flex items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06] hover:border-brand-500/40 hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-all group"
+                    className="flex items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06] hover:border-brand-500/40 hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-500/5 transition-all duration-200 group"
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-slate-900 dark:text-white truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
@@ -1487,24 +1539,34 @@ export function CompanyAdminView({
             const pct = m.pct ?? 0;
             const overLimit = !m.unlimited && m.limit > 0 && pct >= 100;
             return (
-              <div key={m.label} className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06]">
+              <motion.div
+                key={m.label}
+                whileHover={{ y: -4, scale: 1.015 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 340, damping: 22 }}
+                className="group p-4 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06] hover:border-brand-500/30 hover:shadow-xl hover:shadow-brand-500/5 transition-all cursor-default"
+              >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-slate-500 dark:text-white/50">{m.label}</span>
+                  <span className="text-xs font-semibold text-slate-500 dark:text-white/50 group-hover:text-brand-600 dark:group-hover:text-brand-300 transition-colors">
+                    {m.label}
+                  </span>
                   <span className="text-xs font-mono font-bold text-slate-900 dark:text-white">
                     {formatNumber(m.used)}
                     {!m.unlimited ? ` / ${formatNumber(m.limit)}` : ""}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
-                  <div
+                  <motion.div
                     className={`h-full rounded-full bg-gradient-to-r ${m.color} ${overLimit ? "!bg-rose-500" : ""}`}
-                    style={{ width: `${Math.min(100, pct)}%` }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(100, pct)}%` }}
+                    transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
                   />
                 </div>
                 <p className={`text-[10px] font-mono mt-1.5 ${overLimit ? "text-rose-600 dark:text-rose-400" : "text-slate-400 dark:text-white/40"}`}>
                   {m.unlimited ? "Unlimited" : `${pct.toFixed(0)}% used ${overLimit ? "· over limit!" : ""}`}
                 </p>
-              </div>
+              </motion.div>
             );
           })}
         </div>

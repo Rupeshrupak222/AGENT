@@ -541,11 +541,24 @@ export function ManagerView({
               key={k.key + period}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.02 }}
-              className="rounded-2xl p-4 panel-card hover:border-purple-500/30 transition-colors"
+              whileHover={{ y: -5, scale: 1.018 }}
+              whileTap={{ scale: 0.975 }}
+              transition={{
+                delay: i * 0.02,
+                type: "spring",
+                stiffness: 340,
+                damping: 22,
+              }}
+              className="relative group rounded-2xl p-4 panel-card hover:border-purple-500/30 hover:shadow-xl hover:shadow-purple-500/10 transition-all cursor-default overflow-hidden"
             >
+              <span
+                aria-hidden
+                className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-purple-500 to-indigo-600 opacity-60 group-hover:h-1 group-hover:opacity-100 transition-all duration-300 ease-out"
+              />
               <div className="flex items-start justify-between mb-3 gap-2">
-                <div className={`p-2.5 rounded-xl border bg-gradient-to-br ${k.accent}`}>{k.icon}</div>
+                <div className={`p-2.5 rounded-xl border bg-gradient-to-br ${k.accent} group-hover:-rotate-6 group-hover:scale-110 transition-all duration-300 ease-out`}>
+                  {k.icon}
+                </div>
                 {k.delta && !isLoading ? <DeltaPill {...k.delta} /> : null}
               </div>
               {isLoading ? (
@@ -555,7 +568,9 @@ export function ManagerView({
                   {k.value}
                 </p>
               )}
-              <p className="text-xs text-slate-500 dark:text-white/50 mt-1 font-medium">{k.label}</p>
+              <p className="text-xs text-slate-500 dark:text-white/50 mt-1 font-medium group-hover:text-brand-600 dark:group-hover:text-brand-300 transition-colors">
+                {k.label}
+              </p>
               {k.subtext && <p className="text-[10px] text-slate-400 dark:text-white/40 mt-0.5 font-mono">{k.subtext}</p>}
             </motion.div>
           ))}
