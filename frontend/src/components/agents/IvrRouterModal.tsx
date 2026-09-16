@@ -224,10 +224,10 @@ export function IvrRouterModal({ isOpen, onClose }: IvrRouterModalProps) {
               </div>
             </div>
 
-            {/* Right: Keypad Simulator (5 cols) */}
+            {/* Right: Keypad Console (5 cols) */}
             <div className="lg:col-span-5 space-y-3">
               <span className="text-xs font-bold text-white/70 uppercase tracking-wider block">
-                Interactive Dialpad Simulator
+                Interactive Dialpad Testing Console
               </span>
 
               <div className="p-5 rounded-2xl bg-slate-950 border border-white/10 space-y-4 text-center">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Phone,
   PhoneCall,
@@ -1419,9 +1419,7 @@ function CallsPageContent() {
   const [isNewCallModalOpen, setIsNewCallModalOpen] = useState(false);
   const [initialDialPhone, setInitialDialPhone] = useState("");
 
-  // Live Supervisor Monitoring & Barge-In State
-  const [simulatedLiveCallActive, setSimulatedLiveCallActive] = useState(true);
-  const [liveElapsedSeconds, setLiveElapsedSeconds] = useState(54);
+  // Live Supervisor Monitoring & Barge-In State (Grounded exclusively in real calls data)
   const [isListeningIn, setIsListeningIn] = useState(false);
   const [whisperInput, setWhisperInput] = useState("");
   const [isWhispering, setIsWhispering] = useState(false);
@@ -1429,13 +1427,9 @@ function CallsPageContent() {
   const [activeWhisperSent, setActiveWhisperSent] = useState<string | null>(null);
   const { success: showToastSuccess } = useToast();
 
-  useEffect(() => {
-    if (!simulatedLiveCallActive) return;
-    const timer = setInterval(() => {
-      setLiveElapsedSeconds((s) => s + 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [simulatedLiveCallActive]);
+  const liveCall = useMemo(() => {
+    return calls.find((c) => c.status === "in_progress" || c.status === "ringing") || null;
+  }, [calls]);
 
   const handleToggleListenIn = () => {
     setIsListeningIn(!isListeningIn);
@@ -1767,20 +1761,17 @@ function CallsPageContent() {
                   </CardTitle>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSimulatedLiveCallActive(!simulatedLiveCallActive)}
-                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-white/80 transition-all"
-                  >
-                    {simulatedLiveCallActive ? "Pause Stream" : "Resume Stream"}
-                  </button>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30">
-                    Live Telephony
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                    liveCall
+                      ? "bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30"
+                      : "bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/40 border border-slate-200 dark:border-white/10"
+                  }`}>
+                    {liveCall ? "Live Call Connected" : "Ready / Idle"}
                   </span>
                 </div>
               </div>
 
-              {simulatedLiveCallActive ? (
+              {liveCall ? (
                 <div className="space-y-3">
                   {/* Live Call Banner */}
                   <div className="p-4 rounded-2xl bg-gradient-to-r from-rose-500/10 via-brand-500/5 to-amber-500/5 border border-rose-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -1790,11 +1781,13 @@ function CallsPageContent() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="text-sm font-bold text-slate-900 dark:text-white">Aditya Sharma</p>
-                          <span className="text-xs text-slate-500 dark:text-white/40 font-mono">+91 98765 43210</span>
+                          <p className="text-sm font-bold text-slate-900 dark:text-white">
+                            {liveCall.lead?.name || liveCall.phone}
+                          </p>
+                          <span className="text-xs text-slate-500 dark:text-white/40 font-mono">{liveCall.phone}</span>
                         </div>
                         <p className="text-xs text-slate-500 dark:text-white/60">
-                          Assigned: <span className="font-semibold text-brand-600 dark:text-brand-400">Adyapan AI</span> (Outbound Tech Admissions)
+                          Assigned: <span className="font-semibold text-brand-600 dark:text-brand-400">{liveCall.agent?.name || "Autonomous Voice Agent"}</span> ({liveCall.direction || "inbound"})
                         </p>
                       </div>
                     </div>
@@ -1806,13 +1799,14 @@ function CallsPageContent() {
                           Caller Sentiment
                         </span>
                         <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 justify-end">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500" /> 89% Positive
+                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                          {liveCall.sentimentScore ? `${Math.round(liveCall.sentimentScore * 100)}% Positive` : "In Progress"}
                         </span>
                       </div>
 
                       {/* Timer */}
                       <div className="px-3 py-1.5 rounded-xl bg-black/40 border border-white/10 font-mono text-sm font-bold text-amber-300">
-                        {formatDuration(liveElapsedSeconds)}
+                        {liveCall.duration ? formatDuration(liveCall.duration) : "Live"}
                       </div>
                     </div>
                   </div>
@@ -1820,26 +1814,24 @@ function CallsPageContent() {
                   {/* Streaming Dialogue Turn Stream */}
                   <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 space-y-2 text-xs">
                     <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-white/40 font-semibold pb-1 border-b border-slate-200 dark:border-white/10">
-                      <span>Live Speech-to-Text Feed</span>
+                      <span>Authoritative STT Stream</span>
                       <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-mono">
                         <WaveAnimation active size="sm" bars={4} color="bg-emerald-500" />
-                        Sub-second WebRTC Carrier Stream
+                        Live Voice Stream
                       </span>
                     </div>
 
                     <div className="space-y-1.5 pt-1">
-                      <div className="flex items-start gap-2">
-                        <span className="font-bold text-brand-600 dark:text-brand-400 flex-shrink-0">Adyapan AI:</span>
-                        <span className="text-slate-700 dark:text-slate-200">
-                          Namaste! The weekend batch for the Full Stack AI Masterclass begins next Saturday at 10 AM.
-                        </span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="font-bold text-slate-600 dark:text-sky-300 flex-shrink-0">Caller:</span>
-                        <span className="text-slate-700 dark:text-slate-200">
-                          That fits my schedule perfectly. Can I get a provisionally held trial slot?
-                        </span>
-                      </div>
+                      {(liveCall as any)?.transcript?.turns && (liveCall as any).transcript.turns.length > 0 ? (
+                        (liveCall as any).transcript.turns.slice(-3).map((turn: any, idx: number) => (
+                          <div key={idx} className="flex items-start gap-2">
+                            <span className="font-bold text-brand-600 dark:text-brand-400 flex-shrink-0">{turn.speaker}:</span>
+                            <span className="text-slate-700 dark:text-slate-200">{turn.text}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-slate-500 dark:text-white/50 italic">Listening for voice packets from audio gateway...</p>
+                      )}
                       {activeWhisperSent && (
                         <div className="flex items-start gap-2 p-2 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px]">
                           <span className="font-bold flex items-center gap-1">
@@ -1897,7 +1889,7 @@ function CallsPageContent() {
                     </div>
 
                     <span className="text-[10px] text-slate-400 dark:text-white/40 font-mono">
-                      Carrier: Sandbox WebRTC · Latency 210ms
+                      Call ID: {liveCall.id.slice(0, 16)}...
                     </span>
                   </div>
 
@@ -1923,14 +1915,17 @@ function CallsPageContent() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center text-xs text-slate-400 dark:text-white/40 space-y-2">
                   <Phone className="w-8 h-8 opacity-20" />
-                  <p>No live calls currently in progress.</p>
-                  <button
-                    type="button"
-                    onClick={() => setSimulatedLiveCallActive(true)}
-                    className="mt-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-500/15 hover:bg-brand-500/25 text-brand-600 dark:text-brand-400 transition-all"
-                  >
-                    Simulate Live Operator Call
-                  </button>
+                  <p className="font-semibold text-slate-700 dark:text-white/70">No live calls currently in progress.</p>
+                  <p className="text-[11px] max-w-sm">All AI voice agents are currently idle and ready for inbound or outbound traffic.</p>
+                  {canInitiate && (
+                    <button
+                      type="button"
+                      onClick={() => setIsNewCallModalOpen(true)}
+                      className="mt-1 px-3.5 py-1.5 rounded-xl text-xs font-bold btn-red shadow-md flex items-center gap-1.5"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Initiate Outbound Call
+                    </button>
+                  )}
                 </div>
               )}
             </div>

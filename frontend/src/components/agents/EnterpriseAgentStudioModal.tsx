@@ -210,9 +210,9 @@ export function EnterpriseAgentStudioModal({
         setTestLatency(Math.round(performance.now() - startTime));
       }
       setTestResponse(resText);
-    } catch (err) {
-      setTestResponse("Test voice simulation generated turn: " + testInput);
-      setTestLatency(320);
+    } catch (err: any) {
+      setTestResponse("Unable to reach agent dialogue service: " + (err?.response?.data?.message || err?.message || "Check LLM configuration."));
+      setTestLatency(null);
     } finally {
       setTestingInTab(false);
     }

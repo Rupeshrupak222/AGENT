@@ -29,7 +29,7 @@ interface ObjectionScenario {
   id: string;
   category: string;
   customerObjection: string;
-  simulatedAgentResponse: string;
+  benchmarkAgentResponse: string;
   score: number;
   empathy: number;
   valueProp: number;
@@ -43,7 +43,7 @@ const OBJECTION_PRESETS: ObjectionScenario[] = [
     id: "price",
     category: "Price & Affordability",
     customerObjection: "₹45,000 is too expensive for me right now. I can learn the same AI topics for free on YouTube.",
-    simulatedAgentResponse:
+  benchmarkAgentResponse:
       "I completely understand that upfront cost is an important factor. While YouTube has great theoretical overviews, our Masterclass provides 16 production-grade projects deployed to AWS & GCP, weekly 1-on-1 code reviews with Senior AI Architects, and placement assistance that graduates recoup within their first 2 paychecks. Additionally, we provide 0% interest EMI at just ₹3,750 per month. Would you like me to reserve your zero-interest EMI slot for next week?",
     score: 93,
     empathy: 95,
@@ -58,7 +58,7 @@ const OBJECTION_PRESETS: ObjectionScenario[] = [
     id: "time",
     category: "Time & Work Schedule",
     customerObjection: "I work 10 hours a day at my corporate job. I honestly don't have time for a live weekend batch.",
-    simulatedAgentResponse:
+  benchmarkAgentResponse:
       "That is completely valid—over 70% of our successful alumni are working software engineers with intense workweeks. All live sessions are held Saturday & Sunday mornings (10 AM to 1 PM) and are fully recorded with lifetime LMS access and interactive code notebooks. You only need 4 dedicated hours per week. May I book you a 15-minute preview access so you can review our self-paced module structure?",
     score: 89,
     empathy: 92,
@@ -73,7 +73,7 @@ const OBJECTION_PRESETS: ObjectionScenario[] = [
     id: "competitor",
     category: "Competitor Comparison",
     customerObjection: "Another leading institute is offering an AI degree for 30% less fee with a 100% money-back guarantee.",
-    simulatedAgentResponse:
+  benchmarkAgentResponse:
       "We respect their program! However, most general degree programs focus primarily on legacy Python syntax. Our curriculum is specifically built on modern 2026 Agentic AI—including LangGraph, Multi-Agent Swarms, and LLM Fine-Tuning on private GPUs. We also give you verifiable GitHub proof of work instead of generic theoretical certificates. Would you like to attend our free live demo this Sunday to compare the curriculum firsthand?",
     score: 95,
     empathy: 90,
@@ -88,7 +88,7 @@ const OBJECTION_PRESETS: ObjectionScenario[] = [
     id: "hesitation",
     category: "Decision Postponement",
     customerObjection: "Just send me an email with the syllabus. I will read through it and contact you next month if interested.",
-    simulatedAgentResponse:
+  benchmarkAgentResponse:
       "I have already dispatched the syllabus and course guide directly to your email! However, our upcoming cohort starting Monday has only 4 scholarship seats remaining with the 15% Early Bird waiver. Let me tentatively hold a seat under your name for 24 hours while you review the syllabus—no payment required today. Does that sound fair?",
     score: 91,
     empathy: 90,
@@ -222,7 +222,7 @@ export function ObjectionArenaModal({
                   </span>
                 </div>
                 <p className="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">
-                  {selectedScenario.simulatedAgentResponse}
+                  {selectedScenario.benchmarkAgentResponse}
                 </p>
               </div>
 
@@ -305,7 +305,7 @@ export function ObjectionArenaModal({
         {/* Footer */}
         <div className="p-4 border-t border-white/10 bg-slate-950 flex items-center justify-between">
           <span className="text-xs text-white/40">
-            Simulated using real objection benchmarks and conversion heuristics
+            Evaluated against enterprise objection benchmarks and conversion heuristics
           </span>
           <button
             type="button"

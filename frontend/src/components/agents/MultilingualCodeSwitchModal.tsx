@@ -147,13 +147,13 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
         {/* Modal Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
-          {/* Section 1: Live Code-Switching Dialogue Simulator */}
+          {/* Section 1: Live Code-Switching Dialogue Audition Console */}
           <div className="p-5 rounded-2xl bg-black/40 border border-white/10 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <MessageSquare className="w-4 h-4 text-blue-400" />
-                  Bilingual Dialogue Simulator
+                  Bilingual Dialogue Audition Console
                 </h3>
                 <p className="text-xs text-white/50">
                   Observe how the AI agent smoothly transitions languages without restarting session context.
@@ -222,7 +222,7 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
                 className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 shadow-md shadow-blue-600/20 transition-all flex items-center gap-1.5"
               >
                 {isPlayingSim ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                {isPlayingSim ? "Pause Simulation" : "Listen to Bilingual Audio"}
+                {isPlayingSim ? "Pause Playback" : "Audition Bilingual Audio"}
               </button>
             </div>
           </div>

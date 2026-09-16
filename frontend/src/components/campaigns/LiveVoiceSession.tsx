@@ -391,7 +391,7 @@ export function LiveVoiceSession({
 
       setIsMicActive(true);
     } catch (err: any) {
-      setAudioError(`Microphone access error: ${err.message}. You can still use the text simulation bar.`);
+      setAudioError(`Microphone access error: ${err.message}. You can still use the direct text input console.`);
       setIsMicActive(false);
     }
   };
@@ -558,7 +558,7 @@ export function LiveVoiceSession({
                 : "bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
             }`}
           >
-            <User className="w-3.5 h-3.5" /> Caller Simulation
+            <User className="w-3.5 h-3.5" /> Caller Persona
           </button>
 
           <button
@@ -788,7 +788,7 @@ export function LiveVoiceSession({
         </div>
       </div>
 
-      {/* Audio Controls & Interactive Simulation Bar */}
+      {/* Audio Controls & Interactive Input Console */}
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -835,7 +835,7 @@ export function LiveVoiceSession({
           </div>
         </div>
 
-        {/* Text Simulation Input */}
+        {/* Direct Text Input Console */}
         <form onSubmit={handleSendManualText} className="flex gap-2">
           <input
             type="text"

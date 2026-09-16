@@ -482,7 +482,7 @@ export function AgentVoiceSimulatorModal({
               </div>
               <p className="text-xs text-white/50 mt-0.5 flex items-center gap-1.5">
                 <Radio className="w-3 h-3 text-emerald-400" />
-                Live Two-Way Voice Simulator · Multi-lingual Speech-to-Speech
+                Live Two-Way Voice Testing Console · Multi-lingual Speech-to-Speech
               </p>
             </div>
           </div>

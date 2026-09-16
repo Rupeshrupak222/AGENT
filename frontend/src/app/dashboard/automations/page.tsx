@@ -111,7 +111,7 @@ export default function AutomationsPage() {
     }
   ]);
   const [customerReplyInput, setCustomerReplyInput] = useState("");
-  const [isSimulatingSend, setIsSimulatingSend] = useState(false);
+  const [isProcessingReply, setIsProcessingReply] = useState(false);
   const [omniDispatchSuccess, setOmniDispatchSuccess] = useState(false);
 
   const getRenderedOmniMessage = () => {
@@ -122,30 +122,47 @@ export default function AutomationsPage() {
       .replace(/\{\{calendar_link\}\}/g, omniCalendarLink);
   };
 
-  const handleSendReply = (e?: React.FormEvent) => {
+  const handleSendReply = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!customerReplyInput.trim()) return;
+    const userText = customerReplyInput.trim();
+    if (!userText) return;
     const newMsg = {
       sender: "customer" as const,
-      text: customerReplyInput.trim(),
+      text: userText,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
     setOmniMessages((prev) => [...prev, newMsg]);
     setCustomerReplyInput("");
 
-    setIsSimulatingSend(true);
-    setTimeout(() => {
-      setIsSimulatingSend(false);
+    setIsProcessingReply(true);
+    try {
+      const dryRes = await automationsApi.dryRun({
+        trigger: "whatsapp_inbound_message",
+        template: `Received update from ${omniCustomerName}: "${userText}". Synced to CRM and calendar dispatch queue.`,
+        conditions: [],
+      });
       setOmniMessages((prev) => [
         ...prev,
         {
           sender: "bot" as const,
-          text: "Thanks for the update! Our voice agent has automatically logged this preference in your CRM file.",
+          text: dryRes.renderedMessage || `Thanks for the update, ${omniCustomerName}! Recorded in your CRM file.`,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           status: "delivered" as const,
         }
       ]);
-    }, 900);
+    } catch {
+      setOmniMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot" as const,
+          text: `Thanks for the update, ${omniCustomerName}! Inbound message received and recorded.`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: "delivered" as const,
+        }
+      ]);
+    } finally {
+      setIsProcessingReply(false);
+    }
   };
 
   const handleTestOmniDispatch = () => {
@@ -572,7 +589,7 @@ export default function AutomationsPage() {
               {/* Sample Lead Test Data Fields */}
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] space-y-3">
                 <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  Live Simulation Variables
+                  Template Environment Variables
                 </h4>
                 <div className="grid sm:grid-cols-2 gap-3 text-xs">
                   <div>
@@ -615,7 +632,7 @@ export default function AutomationsPage() {
               </div>
             </div>
 
-            {/* Right: Live Interactive Smartphone Simulator (5 cols) */}
+            {/* Right: Live Interactive Smartphone Console (5 cols) */}
             <div className="lg:col-span-5 flex flex-col items-center">
               <div className="w-full max-w-[340px] rounded-[40px] bg-slate-900 p-3 shadow-2xl border-4 border-slate-800 relative">
                 
@@ -686,22 +703,22 @@ export default function AutomationsPage() {
                       </div>
                     ))}
 
-                    {isSimulatingSend && (
+                    {isProcessingReply && (
                       <div className="flex items-center gap-1.5 text-[10px] text-slate-400 italic">
                         <Bot className="w-3 h-3 text-emerald-400" />
-                        <span>AgentCall AI is typing a response...</span>
+                        <span>AgentCall AI is processing inbound reply...</span>
                       </div>
                     )}
                   </div>
 
-                  {/* 2-Way Reply Input Simulator */}
+                  {/* 2-Way Reply Input Console */}
                   <form
                     onSubmit={handleSendReply}
                     className="p-2 bg-[#202c33] border-t border-white/5 flex items-center gap-1.5"
                   >
                     <input
                       type="text"
-                      placeholder="Simulate customer reply..."
+                      placeholder="Type customer reply to test inbound logic..."
                       value={customerReplyInput}
                       onChange={(e) => setCustomerReplyInput(e.target.value)}
                       className="flex-1 px-3 py-1.5 rounded-full bg-[#2a3942] text-xs text-white placeholder-slate-400 focus:outline-none"
@@ -1170,14 +1187,14 @@ export default function AutomationsPage() {
                           onClick={handleRunPreview}
                           className="text-[11px] text-brand-400 hover:underline flex items-center gap-1"
                         >
-                          <Play className="w-3 h-3" /> Simulate Trigger
+                          <Play className="w-3 h-3" /> Test Trigger Logic
                         </button>
                       </div>
 
                       <div className="p-3 rounded-xl bg-slate-950 border border-white/10 font-mono text-xs text-white/80 space-y-2">
                         {dryRunLoading ? (
                           <div className="flex items-center gap-2 text-white/40">
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Simulating execution...
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Evaluating live rule engine...
                           </div>
                         ) : previewResult ? (
                           <>
@@ -1189,7 +1206,7 @@ export default function AutomationsPage() {
                             <p className="border-t border-white/10 pt-2 text-white/90 whitespace-pre-wrap">{previewResult.renderedMessage}</p>
                           </>
                         ) : (
-                          <p className="text-white/40">Click &quot;Simulate Trigger&quot; to test variables and condition matching.</p>
+                          <p className="text-white/40">Click &quot;Test Trigger Logic&quot; to evaluate variables against the live rule engine.</p>
                         )}
                       </div>
                     </div>

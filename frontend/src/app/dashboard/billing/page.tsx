@@ -85,20 +85,61 @@ export default function BillingPage() {
       setUpgradingPlan(planKey);
       setSuccessMessage(null);
 
-      // 1. Create order
+      // 1. Create real order
       const orderRes = await apiClient.post(`/billing/order/${planKey}`);
-      const order = orderRes.data;
+      const order = orderRes.data?.data || orderRes.data;
 
-      // 2. Verify payment (in development, uses automated signature verification)
-      await apiClient.post("/billing/verify", {
-        razorpayOrderId: order.id,
-        razorpayPaymentId: `pay_sim_${Date.now()}`,
-        razorpaySignature: "simulated_signature",
-        plan: planKey,
-      });
+      // When Razorpay keys are not configured in local environment, backend returns dev order
+      if (order?.id && order.id.startsWith("order_dev_")) {
+        await apiClient.post("/billing/verify", {
+          razorpayOrderId: order.id,
+          razorpayPaymentId: `pay_dev_${Date.now()}`,
+          razorpaySignature: "dev_signature",
+          plan: planKey,
+        });
+        setSuccessMessage(`Successfully updated subscription to ${planKey.toUpperCase()}!`);
+        await fetchBillingInfo();
+        return;
+      }
 
-      setSuccessMessage(`Successfully updated subscription to ${planKey.toUpperCase()}!`);
-      await fetchBillingInfo();
+      // Live Razorpay Checkout
+      if (typeof window !== "undefined") {
+        if (!(window as any).Razorpay) {
+          await new Promise<void>((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = "https://checkout.razorpay.com/v1/checkout.js";
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error("Unable to load payment gateway"));
+            document.body.appendChild(script);
+          });
+        }
+
+        const rzp = new (window as any).Razorpay({
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
+          amount: order.amount,
+          currency: order.currency || "INR",
+          name: "AgentCall AI",
+          description: `Upgrade to ${planKey.toUpperCase()} Plan`,
+          order_id: order.id,
+          handler: async (response: any) => {
+            try {
+              await apiClient.post("/billing/verify", {
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+                plan: planKey,
+              });
+              setSuccessMessage(`Successfully activated ${planKey.toUpperCase()} subscription!`);
+              await fetchBillingInfo();
+            } catch {
+              toast.error("Payment verification failed. Please contact billing support.");
+            }
+          },
+          theme: { color: "#6366f1" },
+        });
+
+        rzp.open();
+      }
     } catch (err: any) {
       console.error("Upgrade error:", err);
       toast.error(`Plan change failed: ${err?.response?.data?.message?.[0] || err?.message || "Could not update subscription."}`);
