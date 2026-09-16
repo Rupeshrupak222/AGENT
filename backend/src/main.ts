@@ -114,6 +114,11 @@ async function bootstrap() {
     next();
   });
 
+  // ── Root Redirect to Swagger Docs ───────────────────────────
+  expressApp.get('/', (_req: any, res: any) => {
+    res.redirect(`/${prefix}/docs`);
+  });
+
   // ── Swagger ──────────────────────────────────────────────────
   if (config.get('NODE_ENV') !== 'production') {
     const swaggerConfig = new DocumentBuilder()
@@ -161,9 +166,7 @@ async function bootstrap() {
   process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
 
-if (require.main === module) {
-  main().catch((err: any) => {
-    console.error('Fatal bootstrap error:', err?.message || err);
-    process.exit(1);
-  });
-}
+main().catch((err: any) => {
+  console.error('Fatal bootstrap error:', err?.message || err);
+  process.exit(1);
+});

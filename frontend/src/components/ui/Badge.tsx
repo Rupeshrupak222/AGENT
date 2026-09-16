@@ -30,6 +30,7 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant;
   dot?: boolean;
   size?: "sm" | "md";
+  rounded?: "sm" | "md" | "full";
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
@@ -66,15 +67,18 @@ export function Badge({
   variant = "default",
   dot = false,
   size = "sm",
+  rounded = "md",
   children,
   className,
   ...props
 }: BadgeProps) {
   const resolvedVariant = (VARIANT_ALIAS[variant] as BadgeVariant | undefined) || variant;
+  const radiusCls = rounded === "sm" ? "rounded" : rounded === "full" ? "rounded-full" : "rounded-md";
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full font-semibold leading-tight border",
+        "inline-flex items-center gap-1.5 font-medium leading-tight border select-none",
+        radiusCls,
         size === "sm" ? "px-2 py-[2px] text-[0.6875rem]" : "px-2.5 py-1 text-xs",
         variantStyles[resolvedVariant],
         className

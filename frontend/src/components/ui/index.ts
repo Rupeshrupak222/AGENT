@@ -24,4 +24,5 @@ export * from "./WaveAnimation";
 export * from "./CommandPalette";
 export * from "./ErrorBoundary";
 export * from "./ProviderModeBadge";
+export * from "./EnvironmentBadge";
 export * from "./motion";

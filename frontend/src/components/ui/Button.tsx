@@ -2,7 +2,7 @@
 import { cn } from "@/lib/utils";
 import { forwardRef, ButtonHTMLAttributes } from "react";
 
-type Variant = "primary" | "secondary" | "outline" | "ghost" | "danger" | "success";
+type Variant = "primary" | "secondary" | "tertiary" | "destructive" | "outline" | "ghost" | "danger" | "success";
 type Size = "xs" | "sm" | "md" | "lg" | "xl";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -14,29 +14,33 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const base =
-  "inline-flex items-center justify-center font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none active:scale-[0.97] select-none whitespace-nowrap";
+  "inline-flex items-center justify-center font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none active:scale-[0.98] select-none whitespace-nowrap";
 
 const sizes: Record<Size, string> = {
   xs: "h-7  px-2.5 text-[0.6875rem] gap-1 rounded-md",
   sm: "h-8  px-3   text-xs  gap-1.5 rounded-lg",
-  md: "h-10 px-5   text-sm  gap-2   rounded-xl",
-  lg: "h-12 px-6   text-base gap-2  rounded-xl",
-  xl: "h-14 px-8   text-base gap-2.5 rounded-2xl",
+  md: "h-9  px-4   text-xs  gap-2   rounded-lg",
+  lg: "h-11 px-5   text-sm  gap-2   rounded-lg",
+  xl: "h-12 px-6   text-sm  gap-2.5 rounded-xl",
 };
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-md hover:shadow-lg hover:brightness-110 hover:-translate-y-px",
+    "bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm hover:shadow active:bg-indigo-700 border border-indigo-500/30",
   secondary:
-    "bg-brand-50 text-brand-600 border border-brand-200 hover:bg-brand-100 hover:border-brand-300 dark:bg-brand-500/10 dark:text-brand-400 dark:border-brand-500/30 dark:hover:bg-brand-500/20 dark:hover:border-brand-500/50",
+    "bg-slate-100 hover:bg-slate-200/80 text-slate-800 border border-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.12] dark:border-white/10 dark:text-slate-200",
+  tertiary:
+    "bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.06] hover:text-slate-900 dark:hover:text-white",
+  destructive:
+    "bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 active:bg-rose-500/30",
   outline:
     "border border-line bg-transparent text-content-secondary hover:bg-surface-muted hover:text-content dark:border-white/10 dark:text-white/70 dark:hover:bg-white/5 dark:hover:text-white",
   ghost:
     "bg-transparent text-content-secondary hover:bg-surface-muted hover:text-content dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white",
   danger:
-    "bg-gradient-to-br from-red-600 to-red-800 text-white shadow-md hover:shadow-lg hover:brightness-110",
+    "bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 active:bg-rose-500/30",
   success:
-    "bg-gradient-to-br from-green-600 to-green-700 text-white shadow-md hover:shadow-lg hover:brightness-110",
+    "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(

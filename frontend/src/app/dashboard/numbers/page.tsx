@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   PhoneIncoming,
   PhoneOutgoing,
@@ -14,6 +14,14 @@ import {
   Bot,
   Phone,
   Search,
+  Radio,
+  Copy,
+  Check,
+  ShieldCheck,
+  Activity,
+  Layers,
+  Sparkles,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -26,11 +34,13 @@ import {
   AgentItem,
 } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
-  available: { label: "Available", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30" },
-  assigned: { label: "Assigned", cls: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30" },
-  inactive: { label: "Inactive", cls: "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-white/40 border border-slate-200 dark:border-white/10" },
+  available: { label: "Available", cls: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30" },
+  assigned: { label: "Agent Bound", cls: "bg-amber-500/10 text-amber-300 border border-amber-500/30" },
+  inactive: { label: "Standby", cls: "bg-white/5 text-white/40 border border-white/10" },
 };
 
 const PROVIDERS = ["twilio", "exotel", "sandbox"];
@@ -127,6 +137,26 @@ export default function NumbersPage() {
     }
   }, [canManage]);
 
+  // Telemetry aggregates
+  const telephonyTelemetry = useMemo(() => {
+    let inboundCount = 0;
+    let outboundCount = 0;
+    let boundCount = 0;
+
+    items.forEach((n) => {
+      if (n.isInbound) inboundCount++;
+      if (n.isOutbound) outboundCount++;
+      if (n.assignedAgentId) boundCount++;
+    });
+
+    return {
+      totalNumbers: total || items.length,
+      inboundCount,
+      outboundCount,
+      boundCount,
+    };
+  }, [items, total]);
+
   const openCreate = () => {
     setForm(EMPTY_FORM);
     setShowForm(true);
@@ -152,7 +182,7 @@ export default function NumbersPage() {
       return;
     }
     if (!form.isInbound && !form.isOutbound) {
-      toastError("A number must support at least one direction.");
+      toastError("A number must support at least inbound or outbound direction.");
       return;
     }
     setSaving(true);
@@ -166,7 +196,7 @@ export default function NumbersPage() {
           status: form.status,
           assignedAgentId: form.assignedAgentId || null,
         });
-        success("Phone number updated.");
+        success("Virtual number updated.");
       } else {
         const created = await numbersApi.create({
           number: form.number.trim(),
@@ -182,7 +212,7 @@ export default function NumbersPage() {
             status: "assigned",
           });
         }
-        success("Phone number added to inventory.");
+        success("Virtual number provisioned into inventory.");
       }
       setShowForm(false);
       await load();
@@ -194,11 +224,11 @@ export default function NumbersPage() {
   };
 
   const handleDelete = async (item: PhoneNumberItem) => {
-    if (!window.confirm(`Remove phone number ${item.number}? This cannot be undone.`)) return;
+    if (!window.confirm(`De-provision phone number ${item.number}? Inbound routing will terminate immediately.`)) return;
     setDeletingId(item.id);
     try {
       await numbersApi.remove(item.id);
-      success("Phone number removed.");
+      success("Phone number removed from inventory.");
       await load();
     } catch (e) {
       toastError(normalizeApiError(e));
@@ -210,377 +240,447 @@ export default function NumbersPage() {
   if (!can(PERMISSIONS.TELEPHONY_VIEW)) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-        <div className="rounded-2xl p-8 text-center bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08]">
-          <p className="text-sm font-semibold text-slate-900 dark:text-white">Access Restricted</p>
-          <p className="text-xs text-slate-500 dark:text-white/50 mt-1">You do not have permission to view phone numbers.</p>
+        <div className="rounded-2xl p-8 text-center bg-white/[0.02] border border-white/10">
+          <p className="text-sm font-semibold text-white">Access Restricted</p>
+          <p className="text-xs text-white/50 mt-1">You do not have permission to view telephony inventory.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <PhoneIncoming className="w-6 h-6 text-brand-500 dark:text-brand-400" /> Phone Numbers
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-white/50 mt-1">
-            Company telephony inventory — numbers your AI agents dial from and answer on.
-          </p>
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <PhoneIncoming className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+              Telephony Fleet & Carrier DIDs
+            </h1>
+            <p className="text-xs text-amber-200/60 mt-0.5">
+              Virtual phone numbers, SIP trunks, and webhook routing bindings for your AI workforce
+            </p>
+          </div>
         </div>
+
         <div className="flex items-center gap-2 flex-wrap">
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => setShowGuide(true)}
-            className="inline-flex items-center gap-2 h-10 px-3.5 rounded-xl text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-700 dark:text-amber-300 transition-colors"
           >
-            Provider Webhooks Guide
-          </button>
-          <button
+            <Radio className="w-3.5 h-3.5 mr-1.5 text-amber-400" />
+            <span>Webhook Guide</span>
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => load(true)}
             disabled={refreshing}
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.12] border border-slate-200 dark:border-white/15 text-slate-700 dark:text-white/80 disabled:opacity-50 transition-colors"
           >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin text-brand-500 dark:text-brand-400" : ""}`} />
-            Refresh
-          </button>
+            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${refreshing ? "animate-spin text-amber-400" : ""}`} />
+            <span>Sync</span>
+          </Button>
           {canManage && (
-            <button
+            <Button
+              variant="primary"
+              size="sm"
               onClick={openCreate}
-              className="btn-red text-xs h-10 px-4 shadow-lg shadow-brand-500/25 flex items-center gap-2"
             >
-              <Plus className="w-4 h-4" /> Add Number
-            </button>
+              <Plus className="w-3.5 h-3.5 mr-1.5" />
+              <span>Add Virtual DID</span>
+            </Button>
           )}
         </div>
       </div>
 
       {error && (
-        <div role="alert" className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-sm flex items-center gap-2">
-          <AlertCircle className="w-4 h-4" /> {error}
+        <div role="alert" className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" /> {error}
         </div>
       )}
+
+      {/* Telemetry Strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="p-4 rounded-xl bg-[#140b07] border border-amber-500/15">
+          <div className="flex items-center justify-between text-xs text-amber-200/60 mb-1">
+            <span>Provisioned DIDs</span>
+            <Phone className="w-3.5 h-3.5 text-amber-400" />
+          </div>
+          <p className="text-2xl font-bold font-mono text-white">{telephonyTelemetry.totalNumbers}</p>
+          <p className="text-[10px] text-white/40 mt-1">Global & Indian National DIDs</p>
+        </div>
+
+        <div className="p-4 rounded-xl bg-[#140b07] border border-amber-500/15">
+          <div className="flex items-center justify-between text-xs text-amber-200/60 mb-1">
+            <span>Inbound Routes</span>
+            <PhoneIncoming className="w-3.5 h-3.5 text-emerald-400" />
+          </div>
+          <p className="text-2xl font-bold font-mono text-emerald-400">{telephonyTelemetry.inboundCount}</p>
+          <p className="text-[10px] text-white/40 mt-1">Live customer reception lines</p>
+        </div>
+
+        <div className="p-4 rounded-xl bg-[#140b07] border border-amber-500/15">
+          <div className="flex items-center justify-between text-xs text-amber-200/60 mb-1">
+            <span>Outbound Trunks</span>
+            <PhoneOutgoing className="w-3.5 h-3.5 text-sky-400" />
+          </div>
+          <p className="text-2xl font-bold font-mono text-sky-400">{telephonyTelemetry.outboundCount}</p>
+          <p className="text-[10px] text-white/40 mt-1">Dialer campaign caller IDs</p>
+        </div>
+
+        <div className="p-4 rounded-xl bg-[#140b07] border border-amber-500/15">
+          <div className="flex items-center justify-between text-xs text-amber-200/60 mb-1">
+            <span>Assigned Agents</span>
+            <Bot className="w-3.5 h-3.5 text-amber-400" />
+          </div>
+          <p className="text-2xl font-bold font-mono text-amber-400">{telephonyTelemetry.boundCount}</p>
+          <p className="text-[10px] text-white/40 mt-1">Bound to neural voice bots</p>
+        </div>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-col lg:flex-row lg:items-center gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-white/40" />
-          <label htmlFor="num-search" className="sr-only">Search numbers</label>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
           <input
             id="num-search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by number or label…"
-            className="w-full h-10 pl-9 pr-3 rounded-xl text-sm bg-white dark:bg-white/[0.06] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500"
+            placeholder="Search numbers by international digits or department label…"
+            className="w-full h-10 pl-9 pr-3 rounded-xl text-xs bg-black/40 border border-amber-500/20 text-white outline-none focus:border-amber-400"
           />
         </div>
-        <div className="flex items-center gap-3">
-          <label htmlFor="num-status" className="sr-only">Filter by status</label>
-          <select id="num-status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-10 rounded-xl px-3 text-sm bg-white dark:bg-white/[0.06] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500">
+        <div className="flex items-center gap-2">
+          <select
+            id="num-status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="h-10 rounded-xl px-3 text-xs bg-[#140b07] border border-amber-500/20 text-white outline-none focus:border-amber-400"
+          >
             <option value="">All Statuses</option>
             {Object.entries(STATUS_META).map(([k, v]) => (
               <option key={k} value={k}>{v.label}</option>
             ))}
           </select>
-          <span className="text-xs font-mono text-slate-400 dark:text-white/40 whitespace-nowrap">{total} numbers</span>
         </div>
       </div>
 
-      {/* Grid */}
+      {/* Numbers Grid */}
       {loading && items.length === 0 ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-40 rounded-2xl bg-slate-200/60 dark:bg-white/[0.04] animate-pulse" />
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-40 rounded-xl bg-white/[0.03] animate-pulse border border-white/5" />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-2xl p-12 text-center bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08]">
-          <Phone className="w-10 h-10 text-slate-300 dark:text-white/20 mx-auto mb-3" />
-          <p className="text-sm font-semibold text-slate-900 dark:text-white/70">No phone numbers in inventory</p>
-          <p className="text-xs text-slate-400 dark:text-white/40 mt-1 max-w-sm mx-auto">
+        <div className="rounded-2xl p-12 text-center bg-black/30 border border-white/10">
+          <Phone className="w-10 h-10 text-amber-500/40 mx-auto mb-3" />
+          <p className="text-sm font-bold text-white">No phone numbers in inventory</p>
+          <p className="text-xs text-white/50 mt-1 max-w-sm mx-auto">
             {canManage
-              ? "Add the numbers your AI agents should use for outbound calls and inbound reception."
-              : "Provisioned numbers will appear here."}
+              ? "Provision your Twilio, Exotel, or Sandbox DID to begin handling voice calls."
+              : "Telephony numbers will appear here once provisioned."}
           </p>
+          {canManage && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={openCreate}
+              className="mt-4"
+            >
+              <Plus className="w-3.5 h-3.5 mr-1.5" /> Add First Number
+            </Button>
+          )}
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {items.map((item) => {
             const sm = STATUS_META[item.status] ?? STATUS_META.available;
             return (
-              <div key={item.id} className="rounded-2xl p-5 panel-card flex flex-col">
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <div className="p-2.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-600 dark:text-brand-400">
-                    <PhoneIncoming className="w-5 h-5" />
-                  </div>
-                  <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold", sm.cls)}>
-                    {sm.label}
-                  </span>
-                </div>
+              <div
+                key={item.id}
+                className="rounded-xl p-4 bg-[#120a06] border border-amber-500/15 hover:border-amber-500/30 flex flex-col justify-between transition-all"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-white/5 border border-white/10 text-amber-300 font-bold">
+                        {item.provider}
+                      </span>
+                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md ${sm.cls}`}>
+                        {sm.label}
+                      </span>
+                    </div>
 
-                <p className="text-lg font-black text-slate-900 dark:text-white font-mono tracking-tight">{item.number}</p>
-                <p className="text-xs text-slate-400 dark:text-white/40 mt-0.5">{item.label || `Provisioned via ${item.provider}`}</p>
-
-                <div className="flex items-center gap-2 mt-3 flex-wrap">
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/50 capitalize">
-                    <PhoneIncoming className="w-3 h-3" /> {item.isInbound ? "Inbound" : "-"}
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/50 capitalize">
-                    <PhoneOutgoing className="w-3 h-3" /> {item.isOutbound ? "Outbound" : "-"}
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/25 capitalize">
-                    {item.provider}
-                  </span>
-                </div>
-
-                {item.assignedAgent && (
-                  <div className="flex items-center gap-2 mt-3 p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/25">
-                    <Bot className="w-4 h-4 text-sky-500 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{item.assignedAgent.name}</p>
-                      <p className="text-[10px] text-slate-400 dark:text-white/40 capitalize">{item.assignedAgent.role}</p>
+                    <div className="flex items-center gap-1">
+                      {canManage && (
+                        <button
+                          onClick={() => openEdit(item)}
+                          className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-amber-400 transition-colors"
+                          title="Edit"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {canManage && (
+                        <button
+                          onClick={() => handleDelete(item)}
+                          disabled={deletingId === item.id}
+                          className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-rose-400 disabled:opacity-50 transition-colors"
+                          title="Remove"
+                        >
+                          {deletingId === item.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                        </button>
+                      )}
                     </div>
                   </div>
-                )}
 
-                {canManage && (
-                  <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-white/[0.06]">
+                  <div className="flex items-center justify-between gap-2 mt-2">
+                    <p className="text-base font-bold font-mono text-white tracking-wide">
+                      {item.number}
+                    </p>
                     <button
-                      onClick={() => openEdit(item)}
-                      className="inline-flex flex-1 items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/15 text-slate-600 dark:text-white/70 hover:bg-slate-200 dark:hover:bg-white/[0.12] transition-colors"
+                      onClick={() => handleCopy(item.number, `num-${item.id}`)}
+                      className="p-1 rounded text-white/40 hover:text-white transition-colors"
+                      title="Copy Number"
                     >
-                      <Pencil className="w-3.5 h-3.5" /> Manage
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item)}
-                      disabled={deletingId === item.id}
-                      className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/15 text-slate-500 dark:text-white/60 hover:text-rose-500 disabled:opacity-50 transition-colors"
-                      aria-label="Remove number"
-                    >
-                      {deletingId === item.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                      {copiedKey === `num-${item.id}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
                   </div>
-                )}
+
+                  {item.label && (
+                    <p className="text-xs text-amber-200/70 mt-0.5">
+                      {item.label}
+                    </p>
+                  )}
+
+                  {/* Capabilities */}
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5">
+                    {item.isInbound && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        <PhoneIncoming className="w-2.5 h-2.5" /> Inbound
+                      </span>
+                    )}
+                    {item.isOutbound && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
+                        <PhoneOutgoing className="w-2.5 h-2.5" /> Outbound
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Assigned Agent Ribbon */}
+                <div className="mt-4 pt-3 border-t border-amber-500/10 flex items-center justify-between text-xs">
+                  <span className="text-white/40 text-[11px]">Routing Target:</span>
+                  {item.assignedAgent ? (
+                    <span className="inline-flex items-center gap-1 font-semibold text-amber-300">
+                      <Bot className="w-3 h-3 text-amber-400" /> {item.assignedAgent.name}
+                    </span>
+                  ) : (
+                    <span className="text-white/40 italic text-[11px]">Unassigned</span>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Provider Webhook & Telephony Gateway Guide Modal */}
+      {/* Provider Webhook Configuration Modal */}
       {showGuide && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-2xl rounded-2xl bg-white dark:bg-[#140b08] border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="p-5 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => setShowGuide(false)}>
+          <div
+            className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl p-6 bg-[#0e0805] border border-amber-500/20 shadow-2xl space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  Telephony Gateway & Webhooks Guide
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-white/50 mt-0.5">
-                  How to configure real phone numbers from Twilio and Exotel to route to your AI agents.
+                <h3 className="text-base font-bold text-white">Telephony Webhook Endpoints</h3>
+                <p className="text-xs text-amber-200/60 mt-0.5">
+                  Paste these URLs into your carrier console (Twilio, Exotel, Plivo) for real-time SIP signaling.
                 </p>
               </div>
-              <button
-                onClick={() => setShowGuide(false)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white"
-              >
-                <X className="w-5 h-5" />
+              <button onClick={() => setShowGuide(false)} className="p-1.5 rounded-lg text-white/40 hover:text-white transition-colors">
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-5 overflow-y-auto space-y-6 text-xs text-slate-600 dark:text-white/70">
-              {/* Option 1: Exotel (India) */}
-              <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-3">
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
-                    Exotel Telephony (India DLT & Virtual Numbers)
-                  </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-200">
-                    Recommended for India
-                  </span>
+                  <span className="text-xs font-bold text-white">Twilio Inbound Voice Webhook (POST)</span>
+                  <button
+                    onClick={() => handleCopy(twilioInboundWebhook, "twilio-in")}
+                    className="text-xs text-amber-400 hover:underline flex items-center gap-1"
+                  >
+                    {copiedKey === "twilio-in" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    <span>Copy URL</span>
+                  </button>
                 </div>
-                <p className="text-xs text-slate-600 dark:text-white/70 leading-relaxed">
-                  Best for calling in India (+91) with zero latency and full compliance. Get a Virtual Number (VN) from Exotel, then set the passthru applet URL:
+                <p className="text-xs font-mono text-emerald-400 bg-black/60 p-2 rounded border border-white/5 break-all">
+                  {twilioInboundWebhook}
                 </p>
-                <div className="space-y-1.5 font-mono text-[11px]">
-                  <div className="text-[10px] text-slate-400 uppercase font-bold">Voice Incoming Webhook URL:</div>
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10">
-                    <span className="flex-1 truncate text-slate-800 dark:text-amber-300">{exotelInboundWebhook}</span>
-                    <button
-                      onClick={() => handleCopy(exotelInboundWebhook, "exotel-inbound")}
-                      className="px-2 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-800 dark:text-amber-200 text-[10px] font-sans font-bold"
-                    >
-                      {copiedKey === "exotel-inbound" ? "Copied!" : "Copy"}
-                    </button>
-                  </div>
-                </div>
               </div>
 
-              {/* Option 2: Twilio (Global / US) */}
-              <div className="p-4 rounded-xl border border-sky-500/30 bg-sky-500/5 space-y-3">
+              <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
-                    Twilio Telephony (US & Global Numbers)
-                  </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-800 dark:text-sky-200">
-                    Global PSTN
-                  </span>
+                  <span className="text-xs font-bold text-white">Twilio Status Callback URL (POST)</span>
+                  <button
+                    onClick={() => handleCopy(twilioStatusWebhook, "twilio-status")}
+                    className="text-xs text-amber-400 hover:underline flex items-center gap-1"
+                  >
+                    {copiedKey === "twilio-status" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    <span>Copy URL</span>
+                  </button>
                 </div>
-                <p className="text-xs text-slate-600 dark:text-white/70 leading-relaxed">
-                  In Twilio Console &gt; Phone Numbers &gt; Configure &gt; A Call Comes In &gt; Select <strong>Webhook (HTTP POST)</strong> and paste:
+                <p className="text-xs font-mono text-emerald-400 bg-black/60 p-2 rounded border border-white/5 break-all">
+                  {twilioStatusWebhook}
                 </p>
-                <div className="space-y-1.5 font-mono text-[11px]">
-                  <div className="text-[10px] text-slate-400 uppercase font-bold">TwiML Inbound Webhook:</div>
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10">
-                    <span className="flex-1 truncate text-slate-800 dark:text-sky-300">{twilioInboundWebhook}</span>
-                    <button
-                      onClick={() => handleCopy(twilioInboundWebhook, "twilio-inbound")}
-                      className="px-2 py-1 rounded bg-sky-500/20 hover:bg-sky-500/30 text-sky-800 dark:text-sky-200 text-[10px] font-sans font-bold"
-                    >
-                      {copiedKey === "twilio-inbound" ? "Copied!" : "Copy"}
-                    </button>
-                  </div>
-                </div>
               </div>
 
-              {/* Step by step instructions */}
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 space-y-2">
-                <h4 className="font-bold text-slate-900 dark:text-white">Connecting Phone Numbers to Agents:</h4>
-                <ol className="list-decimal pl-4 space-y-1.5 text-xs text-slate-600 dark:text-white/60">
-                  <li>Click <strong>&quot;Add Number&quot;</strong> in the top right.</li>
-                  <li>Enter your number (e.g. <code>+91 80 4712 3456</code> or <code>+1 415 555 2671</code>).</li>
-                  <li>Select your provider (<strong>Twilio</strong>, <strong>Exotel</strong>, or <strong>Sandbox</strong>).</li>
-                  <li>Assign your AI Agent (e.g., <strong>Adyapan AI</strong> for Edutech course counseling, <strong>Priya</strong> for Hindi inquiries, or <strong>Srinivas</strong> for Telugu).</li>
-                  <li>Save! All calls to that number will instantly trigger real-time AI autonomous voice conversations.</li>
-                </ol>
+              <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white">Exotel Inbound Call App Webhook</span>
+                  <button
+                    onClick={() => handleCopy(exotelInboundWebhook, "exotel-in")}
+                    className="text-xs text-amber-400 hover:underline flex items-center gap-1"
+                  >
+                    {copiedKey === "exotel-in" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    <span>Copy URL</span>
+                  </button>
+                </div>
+                <p className="text-xs font-mono text-emerald-400 bg-black/60 p-2 rounded border border-white/5 break-all">
+                  {exotelInboundWebhook}
+                </p>
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20 flex justify-end">
-              <button
-                onClick={() => setShowGuide(false)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-slate-900 dark:bg-white/20 hover:bg-slate-800 dark:hover:bg-white/30"
-              >
-                Got It, Close
-              </button>
+            <div className="flex justify-end pt-2">
+              <Button variant="secondary" size="sm" onClick={() => setShowGuide(false)}>
+                Done
+              </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Create / edit modal */}
+      {/* Create / Edit Modal */}
       {showForm && canManage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl p-6 bg-white dark:bg-[#1a0405] border border-slate-200 dark:border-white/10 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="w-full max-w-lg rounded-2xl p-6 bg-[#0e0805] border border-amber-500/20 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base font-black text-slate-900 dark:text-white">
-                {form.id ? "Manage Phone Number" : "Add Phone Number"}
+              <h3 className="text-base font-bold text-white">
+                {form.id ? "Edit Virtual DID" : "Provision Virtual DID"}
               </h3>
-              <button onClick={() => setShowForm(false)} className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors" aria-label="Close">
+              <button onClick={() => setShowForm(false)} className="p-1.5 rounded-lg text-white/40 hover:text-white transition-colors" aria-label="Close">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label htmlFor="num-number" className="block text-xs font-semibold text-slate-500 dark:text-white/50 mb-1.5">Phone Number *</label>
+                <label htmlFor="num-val" className="block text-xs font-semibold text-amber-100/90 mb-1.5">Phone Number (E.164 Format) *</label>
                 <input
-                  id="num-number"
+                  id="num-val"
                   value={form.number}
-                  disabled={!!form.id}
                   onChange={(e) => setForm({ ...form, number: e.target.value })}
-                  placeholder="+91 98XXX XXXXX"
-                  className="w-full h-10 rounded-xl px-3 text-sm bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500 disabled:opacity-50"
+                  placeholder="+918045678901 or +14155552671"
+                  className="w-full h-10 rounded-lg px-3 text-xs font-mono bg-black/40 border border-amber-500/20 text-white outline-none focus:border-amber-400"
                 />
               </div>
 
-              <div>
-                <label htmlFor="num-provider" className="block text-xs font-semibold text-slate-500 dark:text-white/50 mb-1.5">Provider</label>
-                <select
-                  id="num-provider"
-                  value={form.provider}
-                  onChange={(e) => setForm({ ...form, provider: e.target.value })}
-                  className="w-full h-10 rounded-xl px-3 text-sm bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500"
-                >
-                  {PROVIDERS.map((p) => (
-                    <option key={p} value={p} className="capitalize">{p}</option>
-                  ))}
-                </select>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="num-provider" className="block text-xs font-semibold text-amber-100/90 mb-1.5">Carrier Gateway</label>
+                  <select
+                    id="num-provider"
+                    value={form.provider}
+                    onChange={(e) => setForm({ ...form, provider: e.target.value })}
+                    className="w-full h-10 rounded-lg px-3 text-xs bg-[#180f0a] border border-amber-500/20 text-white outline-none focus:border-amber-400"
+                  >
+                    {PROVIDERS.map((p) => (
+                      <option key={p} value={p}>{p.toUpperCase()}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="num-label" className="block text-xs font-semibold text-amber-100/90 mb-1.5">Department / Label</label>
+                  <input
+                    id="num-label"
+                    value={form.label}
+                    onChange={(e) => setForm({ ...form, label: e.target.value })}
+                    placeholder="e.g. Inbound Sales Primary"
+                    className="w-full h-10 rounded-lg px-3 text-xs bg-black/40 border border-amber-500/20 text-white outline-none focus:border-amber-400"
+                  />
+                </div>
               </div>
 
               <div>
-                <label htmlFor="num-label" className="block text-xs font-semibold text-slate-500 dark:text-white/50 mb-1.5">Label</label>
-                <input
-                  id="num-label"
-                  value={form.label}
-                  onChange={(e) => setForm({ ...form, label: e.target.value })}
-                  placeholder="e.g. Primary sales line"
-                  className="w-full h-10 rounded-xl px-3 text-sm bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="num-status-sel" className="block text-xs font-semibold text-slate-500 dark:text-white/50 mb-1.5">Status</label>
-                <select
-                  id="num-status-sel"
-                  value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  className="w-full h-10 rounded-xl px-3 text-sm bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500"
-                >
-                  <option value="available">Available</option>
-                  <option value="assigned">Assigned</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="num-agent" className="block text-xs font-semibold text-slate-500 dark:text-white/50 mb-1.5">Assign to Agent</label>
+                <label htmlFor="num-agent" className="block text-xs font-semibold text-amber-100/90 mb-1.5">Assigned Autonomous Agent</label>
                 <select
                   id="num-agent"
                   value={form.assignedAgentId}
                   onChange={(e) => setForm({ ...form, assignedAgentId: e.target.value })}
-                  className="w-full h-10 rounded-xl px-3 text-sm bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500"
+                  className="w-full h-10 rounded-lg px-3 text-xs bg-[#180f0a] border border-amber-500/20 text-white outline-none focus:border-amber-400"
                 >
-                  <option value="">Unassigned</option>
+                  <option value="">Unassigned (Standby Line)</option>
                   {agents.map((a) => (
                     <option key={a.id} value={a.id}>{a.name}</option>
                   ))}
                 </select>
               </div>
 
-              <div className="flex items-center gap-5">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
+              {/* Direction Capabilities */}
+              <div className="grid sm:grid-cols-2 gap-3 pt-2">
+                <label className="flex items-center gap-2.5 p-3 rounded-xl border border-white/10 bg-black/30 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={form.isInbound}
                     onChange={(e) => setForm({ ...form, isInbound: e.target.checked })}
-                    className="w-4 h-4 accent-[#D42027]"
+                    className="accent-amber-500 w-4 h-4"
                   />
-                  <span className="text-xs text-slate-700 dark:text-white/80 flex items-center gap-1">
-                    <PhoneIncoming className="w-3.5 h-3.5" /> Inbound
-                  </span>
+                  <div>
+                    <p className="text-xs font-bold text-white">Inbound Reception</p>
+                    <p className="text-[10px] text-white/40">Accept inbound prospect calls</p>
+                  </div>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer select-none">
+
+                <label className="flex items-center gap-2.5 p-3 rounded-xl border border-white/10 bg-black/30 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={form.isOutbound}
                     onChange={(e) => setForm({ ...form, isOutbound: e.target.checked })}
-                    className="w-4 h-4 accent-[#D42027]"
+                    className="accent-amber-500 w-4 h-4"
                   />
-                  <span className="text-xs text-slate-700 dark:text-white/80 flex items-center gap-1">
-                    <PhoneOutgoing className="w-3.5 h-3.5" /> Outbound
-                  </span>
+                  <div>
+                    <p className="text-xs font-bold text-white">Outbound Dialing</p>
+                    <p className="text-[10px] text-white/40">Use as caller ID for campaigns</p>
+                  </div>
                 </label>
               </div>
 
-              <div className="flex items-center gap-2 justify-end pt-2">
-                <button onClick={() => setShowForm(false)} className="h-10 px-4 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/15 text-slate-600 dark:text-white/70">
+              <div className="flex items-center gap-2 justify-end pt-3 border-t border-white/10">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setShowForm(false)}
+                >
                   Cancel
-                </button>
-                <button onClick={handleSave} disabled={saving} className="btn-red text-xs h-10 px-4 shadow-lg shadow-brand-500/25 flex items-center gap-2 disabled:opacity-50">
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                  Save Number
-                </button>
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  {saving && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />}
+                  <span>{saving ? "Provisioning..." : "Save Number"}</span>
+                </Button>
               </div>
             </div>
           </div>
