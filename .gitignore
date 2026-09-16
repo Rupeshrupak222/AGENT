@@ -37,3 +37,7 @@ Thumbs.db
 
 # Reports
 DAY_*_REPORT.md
+
+# Local agent and MCP configurations
+.agents/
+
