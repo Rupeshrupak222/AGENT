@@ -63,7 +63,9 @@ async function bootstrap() {
   const port   = config.get<number>('PORT', 3001);
   const prefix = config.get<string>('API_PREFIX', 'api/v1');
 
-  app.setGlobalPrefix(prefix);
+  app.setGlobalPrefix(prefix, {
+    exclude: ['health', 'health/(.*)'],
+  });
   app.useWebSocketAdapter(new IoAdapter(app));
 
   // ── CORS ─────────────────────────────────────────────────────
