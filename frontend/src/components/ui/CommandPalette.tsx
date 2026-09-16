@@ -264,31 +264,31 @@ export function CommandPalette({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-slate-900/40 dark:bg-black/70 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: -10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: -10 }}
-        className="w-full max-w-xl rounded-2xl bg-slate-900 border border-slate-700/60 shadow-2xl overflow-hidden text-white"
+        className="w-full max-w-xl rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60 shadow-2xl overflow-hidden text-slate-900 dark:text-white"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input Bar */}
-        <div className="flex items-center px-4 py-3.5 border-b border-slate-800 gap-3">
-          <Search className="w-5 h-5 text-slate-400 flex-shrink-0" />
+        <div className="flex items-center px-4 py-3.5 border-b border-slate-100 dark:border-slate-800 gap-3">
+          <Search className="w-5 h-5 text-slate-400 dark:text-slate-500 flex-shrink-0" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Type a command or jump to page... (e.g. Agents, Calls, CRM)"
-            className="flex-1 bg-transparent text-sm text-white placeholder-slate-400 outline-none"
+            className="flex-1 bg-transparent text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none"
             autoFocus
           />
-          <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono text-slate-400 bg-slate-800 border border-slate-700">
+          <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
             ESC
           </kbd>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -297,7 +297,7 @@ export function CommandPalette({
         {/* Results List */}
         <div className="max-h-80 overflow-y-auto p-2 space-y-1">
           {filteredCommands.length === 0 ? (
-            <div className="py-8 text-center text-slate-400 text-xs">
+            <div className="py-8 text-center text-slate-400 dark:text-slate-500 text-xs">
               No matching destinations or commands found.
             </div>
           ) : (
@@ -309,16 +309,18 @@ export function CommandPalette({
                   key={cmd.id}
                   onClick={() => executeCommand(cmd)}
                   onMouseEnter={() => setSelectedIndex(idx)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs transition-all text-left ${
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs transition-all text-left border ${
                     isSelected
-                      ? "bg-brand-600 text-white shadow-sm"
-                      : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
+                      ? "bg-brand-500/10 dark:bg-brand-500/20 text-brand-700 dark:text-white border-brand-500/30 dark:border-brand-500/40 font-semibold shadow-xs"
+                      : "text-slate-600 dark:text-slate-300 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-white border-transparent"
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        isSelected ? "bg-white/20" : "bg-slate-800 text-slate-300"
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                        isSelected
+                          ? "bg-brand-600 dark:bg-brand-500/30 text-white dark:text-brand-300 shadow-xs"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5" />
@@ -327,7 +329,7 @@ export function CommandPalette({
                       <p className="font-semibold truncate">{cmd.label}</p>
                       <p
                         className={`text-[10px] truncate ${
-                          isSelected ? "text-white/80" : "text-slate-500"
+                          isSelected ? "text-brand-600/80 dark:text-brand-300/80" : "text-slate-400 dark:text-slate-500"
                         }`}
                       >
                         {cmd.category}
@@ -340,14 +342,14 @@ export function CommandPalette({
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                           isSelected
-                            ? "bg-white/20 text-white"
-                            : "bg-slate-800 text-slate-400 border border-slate-700"
+                            ? "bg-brand-100 dark:bg-brand-500/30 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-500/30"
+                            : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
                         }`}
                       >
                         {cmd.badge}
                       </span>
                     )}
-                    {isSelected && <ArrowRight className="w-3.5 h-3.5 text-white" />}
+                    {isSelected && <ArrowRight className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" />}
                   </div>
                 </button>
               );
@@ -356,15 +358,15 @@ export function CommandPalette({
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2 border-t border-slate-800/80 bg-slate-950/60 flex items-center justify-between text-[11px] text-slate-500">
+        <div className="px-4 py-2 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-950/60 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
           <div className="flex items-center gap-2">
             <span>Navigation:</span>
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px]">↑</kbd>
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px]">↓</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-[10px]">↑</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-[10px]">↓</kbd>
             <span>Select:</span>
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px]">↵</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-[10px]">↵</kbd>
           </div>
-          <span className="font-medium text-slate-400">AgentCall Command Center</span>
+          <span className="font-medium text-slate-400 dark:text-slate-500">AgentCall Command Center</span>
         </div>
       </motion.div>
     </div>

@@ -4,6 +4,8 @@
 
 /* ── Design System Tokens ───────────────────────────────────── */
 :root {
+  color-scheme: light;
+
   /* Brand: Warm Chocolate / Espresso Brown */
   --brand-50:  #fdf8f5;
   --brand-100: #f7ede3;
@@ -58,6 +60,8 @@
 }
 
 .dark {
+  color-scheme: dark;
+
   --bg:           #0a0604;
   --bg-secondary: #120a06;
   --bg-card:      #140b07;
