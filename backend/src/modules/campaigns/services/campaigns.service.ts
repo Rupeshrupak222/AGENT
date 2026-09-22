@@ -21,6 +21,7 @@ import {
   CampaignStatus,
 } from '../dto/campaign.dto';
 import { ScopedActor, campaignScope, leadScope, agentScope } from '../../../common/scope';
+import { FeatureFlagsService } from '../../feature-flags/feature-flags.service';
 
 @Injectable()
 export class CampaignsService implements OnModuleInit {
@@ -30,6 +31,7 @@ export class CampaignsService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly eligibilityService: CampaignEligibilityService,
     private readonly queueService: CampaignQueueService,
+    private readonly featureFlags: FeatureFlagsService,
     @Inject(forwardRef(() => TelephonyService))
     private readonly telephonyService: TelephonyService,
     @Optional()
@@ -296,6 +298,8 @@ export class CampaignsService implements OnModuleInit {
 
   // ── 8. Start Campaign ───────────────────────────────────────
   async startCampaign(tenantId: string, campaignId: string, actor?: ScopedActor) {
+    await this.featureFlags.requireEnabled('voice_ai', tenantId, 'Voice calls are currently disabled for your workspace');
+
     const campaign = await this.findOne(tenantId, campaignId, actor);
 
     if (campaign.status === CampaignStatus.RUNNING) {

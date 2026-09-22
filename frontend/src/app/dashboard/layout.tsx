@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,9 +38,10 @@ import {
   PhoneIncoming,
   Workflow,
   ArrowRight,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { bootstrapAuth, callsApi, CallItem } from "@/lib/api";
+import { bootstrapAuth, callsApi, CallItem, announcementsApi, AnnouncementItem } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/components/ui/Toast";
@@ -223,10 +224,12 @@ function SidebarContent({
   collapsed = false,
   mobile = false,
   onClose,
+  onNavigate,
 }: {
   collapsed?: boolean;
   mobile?: boolean;
   onClose?: () => void;
+  onNavigate?: () => void;
 }) {
   const pathname = usePathname();
   const { user, tenant, logout } = useAuthStore();
@@ -295,6 +298,7 @@ function SidebarContent({
                   <li key={item.href}>
                     <Link
                       href={item.href}
+                      onClick={onNavigate}
                       title={!show ? item.label : undefined}
                       className={cn(
                         "flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
@@ -340,6 +344,7 @@ active
       >
         <Link
           href="/dashboard/settings"
+          onClick={onNavigate}
           className={cn(
             "flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-all",
             !show && "justify-center px-0"
@@ -363,19 +368,35 @@ active
           {show && <span>Sign Out</span>}
         </button>
         {show && user && (
-          <div className="flex items-center gap-3 px-3 py-2 mt-2 rounded-xl bg-slate-100/70 dark:bg-brand-500/10 border border-slate-200 dark:border-brand-500/20">
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-sm bg-gradient-to-br from-brand-500 to-brand-700">
+          <Link
+            href="/dashboard/profile"
+            onClick={onNavigate}
+            className="flex items-center gap-3 px-3 py-2 mt-2 rounded-xl bg-slate-100/70 dark:bg-brand-500/10 hover:bg-slate-200/70 dark:hover:bg-brand-500/20 border border-slate-200 dark:border-brand-500/20 transition-all cursor-pointer group"
+          >
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-sm bg-gradient-to-br from-brand-500 to-brand-700 group-hover:scale-105 transition-transform">
               {user.name?.[0]?.toUpperCase() ?? "U"}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+              <p className="text-xs font-semibold text-slate-900 dark:text-white truncate group-hover:text-brand-600 dark:group-hover:text-rose-300 transition-colors">
                 {user.name}
               </p>
               <p className="text-[10px] capitalize truncate text-slate-500 dark:text-white/40">
                 {tenant?.name ?? user.role?.replace("_", " ")}
               </p>
             </div>
-          </div>
+          </Link>
+        )}
+        {!show && user && (
+          <Link
+            href="/dashboard/profile"
+            onClick={onNavigate}
+            title={`${user.name} (${user.role?.replace("_", " ")})`}
+            className="flex items-center justify-center py-2 mt-2 cursor-pointer group"
+          >
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm bg-gradient-to-br from-brand-500 to-brand-700 group-hover:scale-110 transition-transform">
+              {user.name?.[0]?.toUpperCase() ?? "U"}
+            </div>
+          </Link>
         )}
       </div>
     </div>
@@ -390,7 +411,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { success } = useToast();
   const [mounted, setMounted] = useState(false);
   const [sessionValidated, setSessionValidated] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const hoverLeaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = useCallback(() => {
+    if (hoverLeaveTimerRef.current) {
+      clearTimeout(hoverLeaveTimerRef.current);
+      hoverLeaveTimerRef.current = null;
+    }
+    setIsHovered(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    if (hoverLeaveTimerRef.current) {
+      clearTimeout(hoverLeaveTimerRef.current);
+    }
+    hoverLeaveTimerRef.current = setTimeout(() => {
+      setIsHovered(false);
+    }, 180);
+  }, []);
+
+  useEffect(() => {
+    setIsHovered(false);
+    if (hoverLeaveTimerRef.current) {
+      clearTimeout(hoverLeaveTimerRef.current);
+    }
+  }, [pathname]);
+
+  useEffect(() => {
+    return () => {
+      if (hoverLeaveTimerRef.current) {
+        clearTimeout(hoverLeaveTimerRef.current);
+      }
+    };
+  }, []);
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -398,6 +453,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [commandOpen, setCommandOpen] = useState(false);
   const [recentCalls, setRecentCalls] = useState<CallItem[]>([]);
   const [notifError, setNotifError] = useState(false);
+  const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
+  const [dismissedAnnouncements, setDismissedAnnouncements] = useState<string[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -464,6 +521,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  // Platform announcements banner (tenant surface, not admin shell)
+  useEffect(() => {
+    if (!mounted || !isAuthenticated) return;
+    if (pathname.startsWith("/dashboard/admin")) return;
+    let active = true;
+    announcementsApi
+      .active()
+      .then((items) => {
+        if (active) setAnnouncements(items || []);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [mounted, isAuthenticated, pathname, accessToken]);
 
   // Live notification feed: most recent calls in the workspace
   useEffect(() => {
@@ -576,7 +649,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Profile dropdown items filtered by permissions
   const profileItems = [
-    { label: "Profile Settings", href: "/dashboard/settings", show: true },
+    { label: "My Profile", href: "/dashboard/profile", show: true },
+    { label: "Account Settings", href: "/dashboard/settings", show: true },
     { label: "Workspace", href: "/dashboard/workspace", show: can(PERMISSIONS.WORKSPACE_VIEW) },
     { label: "Billing", href: "/dashboard/billing", show: can(PERMISSIONS.BILLING_VIEW) },
   ].filter((item) => item.show);
@@ -585,23 +659,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex h-screen overflow-hidden bg-page transition-colors duration-200">
       {/* Desktop sidebar */}
       <aside
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         className={cn(
-          "hidden lg:flex flex-col relative flex-shrink-0 transition-all duration-300",
-          collapsed ? "w-[64px]" : "w-[240px]"
+          "hidden lg:flex flex-col relative flex-shrink-0 transition-all duration-300 ease-in-out z-20 overflow-hidden",
+          isHovered ? "w-[240px]" : "w-[64px]"
         )}
       >
-        <SidebarContent collapsed={collapsed} />
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="absolute -right-3 top-20 w-6 h-6 rounded-full flex items-center justify-center z-10 transition-all bg-input border border-slate-200 dark:border-brand-500/30 text-slate-500 dark:text-white/50 shadow-md hover:border-brand-500 hover:text-brand-600 dark:hover:text-white"
-        >
-          {collapsed ? (
-            <ChevronRight className="w-3.5 h-3.5" />
-          ) : (
-            <ChevronLeft className="w-3.5 h-3.5" />
-          )}
-        </button>
+        <SidebarContent
+          collapsed={!isHovered}
+          onNavigate={() => setIsHovered(false)}
+        />
       </aside>
 
       {/* Mobile sidebar */}
@@ -629,7 +697,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </AnimatePresence>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0 transition-all duration-300 ease-in-out">
         {/* Topbar */}
         <header className="h-16 flex items-center justify-between px-4 sm:px-6 flex-shrink-0 z-30 border-b border-slate-200 dark:border-brand-500/15 bg-surface-sidebar/85 backdrop-blur-xl transition-colors duration-200">
           <div className="flex items-center gap-3 min-w-0">
@@ -751,7 +819,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <li className="text-slate-800 dark:text-white/80 font-medium">{navInfo.label}</li>
                 </ol>
               ) : (
-                <p className="text-xs hidden sm:block text-slate-500 dark:text-white/40">
+                <p suppressHydrationWarning className="text-xs hidden sm:block text-slate-500 dark:text-white/40">
                   {new Date().toLocaleDateString("en-IN", {
                     weekday: "long",
                     day: "numeric",
@@ -942,6 +1010,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </header>
+
+        {/* Platform announcement banner */}
+        {announcements.length > 0 && !pathname.startsWith("/dashboard/admin") && (
+          <AnimatePresence>
+            {announcements
+              .filter((a) => !dismissedAnnouncements.includes(a.id))
+              .map((a) => (
+                <motion.div
+                  key={a.id}
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  className={cn(
+                    "px-4 sm:px-6 py-2 flex items-start sm:items-center gap-3 text-xs border-b",
+                    a.priority === "high"
+                      ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300"
+                      : "bg-brand-500/10 border-brand-500/25 text-brand-700 dark:text-rose-300"
+                  )}
+                >
+                  <Megaphone className="w-3.5 h-3.5 mt-0.5 sm:mt-0 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold">{a.title}</p>
+                    <p className="truncate">{a.body}</p>
+                  </div>
+                  <button
+                    onClick={() => setDismissedAnnouncements((prev) => [...prev, a.id])}
+                    aria-label="Dismiss announcement"
+                    className="p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex-shrink-0"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </motion.div>
+              ))}
+          </AnimatePresence>
+        )}
 
         {/* Page */}
         <main className="flex-1 overflow-y-auto bg-page transition-colors duration-200">

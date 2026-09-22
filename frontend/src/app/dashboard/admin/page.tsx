@@ -25,8 +25,9 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { cn, formatNumber } from "@/lib/utils";
-import { platformApi, PlatformDashboardData, PlatformCallTrendItem, PlatformCompanyPerformance } from "@/lib/api";
+import { platformApi, superAdminApi, PlatformDashboardData, PlatformCallTrendItem, PlatformCompanyPerformance, ActivityFeedItem, ChurnRiskItem } from "@/lib/api";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { Flame } from "lucide-react";
 
 const PLAN_CONFIG: Record<string, { name: string; price: number; color: string }> = {
   starter: { name: "Starter", price: 4999, color: "bg-blue-500" },
@@ -97,20 +98,26 @@ export default function AdminDashboardPage() {
   const [dashboard, setDashboard] = useState<PlatformDashboardData | null>(null);
   const [callTrend, setCallTrend] = useState<PlatformCallTrendItem[]>([]);
   const [companyPerf, setCompanyPerf] = useState<PlatformCompanyPerformance[]>([]);
+  const [activity, setActivity] = useState<ActivityFeedItem[]>([]);
+  const [churn, setChurn] = useState<ChurnRiskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState<"today" | "week" | "month">("week");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [dash, trend, perf] = await Promise.allSettled([
+      const [dash, trend, perf, feed, churnRes] = await Promise.allSettled([
         platformApi.dashboard(range),
         platformApi.callTrend(range === "today" ? 1 : range === "week" ? 7 : 30),
         platformApi.companyPerformance(range),
+        superAdminApi.getActivityFeed(10),
+        superAdminApi.getChurnRisk(),
       ]);
       if (dash.status === "fulfilled") setDashboard(dash.value);
       if (trend.status === "fulfilled") setCallTrend(trend.value);
       if (perf.status === "fulfilled") setCompanyPerf(perf.value);
+      if (feed.status === "fulfilled") setActivity(feed.value.items);
+      if (churnRes.status === "fulfilled") setChurn(churnRes.value.items);
     } catch (e) { /* handled by Promise.allSettled */ }
     setLoading(false);
   }, [range]);
@@ -274,6 +281,88 @@ export default function AdminDashboardPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Live Activity Feed */}
+        <div className="rounded-xl border border-slate-200 dark:border-white/[0.07] bg-white dark:bg-[#120a06]/80 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-white/[0.06]">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Live Activity</h3>
+            <Link href="/dashboard/admin/audit" className="text-xs font-semibold text-brand-500 hover:text-brand-600 dark:hover:text-brand-400 flex items-center gap-1">
+              View Audit Log <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+          {activity.length === 0 ? (
+            <div className="p-6 text-center text-sm text-slate-400 dark:text-white/30">No activity yet</div>
+          ) : (
+            <ul className="divide-y divide-slate-100 dark:divide-white/[0.04]">
+              {activity.map((a, i) => (
+                <li key={i} className="flex items-center gap-3 px-5 py-3">
+                  <span
+                    className={cn(
+                      "w-2 h-2 rounded-full flex-shrink-0",
+                      a.icon === "success" ? "bg-emerald-500" : a.icon === "error" ? "bg-red-500" : a.icon === "warning" ? "bg-amber-500" : "bg-brand-500"
+                    )}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-slate-900 dark:text-white capitalize truncate">{a.title}</p>
+                    {a.detail && <p className="text-xs text-slate-500 dark:text-white/40 truncate">{a.detail}</p>}
+                  </div>
+                  {(a.meta || true) && (
+                    <span className="text-[10px] font-mono text-slate-400 dark:text-white/30 flex-shrink-0 text-right">
+                      {a.meta ? <span className="block">{a.meta}</span> : null}
+                      {new Date(a.timestamp).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Churn Risk */}
+        <div className="rounded-xl border border-slate-200 dark:border-white/[0.07] bg-white dark:bg-[#120a06]/80 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-white/[0.06]">
+            <div className="flex items-center gap-2">
+              <Flame className="w-4 h-4 text-orange-500" />
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Churn Risk</h3>
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-white/30">
+              {churn.filter((c) => c.risk === "high").length} at-risk
+            </span>
+          </div>
+          {churn.length === 0 ? (
+            <div className="p-6 text-center text-sm text-slate-400 dark:text-white/30">No company usage data to score</div>
+          ) : (
+            <ul className="divide-y divide-slate-100 dark:divide-white/[0.04]">
+              {churn.slice(0, 6).map((c) => (
+                <li key={c.tenantId} className="flex items-center gap-3 px-5 py-3">
+                  <span
+                    className={cn(
+                      "px-2 py-0.5 rounded-md text-[10px] font-bold uppercase",
+                      c.risk === "high" ? "bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400" : c.risk === "medium" ? "bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    )}
+                  >
+                    {c.risk}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{c.company}</p>
+                    <p className="text-[11px] text-slate-400 dark:text-white/30">
+                      {c.callsThisMonth} calls this month · {c.daysSinceLastCall === null ? "no calls yet" : `${c.daysSinceLastCall}d since last call`}
+                    </p>
+                  </div>
+                  <div className="w-24 flex-shrink-0">
+                    <div className="h-1.5 rounded-full bg-slate-100 dark:bg-white/[0.06] overflow-hidden">
+                      <div
+                        className={cn("h-full rounded-full", c.score >= 60 ? "bg-red-500" : c.score >= 30 ? "bg-amber-500" : "bg-emerald-500")}
+                        style={{ width: `${c.score}%` }}
+                      />
+                    </div>
+                  </div>
+                  <span className="w-8 text-right text-xs font-bold text-slate-900 dark:text-white flex-shrink-0">{c.score}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {/* Company Performance Table */}

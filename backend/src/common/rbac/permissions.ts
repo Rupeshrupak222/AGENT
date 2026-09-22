@@ -105,6 +105,10 @@ export const PLATFORM_AI_PROVIDERS = 'platform:ai_providers' as const;
 export const PLATFORM_BILLING_CONFIG = 'platform:billing_config' as const;
 export const PLATFORM_DIAGNOSTICS = 'platform:diagnostics' as const;
 export const PLATFORM_AUDIT = 'platform:audit' as const;
+export const PLATFORM_FEATURE_FLAGS = 'platform:feature_flags' as const;
+export const PLATFORM_API_KEYS = 'platform:api_keys' as const;
+export const PLATFORM_WEBHOOKS = 'platform:webhooks' as const;
+export const PLATFORM_REPORTS = 'platform:reports' as const;
 
 /** Union type of all permission strings */
 export type Permission =
@@ -131,4 +135,6 @@ export type Permission =
   | typeof WORKSPACE_VIEW | typeof WORKSPACE_MANAGE
   | typeof PLATFORM_TENANT_CREATE | typeof PLATFORM_TENANT_MANAGE
   | typeof PLATFORM_TELEPHONY | typeof PLATFORM_AI_PROVIDERS
-  | typeof PLATFORM_BILLING_CONFIG | typeof PLATFORM_DIAGNOSTICS | typeof PLATFORM_AUDIT;
+  | typeof PLATFORM_BILLING_CONFIG | typeof PLATFORM_DIAGNOSTICS | typeof PLATFORM_AUDIT
+  | typeof PLATFORM_FEATURE_FLAGS
+  | typeof PLATFORM_API_KEYS | typeof PLATFORM_WEBHOOKS | typeof PLATFORM_REPORTS;

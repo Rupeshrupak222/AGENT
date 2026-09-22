@@ -4,6 +4,7 @@ import { TelephonyService } from '../telephony/services/telephony.service';
 import { CloudflareR2StorageProvider } from '../storage/providers/r2-storage.provider';
 import { PostCallQueueService } from '../ai/services/post-call-queue.service';
 import { RecordingProcessor } from '../telephony/processors/recording.processor';
+import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
 import { ScopedActor, callScope, leadScope, agentScope } from '../../common/scope';
 
 export interface InitiateCallDto {
@@ -19,6 +20,7 @@ export class CallsService implements OnModuleInit {
   constructor(
     private prisma: PrismaService,
     private telephonyService: TelephonyService,
+    private featureFlags: FeatureFlagsService,
     @Optional() private storageProvider?: CloudflareR2StorageProvider,
     @Optional() @Inject(forwardRef(() => PostCallQueueService)) private postCallQueueService?: PostCallQueueService,
     @Optional() private recordingProcessor?: RecordingProcessor,
@@ -73,6 +75,8 @@ export class CallsService implements OnModuleInit {
   }
 
   async initiateCall(tenantId: string, dto: InitiateCallDto, actor?: ScopedActor) {
+    await this.featureFlags.requireEnabled('voice_ai', tenantId, 'Voice calls are currently disabled for your workspace');
+
     const [lead, agent] = await Promise.all([
       this.prisma.lead.findFirst({ where: { id: dto.leadId, tenantId, ...leadScope(actor) } }),
       this.prisma.aIAgent.findFirst({ where: { id: dto.agentId, tenantId, status: 'active', ...agentScope(actor) } }),

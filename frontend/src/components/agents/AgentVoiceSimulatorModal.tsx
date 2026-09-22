@@ -66,7 +66,7 @@ export function AgentVoiceSimulatorModal({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recognitionRef = useRef<any>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
-  const handleSendTurnRef = useRef<(text?: string) => Promise<void>>();
+  const handleSendTurnRef = useRef<((text?: string) => Promise<void>) | undefined>(undefined);
   const { success, error: toastError } = useToast();
 
   // Scroll to bottom of chat

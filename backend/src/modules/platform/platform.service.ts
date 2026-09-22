@@ -7,7 +7,33 @@ export class PlatformService {
 
   constructor(private prisma: PrismaService) {}
 
+  private cache = new Map<string, { data: any; expiresAt: number }>();
+
+  private getFromCache<T>(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (entry && entry.expiresAt > Date.now()) {
+      return entry.data as T;
+    }
+    this.cache.delete(key);
+    return null;
+  }
+
+  private setInCache(key: string, data: any, ttlSeconds = 15) {
+    this.cache.set(key, {
+      data,
+      expiresAt: Date.now() + ttlSeconds * 1000,
+    });
+  }
+
+  public invalidatePlatformCache() {
+    this.cache.clear();
+  }
+
   async getDashboard(range: 'today' | 'week' | 'month' = 'week') {
+    const cacheKey = `dashboard:${range}`;
+    const cached = this.getFromCache<any>(cacheKey);
+    if (cached) return cached;
+
     try {
       const now = new Date();
       const start =
@@ -35,19 +61,17 @@ export class PlatformService {
         activeUsers,
         totalAgents,
         activeAgents,
-        totalCalls,
         totalLeads,
         totalCampaigns,
-        completedCalls,
-        failedCalls,
-        inboundCalls,
-        outboundCalls,
-        transferredCalls,
-        totalCallMinutes,
-        avgDuration,
+        callAgg,
         totalRevenue,
         invoicesCount,
         failedPayments,
+        prevCalls,
+        prevUsers,
+        prevCompanies,
+        PLAN_PRICES,
+        activeTenants,
       ] = await Promise.all([
         this.prisma.tenant.count(),
         this.prisma.tenant.count({ where: { isActive: true } }),
@@ -55,60 +79,70 @@ export class PlatformService {
         this.prisma.user.count({ where: { isActive: true } }),
         this.prisma.aIAgent.count({ where: { deletedAt: null } }),
         this.prisma.aIAgent.count({ where: { deletedAt: null, status: 'active' } }),
-        this.prisma.call.count({ where: { startedAt: { gte: start } } }),
         this.prisma.lead.count({ where: { deletedAt: null } }),
         this.prisma.campaign.count(),
-        this.prisma.call.count({ where: { startedAt: { gte: start }, status: 'completed' } }),
-        this.prisma.call.count({ where: { startedAt: { gte: start }, status: 'failed' } }),
-        this.prisma.call.count({ where: { startedAt: { gte: start }, direction: 'inbound' } }),
-        this.prisma.call.count({ where: { startedAt: { gte: start }, direction: 'outbound' } }),
-        this.prisma.call.count({ where: { startedAt: { gte: start }, status: 'transferred' } }),
-        this.prisma.call.aggregate({
-          where: { startedAt: { gte: start }, status: 'completed' },
-          _sum: { duration: true },
-        }),
-        this.prisma.call.aggregate({
-          where: { startedAt: { gte: start }, status: 'completed' },
-          _avg: { duration: true },
-        }),
+        this.prisma.$queryRaw<any[]>`
+          SELECT
+            COUNT(*)::int AS total_calls,
+            COUNT(*) FILTER (WHERE "status" = 'completed')::int AS completed_calls,
+            COUNT(*) FILTER (WHERE "status" = 'failed')::int AS failed_calls,
+            COUNT(*) FILTER (WHERE "direction" = 'inbound')::int AS inbound_calls,
+            COUNT(*) FILTER (WHERE "direction" = 'outbound')::int AS outbound_calls,
+            COUNT(*) FILTER (WHERE "status" = 'transferred')::int AS transferred_calls,
+            COALESCE(SUM("duration") FILTER (WHERE "status" = 'completed'), 0)::int AS total_duration,
+            COALESCE(AVG("duration") FILTER (WHERE "status" = 'completed'), 0)::float AS avg_duration
+          FROM "Call"
+          WHERE "startedAt" >= ${start}
+        `,
         this.prisma.invoice.aggregate({
           where: { status: 'paid' },
           _sum: { amount: true },
         }),
         this.prisma.invoice.count({ where: { status: 'paid' } }),
         this.prisma.invoice.count({ where: { status: 'failed' } }),
+        this.prisma.call.count({
+          where: { startedAt: { gte: prevStart, lt: start } },
+        }),
+        this.prisma.user.count({
+          where: { createdAt: { gte: prevStart, lt: start } },
+        }),
+        this.prisma.tenant.count({
+          where: { createdAt: { gte: prevStart, lt: start } },
+        }),
+        this.planPrices(),
+        this.prisma.tenant.findMany({
+          where: { isActive: true },
+          select: { plan: true },
+        }),
       ]);
 
-      // Previous period for comparison
-      const prevCalls = await this.prisma.call.count({
-        where: { startedAt: { gte: prevStart, lt: start } },
-      });
-      const prevUsers = await this.prisma.user.count({
-        where: { createdAt: { gte: prevStart, lt: start } },
-      });
-      const prevCompanies = await this.prisma.tenant.count({
-        where: { createdAt: { gte: prevStart, lt: start } },
-      });
+      const cAgg = callAgg?.[0] || {
+        total_calls: 0,
+        completed_calls: 0,
+        failed_calls: 0,
+        inbound_calls: 0,
+        outbound_calls: 0,
+        transferred_calls: 0,
+        total_duration: 0,
+        avg_duration: 0,
+      };
+
+      const totalCalls = Number(cAgg.total_calls) || 0;
+      const completedCalls = Number(cAgg.completed_calls) || 0;
+      const failedCalls = Number(cAgg.failed_calls) || 0;
+      const inboundCalls = Number(cAgg.inbound_calls) || 0;
+      const outboundCalls = Number(cAgg.outbound_calls) || 0;
+      const transferredCalls = Number(cAgg.transferred_calls) || 0;
+      const totalMinutes = Math.round((Number(cAgg.total_duration) || 0) / 60);
+      const avgDuration = Math.round(Number(cAgg.avg_duration) || 0);
 
       const callsChange = prevCalls ? +(((totalCalls - prevCalls) / prevCalls) * 100).toFixed(1) : 0;
       const usersChange = prevUsers ? +(((activeUsers - prevUsers) / prevUsers) * 100).toFixed(1) : 0;
       const companiesChange = prevCompanies ? +(((totalCompanies - prevCompanies) / prevCompanies) * 100).toFixed(1) : 0;
 
-      const PLAN_PRICES: Record<string, number> = {
-        starter: 4999,
-        growth: 14999,
-        business: 39999,
-        enterprise: 99999,
-      };
-
-      // Calculate MRR from active tenants
-      const activeTenants = await this.prisma.tenant.findMany({
-        where: { isActive: true },
-        select: { plan: true },
-      });
       const mrr = activeTenants.reduce((sum, t) => sum + (PLAN_PRICES[t.plan] || PLAN_PRICES.starter), 0);
 
-      return {
+      const result = {
         companies: { total: totalCompanies, active: activeCompanies, change: companiesChange },
         users: { total: totalUsers, active: activeUsers, change: usersChange },
         agents: { total: totalAgents, active: activeAgents },
@@ -122,8 +156,8 @@ export class PlatformService {
           change: callsChange,
         },
         callMinutes: {
-          total: Math.round((totalCallMinutes._sum.duration ?? 0) / 60),
-          avgDuration: Math.round(avgDuration._avg.duration ?? 0),
+          total: totalMinutes,
+          avgDuration,
         },
         leads: { total: totalLeads },
         campaigns: { total: totalCampaigns },
@@ -134,6 +168,9 @@ export class PlatformService {
           failedPayments,
         },
       };
+
+      this.setInCache(cacheKey, result, 15);
+      return result;
     } catch (err: any) {
       this.logger.warn(`Platform dashboard query failed: ${err.message}`);
       return this.getEmptyDashboard();
@@ -141,6 +178,10 @@ export class PlatformService {
   }
 
   async getCallTrend(days = 30) {
+    const cacheKey = `callTrend:${days}`;
+    const cached = this.getFromCache<any[]>(cacheKey);
+    if (cached) return cached;
+
     try {
       const rows: any[] = await this.prisma.$queryRaw`
         SELECT
@@ -155,7 +196,7 @@ export class PlatformService {
         GROUP BY 1
         ORDER BY 1
       `;
-      return rows.map((r: any) => ({
+      const result = rows.map((r: any) => ({
         day: r.day?.toISOString?.()?.split('T')[0] || r.day,
         total_calls: r.total_calls,
         completed: r.completed,
@@ -163,6 +204,9 @@ export class PlatformService {
         outbound: r.outbound,
         avg_sentiment: r.avg_sentiment ? +Number(r.avg_sentiment).toFixed(2) : 0,
       }));
+
+      this.setInCache(cacheKey, result, 15);
+      return result;
     } catch (err: any) {
       this.logger.warn(`Platform call trend query failed: ${err.message}`);
       return [];
@@ -170,6 +214,10 @@ export class PlatformService {
   }
 
   async getCompanyPerformance(range: 'today' | 'week' | 'month' = 'month') {
+    const cacheKey = `companyPerf:${range}`;
+    const cached = this.getFromCache<any[]>(cacheKey);
+    if (cached) return cached;
+
     try {
       const now = new Date();
       const start =
@@ -179,67 +227,82 @@ export class PlatformService {
           ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
           : new Date(now.getFullYear(), now.getMonth(), 1);
 
-      const tenants = await this.prisma.tenant.findMany({
-        include: {
-          _count: { select: { users: true, agents: true, calls: true, leads: true } },
-          agents: {
-            where: { deletedAt: null },
-            select: { id: true },
+      const [tenants, PLAN_PRICES, callStatsByTenant, activeAgentsByTenant, latestCalls] = await Promise.all([
+        this.prisma.tenant.findMany({
+          include: {
+            _count: { select: { users: true, agents: true, calls: true, leads: true } },
           },
-        },
-        orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.planPrices(),
+        this.prisma.$queryRaw<any[]>`
+          SELECT
+            "tenantId",
+            COUNT(*)::int AS total_calls,
+            COUNT(*) FILTER (WHERE "status" = 'completed')::int AS completed_calls,
+            COALESCE(SUM("duration") FILTER (WHERE "status" = 'completed'), 0)::int AS total_duration,
+            COALESCE(AVG("duration") FILTER (WHERE "status" = 'completed'), 0)::float AS avg_duration
+          FROM "Call"
+          WHERE "startedAt" >= ${start}
+          GROUP BY "tenantId"
+        `,
+        this.prisma.aIAgent.groupBy({
+          by: ['tenantId'],
+          where: { deletedAt: null, status: 'active' },
+          _count: { id: true },
+        }),
+        this.prisma.$queryRaw<any[]>`
+          SELECT DISTINCT ON ("tenantId") "tenantId", "startedAt"
+          FROM "Call"
+          ORDER BY "tenantId", "startedAt" DESC
+        `,
+      ]);
+
+      const callMap = new Map<string, any>();
+      for (const row of callStatsByTenant || []) {
+        if (row.tenantId) callMap.set(row.tenantId, row);
+      }
+
+      const activeAgentMap = new Map<string, number>();
+      for (const row of activeAgentsByTenant || []) {
+        if (row.tenantId) activeAgentMap.set(row.tenantId, row._count?.id || 0);
+      }
+
+      const latestCallMap = new Map<string, any>();
+      for (const row of latestCalls || []) {
+        if (row.tenantId) latestCallMap.set(row.tenantId, row.startedAt);
+      }
+
+      const results = tenants.map((t) => {
+        const stats = callMap.get(t.id) || {};
+        const callCount = Number(stats.total_calls) || 0;
+        const completedCalls = Number(stats.completed_calls) || 0;
+        const totalDuration = Number(stats.total_duration) || 0;
+        const avgDuration = Number(stats.avg_duration) || 0;
+        const activeAgents = activeAgentMap.get(t.id) || 0;
+        const lastActivity = latestCallMap.get(t.id) || t.createdAt;
+
+        return {
+          id: t.id,
+          name: t.name,
+          slug: t.slug,
+          plan: t.plan,
+          isActive: t.isActive,
+          createdAt: t.createdAt,
+          users: t._count.users,
+          agents: t._count.agents,
+          activeAgents,
+          calls: callCount,
+          completedCalls,
+          successRate: callCount > 0 ? +((completedCalls / callCount) * 100).toFixed(1) : 0,
+          minutes: Math.round(totalDuration / 60),
+          avgDuration: Math.round(avgDuration),
+          revenue: PLAN_PRICES[t.plan] || PLAN_PRICES.starter,
+          lastActivity,
+        };
       });
 
-      const results = await Promise.all(
-        tenants.map(async (t) => {
-          const callCount = await this.prisma.call.count({
-            where: { tenantId: t.id, startedAt: { gte: start } },
-          });
-          const completedCalls = await this.prisma.call.count({
-            where: { tenantId: t.id, startedAt: { gte: start }, status: 'completed' },
-          });
-          const totalMinutes = await this.prisma.call.aggregate({
-            where: { tenantId: t.id, startedAt: { gte: start }, status: 'completed' },
-            _sum: { duration: true },
-          });
-          const avgDuration = await this.prisma.call.aggregate({
-            where: { tenantId: t.id, startedAt: { gte: start }, status: 'completed' },
-            _avg: { duration: true },
-          });
-          const activeAgents = await this.prisma.aIAgent.count({
-            where: { tenantId: t.id, deletedAt: null, status: 'active' },
-          });
-          const lastCall = await this.prisma.call.findFirst({
-            where: { tenantId: t.id },
-            orderBy: { startedAt: 'desc' },
-            select: { startedAt: true },
-          });
-
-          const PLAN_PRICES: Record<string, number> = {
-            starter: 4999, growth: 14999, business: 39999, enterprise: 99999,
-          };
-
-          return {
-            id: t.id,
-            name: t.name,
-            slug: t.slug,
-            plan: t.plan,
-            isActive: t.isActive,
-            createdAt: t.createdAt,
-            users: t._count.users,
-            agents: t._count.agents,
-            activeAgents,
-            calls: callCount,
-            completedCalls,
-            successRate: callCount > 0 ? +((completedCalls / callCount) * 100).toFixed(1) : 0,
-            minutes: Math.round((totalMinutes._sum.duration ?? 0) / 60),
-            avgDuration: Math.round(avgDuration._avg.duration ?? 0),
-            revenue: PLAN_PRICES[t.plan] || PLAN_PRICES.starter,
-            lastActivity: lastCall?.startedAt || t.createdAt,
-          };
-        })
-      );
-
+      this.setInCache(cacheKey, results, 15);
       return results;
     } catch (err: any) {
       this.logger.warn(`Company performance query failed: ${err.message}`);
@@ -548,9 +611,7 @@ export class PlatformService {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-      const PLAN_PRICES: Record<string, number> = {
-        starter: 4999, growth: 14999, business: 39999, enterprise: 99999,
-      };
+      const PLAN_PRICES = await this.planPrices();
 
       const [activeTenants, allInvoices, monthlyInvoices, prevMonthlyInvoices] = await Promise.all([
         this.prisma.tenant.findMany({
@@ -705,7 +766,27 @@ export class PlatformService {
     emailNotifications: true,
     apiRateLimit: 'default',
     defaultCallLimit: 0,
+    requireMfa: false,
   };
+
+  /**
+   * Resolve active plan pricing from the PlanPricing table,
+   * falling back to built-in defaults when unavailable.
+   */
+  private async planPrices(): Promise<Record<string, number>> {
+    const defaults: Record<string, number> = {
+      starter: 4999, growth: 14999, business: 39999, enterprise: 99999,
+    };
+    if (!this.prisma.isConnected) return defaults;
+    try {
+      const rows = await this.prisma.planPricing.findMany({ where: { isActive: true } });
+      const overrides: Record<string, number> = {};
+      rows.forEach((r) => { overrides[r.plan] = Math.round(Number(r.amount) / 100); });
+      return { ...defaults, ...overrides };
+    } catch {
+      return defaults;
+    }
+  }
 
   async getPlatformSettings(tenantId: string) {
     const tenant = await this.prisma.tenant.findUnique({

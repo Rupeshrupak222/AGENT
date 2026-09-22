@@ -47,7 +47,7 @@ export function HeroSection() {
         <div className="flex items-center justify-center">
           {/* Copy */}
           <div className="space-y-7 text-center max-w-2xl">
-            <motion.div initial={{ opacity:0,y:30 }} animate={{ opacity:1,y:0 }} transition={{ duration:0.8, ease:[0.22, 1, 0.36, 1] }}>
+            <motion.div initial={{ opacity:0,y:30 }} animate={{ opacity:1,y:0 }} transition={{ duration:0.8, ease:[0.22, 1, 0.36, 1] as const }}>
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-[1.1] tracking-tight text-balance mb-6">
                 <span style={{
                   color: "#1a1a1a",
@@ -63,7 +63,7 @@ export function HeroSection() {
               </p>
             </motion.div>
 
-            <motion.div initial={{ opacity:0,y:25 }} animate={{ opacity:1,y:0 }} transition={{ delay:0.2, duration:0.6, ease:[0.22, 1, 0.36, 1] }}
+            <motion.div initial={{ opacity:0,y:25 }} animate={{ opacity:1,y:0 }} transition={{ delay:0.2, duration:0.6, ease:[0.22, 1, 0.36, 1] as const }}
               className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link href="/signup"
                 className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full text-white font-bold text-base group transition-all duration-200 active:scale-[0.97] hover:brightness-105"

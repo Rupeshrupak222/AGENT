@@ -9,6 +9,8 @@ export interface AuthUser {
   role: string;
   tenantId: string;
   avatar?: string;
+  phone?: string;
+  settings?: Record<string, any>;
 }
 
 export interface AuthTenant {

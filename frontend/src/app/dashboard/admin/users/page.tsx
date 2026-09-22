@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Users,
   Eye,
@@ -9,13 +10,17 @@ import {
   CheckCircle,
   Shield,
   UserCog,
+  Download,
+  KeyRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   platformApi,
+  superAdminApi,
   PlatformUserItem,
   normalizeApiError,
 } from "@/lib/api";
+import { useAuthStore } from "@/store/auth.store";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui";
 import { Badge } from "@/components/ui";
@@ -46,6 +51,8 @@ const PER_PAGE = 20;
 
 export default function UsersPage() {
   const { success, error: toastError } = useToast();
+  const router = useRouter();
+  const login = useAuthStore((s) => s.login);
   const [users, setUsers] = useState<PlatformUserItem[]>([]);
   const [total, setTotal] = useState(0);
   const [pageCount, setPageCount] = useState(1);
@@ -56,6 +63,49 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [page, setPage] = useState(1);
+  const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
+
+  const downloadContent = (content: string, filename: string, mimetype: string) => {
+    const blob = new Blob([content], { type: mimetype });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExport = async (format: "csv" | "json") => {
+    try {
+      const res = await superAdminApi.exportData("users", format);
+      downloadContent(res.content, res.filename, res.mimetype);
+      success(`Users exported as ${format.toUpperCase()}`);
+    } catch (e) {
+      toastError(normalizeApiError(e));
+    }
+  };
+
+  const handleImpersonate = async (user: PlatformUserItem) => {
+    if (user.role === "super_admin") return;
+    setImpersonatingId(user.id);
+    try {
+      const res = await superAdminApi.impersonate(user.id);
+      login(
+        { ...res.user, tenantId: res.user.tenantId },
+        res.tenant,
+        res.accessToken,
+        res.refreshToken
+      );
+      success(`Now viewing workspace as ${res.user.name}`);
+      router.push("/dashboard/overview");
+    } catch (e) {
+      toastError(normalizeApiError(e));
+    } finally {
+      setImpersonatingId(null);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -106,6 +156,20 @@ export default function UsersPage() {
           <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-white/40">
             <Users className="w-4 h-4" />
             <span className="font-semibold text-slate-900 dark:text-white">{total}</span> total users
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleExport("csv")}
+              className="hidden sm:flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-semibold border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.04] text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/[0.08] transition-all"
+            >
+              <Download className="w-3.5 h-3.5" /> Export CSV
+            </button>
+            <button
+              onClick={() => handleExport("json")}
+              className="hidden sm:flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-semibold border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.04] text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/[0.08] transition-all"
+            >
+              <Download className="w-3.5 h-3.5" /> JSON
+            </button>
           </div>
         </div>
 
@@ -218,6 +282,9 @@ export default function UsersPage() {
                       <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-white/30">
                         Created
                       </th>
+                      <th className="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-white/30">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-white/[0.04]">
@@ -253,6 +320,27 @@ export default function UsersPage() {
                         <td className="px-5 py-3.5 text-xs text-slate-500 dark:text-white/40">
                           {new Date(u.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                         </td>
+                        <td className="px-5 py-3.5 text-right">
+                          {u.role !== "super_admin" && (
+                            <button
+                              onClick={() => handleImpersonate(u)}
+                              disabled={impersonatingId === u.id}
+                              className={cn(
+                                "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all border",
+                                impersonatingId === u.id
+                                  ? "opacity-50 pointer-events-none"
+                                  : "text-brand-600 dark:text-brand-400 border-brand-500/25 bg-brand-500/5 hover:bg-brand-500/10"
+                              )}
+                            >
+                              {impersonatingId === u.id ? (
+                                <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <KeyRound className="w-3 h-3" />
+                              )}
+                              Impersonate
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -286,6 +374,20 @@ export default function UsersPage() {
                         {u.tenant.name}
                       </Link>
                     </div>
+                    {u.role !== "super_admin" && (
+                      <button
+                        onClick={() => handleImpersonate(u)}
+                        disabled={impersonatingId === u.id}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all border",
+                          impersonatingId === u.id
+                            ? "opacity-50 pointer-events-none"
+                            : "text-brand-600 dark:text-brand-400 border-brand-500/25 bg-brand-500/5 hover:bg-brand-500/10"
+                        )}
+                      >
+                        <KeyRound className="w-3 h-3" /> Impersonate
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, createContext, useContext } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,12 +31,22 @@ import {
   Headphones,
   PieChart,
   FileText,
+  UserCog,
+  BrainCircuit,
+  RadioTower,
+  Banknote,
+  Settings2,
+  Megaphone,
+  ShieldCheck,
+  Flag,
+  KeyRound,
+  FileBarChart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/components/ui/Toast";
-import { platformApi, GlobalSearchResult } from "@/lib/api";
+import { platformApi, GlobalSearchResult, superAdminApi } from "@/lib/api";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface AdminNavItem {
@@ -60,6 +70,17 @@ const ADMIN_NAV: AdminNavItem[] = [
   { icon: HeartPulse, label: "System Health", href: "/dashboard/admin/health", section: "SYSTEM" },
   { icon: Shield, label: "Audit Logs", href: "/dashboard/admin/audit", section: "SYSTEM" },
   { icon: Settings, label: "Settings", href: "/dashboard/admin/settings", section: "ADMINISTRATION" },
+  { icon: UserCog, label: "Admins", href: "/dashboard/admin/admins", section: "GOVERNANCE" },
+  { icon: BrainCircuit, label: "AI Providers", href: "/dashboard/admin/ai-providers", section: "GOVERNANCE" },
+  { icon: RadioTower, label: "Telephony", href: "/dashboard/admin/telephony", section: "GOVERNANCE" },
+  { icon: Banknote, label: "Billing Plans", href: "/dashboard/admin/billing", section: "GOVERNANCE" },
+  { icon: Settings2, label: "Role Permissions", href: "/dashboard/admin/permissions", section: "GOVERNANCE" },
+  { icon: Flag, label: "Feature Flags", href: "/dashboard/admin/feature-flags", section: "GOVERNANCE" },
+  { icon: KeyRound, label: "API Keys & Webhooks", href: "/dashboard/admin/api-keys", section: "GOVERNANCE" },
+  { icon: FileBarChart, label: "Scheduled Reports", href: "/dashboard/admin/reports", section: "GOVERNANCE" },
+  { icon: Megaphone, label: "Announcements", href: "/dashboard/admin/announcements", section: "GOVERNANCE" },
+  { icon: Headphones, label: "Support Center", href: "/dashboard/admin/support", section: "GOVERNANCE" },
+  { icon: ShieldCheck, label: "Security", href: "/dashboard/admin/security", section: "GOVERNANCE" },
 ];
 
 const SECTION_LABELS: Record<string, string> = {
@@ -67,16 +88,19 @@ const SECTION_LABELS: Record<string, string> = {
   INSIGHTS: "Insights",
   SYSTEM: "System",
   ADMINISTRATION: "Administration",
+  GOVERNANCE: "Governance",
 };
 
 function AdminSidebarContent({
   collapsed = false,
   mobile = false,
   onClose,
+  onNavigate,
 }: {
   collapsed?: boolean;
   mobile?: boolean;
   onClose?: () => void;
+  onNavigate?: () => void;
 }) {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
@@ -103,7 +127,7 @@ function AdminSidebarContent({
               AgentCall <span className="text-brand-500">AI</span>
             </span>
             <span className="text-[9px] font-bold uppercase tracking-widest text-amber-500 mt-0.5">
-              Platform Admin
+              Super Admin
             </span>
           </div>
         )}
@@ -134,6 +158,7 @@ function AdminSidebarContent({
                   <li key={item.href}>
                     <Link
                       href={item.href}
+                      onClick={onNavigate}
                       title={!show ? item.label : undefined}
                       className={cn(
                         "flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
@@ -186,22 +211,87 @@ function AdminSidebarContent({
   );
 }
 
+const AdminLayoutContext = createContext<boolean>(false);
+let cachedMaintenanceMode: boolean | null = null;
+
 export function AdminLayout({ children }: { children: React.ReactNode }) {
+  const isNested = useContext(AdminLayoutContext);
+  if (isNested) {
+    return <>{children}</>;
+  }
+
+  return (
+    <AdminLayoutContext.Provider value={true}>
+      <AdminLayoutShell>{children}</AdminLayoutShell>
+    </AdminLayoutContext.Provider>
+  );
+}
+
+function AdminLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, isAuthenticated, accessToken } = useAuthStore();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const hoverLeaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = useCallback(() => {
+    if (hoverLeaveTimerRef.current) {
+      clearTimeout(hoverLeaveTimerRef.current);
+      hoverLeaveTimerRef.current = null;
+    }
+    setIsHovered(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    if (hoverLeaveTimerRef.current) {
+      clearTimeout(hoverLeaveTimerRef.current);
+    }
+    hoverLeaveTimerRef.current = setTimeout(() => {
+      setIsHovered(false);
+    }, 180);
+  }, []);
+
+  useEffect(() => {
+    setIsHovered(false);
+    if (hoverLeaveTimerRef.current) {
+      clearTimeout(hoverLeaveTimerRef.current);
+    }
+  }, [pathname]);
+
+  useEffect(() => {
+    return () => {
+      if (hoverLeaveTimerRef.current) {
+        clearTimeout(hoverLeaveTimerRef.current);
+      }
+    };
+  }, []);
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<GlobalSearchResult | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [maintenanceMode, setMaintenanceMode] = useState<boolean>(() => cachedMaintenanceMode ?? false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const sec = await superAdminApi.getSecurity();
+        if (!cancelled) {
+          cachedMaintenanceMode = !!sec.maintenanceMode;
+          setMaintenanceMode(cachedMaintenanceMode);
+        }
+      } catch { /* non-fatal */ }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -237,7 +327,17 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     }, 400);
   }, []);
 
-  if (!mounted) return null;
+  if (!mounted) {
+    return (
+      <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-[#0a0102]">
+        <aside className="hidden lg:flex flex-col w-[64px] bg-white dark:bg-[#0c0102] border-r border-slate-200 dark:border-white/[0.08]" />
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="h-16 border-b border-slate-200 dark:border-white/[0.08] bg-white/80 dark:bg-[#0c0102]/90 backdrop-blur-xl" />
+          <main className="flex-1 overflow-y-auto">{children}</main>
+        </div>
+      </div>
+    );
+  }
 
   // Client-side role guard (defense in depth; the backend enforces real authorization)
   const rawRole = (user?.role || "").toLowerCase().trim();
@@ -277,15 +377,18 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-[#0a0102]">
       {/* Desktop Sidebar */}
-      <aside className={cn("hidden lg:flex flex-col relative flex-shrink-0 transition-all duration-300", collapsed ? "w-[64px]" : "w-[250px]")}>
-        <AdminSidebarContent collapsed={collapsed} />
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="absolute -right-3 top-20 w-6 h-6 rounded-full flex items-center justify-center z-10 bg-white dark:bg-[#1a0a06] border border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/50 shadow-md hover:text-brand-500 dark:hover:text-white transition-all"
-        >
-          {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
-        </button>
+      <aside
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className={cn(
+          "hidden lg:flex flex-col relative flex-shrink-0 transition-all duration-300 ease-in-out z-20 overflow-hidden",
+          isHovered ? "w-[250px]" : "w-[64px]"
+        )}
+      >
+        <AdminSidebarContent
+          collapsed={!isHovered}
+          onNavigate={() => setIsHovered(false)}
+        />
       </aside>
 
       {/* Mobile Sidebar */}
@@ -301,7 +404,13 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       </AnimatePresence>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0 transition-all duration-300 ease-in-out">
+        {maintenanceMode && (
+          <div className="px-4 sm:px-6 py-2 flex-shrink-0 flex items-center gap-2 bg-amber-500/10 border-b border-amber-500/25 text-amber-600 dark:text-amber-400 text-xs font-medium">
+            <Shield className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>Maintenance mode is ON — tenant logins and voice calls are paused. Super admins remain able to sign in.</span>
+          </div>
+        )}
         {/* Header */}
         <header className="h-16 flex items-center justify-between px-4 sm:px-6 flex-shrink-0 z-30 border-b border-slate-200 dark:border-white/[0.08] bg-white/80 dark:bg-[#0c0102]/90 backdrop-blur-xl">
           <div className="flex items-center gap-3 min-w-0">
@@ -310,7 +419,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </button>
             <div>
               <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight">
-                {currentPage?.label || "Platform Admin"}
+                {currentPage?.label || "Super Admin Dashboard"}
               </h1>
             </div>
           </div>

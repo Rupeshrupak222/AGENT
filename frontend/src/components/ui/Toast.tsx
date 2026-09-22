@@ -1,6 +1,6 @@
 "use client";
 import { cn } from "@/lib/utils";
-import { useState, useCallback, createContext, useContext, ReactNode } from "react";
+import { useState, useCallback, createContext, useContext, useEffect, ReactNode } from "react";
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from "lucide-react";
 
 type ToastType = "success" | "error" | "warning" | "info";
@@ -31,6 +31,11 @@ export function useToast(): ToastContextValue {
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const dismiss = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -73,29 +78,34 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      {/* Toast container */}
-      <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={cn(
-              "pointer-events-auto flex items-start gap-3 w-80 px-4 py-3 rounded-xl border border-l-4 shadow-lg animate-slide-up",
-              "bg-surface-card border-line",
-              "dark:shadow-glass",
-              borderColors[t.type]
-            )}
-          >
-            <span className="mt-0.5 flex-shrink-0">{icons[t.type]}</span>
-            <p className="flex-1 text-sm text-content dark:text-white/85">{t.message}</p>
-            <button
-              onClick={() => dismiss(t.id)}
-              className="flex-shrink-0 p-0.5 text-content-muted hover:text-content dark:text-white/30 dark:hover:text-white/60 transition-colors"
+      {/* Toast container - mounted client-side only */}
+      {mounted && toasts.length > 0 && (
+        <div
+          suppressHydrationWarning
+          className="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none"
+        >
+          {toasts.map((t) => (
+            <div
+              key={t.id}
+              className={cn(
+                "pointer-events-auto flex items-start gap-3 w-80 px-4 py-3 rounded-xl border border-l-4 shadow-lg animate-slide-up",
+                "bg-surface-card border-line",
+                "dark:shadow-glass",
+                borderColors[t.type]
+              )}
             >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        ))}
-      </div>
+              <span className="mt-0.5 flex-shrink-0">{icons[t.type]}</span>
+              <p className="flex-1 text-sm text-content dark:text-white/85">{t.message}</p>
+              <button
+                onClick={() => dismiss(t.id)}
+                className="flex-shrink-0 p-0.5 text-content-muted hover:text-content dark:text-white/30 dark:hover:text-white/60 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </ToastContext.Provider>
   );
 }

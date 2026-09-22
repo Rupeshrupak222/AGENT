@@ -1,6 +1,6 @@
 import {
   Injectable, UnauthorizedException,
-  ConflictException, BadRequestException, Logger,
+  ConflictException, BadRequestException, ServiceUnavailableException, Logger,
 } from '@nestjs/common';
 import { JwtService }    from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -145,6 +145,36 @@ export class AuthService {
     if (!valid) throw new UnauthorizedException('Invalid credentials');
     if (!user.isActive) throw new UnauthorizedException('Account deactivated');
     if (!user.tenant?.isActive) throw new UnauthorizedException('Tenant account suspended');
+
+    // Platform maintenance mode (platform staff excluded)
+    try {
+      const maintTenant = await this.prisma.tenant.findFirst({
+        where: { users: { some: { role: 'super_admin' } } },
+        select: { settings: true },
+      });
+      const maintenanceMode = !!((maintTenant?.settings as any)?.platform?.maintenanceMode);
+      if (maintenanceMode && user.role !== 'super_admin') {
+        throw new ServiceUnavailableException('The platform is under maintenance. Please try again later.');
+      }
+    } catch (err: any) {
+      if (err instanceof ServiceUnavailableException) throw err;
+    }
+
+    // Super admin MFA enforcement (platform security policy)
+    if (user.role === 'super_admin' && !user.mfaEnabled) {
+      try {
+        const settingsTenant = await this.prisma.tenant.findFirst({
+          where: { users: { some: { role: 'super_admin' } } },
+          select: { settings: true },
+        });
+        const requireMfa = !!((settingsTenant?.settings as any)?.platform?.requireMfa);
+        if (requireMfa) {
+          throw new UnauthorizedException('Super admin MFA is required. Enable MFA or contact platform support.');
+        }
+      } catch (err: any) {
+        if (err instanceof UnauthorizedException && err.message.includes('Super admin MFA')) throw err;
+      }
+    }
 
     // Update last login
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }).catch(() => null);

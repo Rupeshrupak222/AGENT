@@ -254,6 +254,8 @@ model User {
   isActive    Boolean  @default(true)
   lastLoginAt DateTime?
   settings    Json?    @default("{}")
+  mfaEnabled  Boolean  @default(false)
+  mfaSecret   String?
 
   tenantId    String
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -845,4 +847,171 @@ model AuditLog {
   @@index([userId])
   @@index([action])
   @@map("AuditLog")
+}
+
+// ── Platform AI Provider Config ──────────────────────────────
+// Global registry of enabled AI providers / model gateways for the platform.
+model AiProvider {
+  id              String   @id @default(cuid())
+  provider        String   @unique // openrouter | groq | azure_openai | anthropic | google | openai
+  name            String
+  baseUrl         String?
+  apiKeyEncrypted String?
+  isEnabled       Boolean  @default(true)
+  defaultModel    String?
+  models          Json?    @default("[]")
+  rateLimit       Int      @default(0) // requests / min (0 = unlimited)
+  usageCount      Int      @default(0)
+  lastUsedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("AiProvider")
+}
+
+// ── Platform Telephony Gateway ────────────────────────────────
+// Registry of telephony providers (Twilio / Exotel / ...) with health status.
+model TelephonyGateway {
+  id            String    @id @default(cuid())
+  provider      String    @unique // twilio | exotel | plivo | sandbox | custom
+  name          String
+  isEnabled     Boolean   @default(true)
+  settings      Json?     @default("{}")
+  healthStatus  String    @default("unknown") // healthy | degraded | down | unknown
+  lastCheckedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("TelephonyGateway")
+}
+
+// ── Plan Pricing (Platform billing templates) ────────────────
+model PlanPricing {
+  id        String   @id @default(cuid())
+  plan      Plan
+  currency  String   @default("INR")
+  amount    Int      // in paise
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([plan, currency])
+  @@map("PlanPricing")
+}
+
+// ── Role Permission Override ──────────────────────────────────
+model RoleOverride {
+  id          String   @id @default(cuid())
+  role        String   @unique
+  permissions Json     // array of permission strings granted for this role
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("RoleOverride")
+}
+
+// ── Announcement (platform broadcast) ─────────────────────────
+model Announcement {
+  id         String    @id @default(cuid())
+  title      String
+  body       String    @db.Text
+  priority   String    @default("info") // info | warning | important
+  audience   String    @default("all") // all | specific
+  tenantIds  String[]  @default([])
+  startsAt   DateTime  @default(now())
+  expiresAt  DateTime?
+  isActive   Boolean   @default(true)
+  createdById String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([isActive])
+  @@map("Announcement")
+}
+
+// ── Support Ticket (platform support inbox) ───────────────────
+model SupportTicket {
+  id           String   @id @default(cuid())
+  subject      String
+  body         String   @db.Text
+  status       String   @default("open") // open | in_progress | resolved | closed
+  priority     String   @default("medium") // low | medium | high | urgent
+  tenantId     String?
+  tenantName   String?
+  tenantEmail  String?
+  assignedToId String?
+  messages     Json?    @default("[]")
+  createdBy    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status])
+  @@map("SupportTicket")
+}
+
+// ── IP Allowlist (security) ───────────────────────────────────
+model IpAllowlist {
+  id          String   @id @default(cuid())
+  cidr        String
+  label       String?
+  isActive    Boolean  @default(true)
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@unique([cidr])
+  @@map("IpAllowlist")
+}
+
+// ── Platform Audit Log (super admin actions) ─────────────────
+model PlatformAuditLog {
+  id         String   @id @default(cuid())
+  action     String
+  resource   String
+  resourceId String?
+  details    Json?    @default("{}")
+  ipAddress  String?
+  userAgent  String?
+  userId     String?
+  userEmail  String?
+  createdAt  DateTime @default(now())
+
+  @@index([action])
+  @@index([userId])
+  @@map("PlatformAuditLog")
+}
+
+// ── Feature Flag (platform-wide capability toggles) ──────────
+model FeatureFlag {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  description     String?
+  isEnabled       Boolean  @default(false)
+  defaultEnabled  Boolean  @default(false)
+  rollout         Int      @default(100) // 0-100 (% of tenants)
+  tenantOverride  Json?    @default("{}") // { tenantId: boolean }
+  updatedById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("FeatureFlag")
+}
+
+// ── Scheduled Report (super admin email/csv report schedules) ─
+model ScheduledReport {
+  id         String   @id @default(cuid())
+  name       String
+  type       String   @default("companies") // companies | calls | agents | leads | summary
+  frequency  String   @default("weekly")   // daily | weekly | monthly
+  recipients String[] @default([])         // emails
+  format     String   @default("csv")       // csv | summary
+  enabled    Boolean  @default(true)
+  createdById String?
+  lastRunAt  DateTime?
+  lastStatus String?  // success | failed | sent
+  nextRunAt  DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("ScheduledReport")
 }

@@ -148,7 +148,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className={`${inter.variable} ${mono.variable} min-h-screen bg-page text-slate-900 dark:text-white antialiased transition-colors duration-200`}>
+      <body suppressHydrationWarning className={`${inter.variable} ${mono.variable} min-h-screen bg-page text-slate-900 dark:text-white antialiased transition-colors duration-200`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <AppProviders>
             {children}

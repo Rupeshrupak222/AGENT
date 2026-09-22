@@ -20,7 +20,8 @@ import {
   WORKSPACE_VIEW, WORKSPACE_MANAGE,
   PLATFORM_TENANT_CREATE, PLATFORM_TENANT_MANAGE,
   PLATFORM_TELEPHONY, PLATFORM_AI_PROVIDERS,
-  PLATFORM_BILLING_CONFIG, PLATFORM_DIAGNOSTICS, PLATFORM_AUDIT,
+  PLATFORM_BILLING_CONFIG, PLATFORM_DIAGNOSTICS, PLATFORM_AUDIT, PLATFORM_FEATURE_FLAGS,
+  PLATFORM_API_KEYS, PLATFORM_WEBHOOKS, PLATFORM_REPORTS,
 } from './permissions';
 
 /**
@@ -30,6 +31,14 @@ import {
  * super_admin has ALL permissions (platform + tenant).
  * Tenant roles have only tenant-scoped permissions.
  */
+export const ROLE_METADATA: Record<string, { label: string; description: string }> = {
+  super_admin:    { label: 'Super Admin',     description: 'Full platform + tenant access (AgentCall AI staff only).' },
+  company_admin:  { label: 'Company Admin',   description: 'Full workspace access for a single company.' },
+  manager:        { label: 'Manager',         description: 'Manages team operations and configurations.' },
+  agent:          { label: 'Agent',           description: 'Operates calls and assigned leads.' },
+  viewer:         { label: 'Viewer',          description: 'Read-only access to workspace data.' },
+};
+
 export const ROLE_PERMISSIONS: Record<string, readonly Permission[]> = {
   super_admin: [
     // Platform permissions
@@ -40,6 +49,10 @@ export const ROLE_PERMISSIONS: Record<string, readonly Permission[]> = {
     PLATFORM_BILLING_CONFIG,
     PLATFORM_DIAGNOSTICS,
     PLATFORM_AUDIT,
+    PLATFORM_FEATURE_FLAGS,
+    PLATFORM_API_KEYS,
+    PLATFORM_WEBHOOKS,
+    PLATFORM_REPORTS,
     // All tenant permissions (super_admin can act on any tenant)
     TENANT_VIEW,
     TENANT_UPDATE,

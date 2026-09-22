@@ -16,9 +16,12 @@ import {
   Calendar,
   Mail,
   Globe,
+  UserPlus,
+  Download,
+  KeyRound,
 } from "lucide-react";
 import { cn, formatNumber } from "@/lib/utils";
-import { tenantsApi, TenantDetailItem, normalizeApiError } from "@/lib/api";
+import { tenantsApi, superAdminApi, TenantDetailItem, normalizeApiError } from "@/lib/api";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui";
 import { Badge } from "@/components/ui";
@@ -26,6 +29,9 @@ import { EmptyState } from "@/components/ui";
 import { Skeleton } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui";
 import { Tabs } from "@/components/ui";
+import { Modal } from "@/components/ui";
+import { Input } from "@/components/ui";
+import { Select } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
 
 const PLAN_CONFIG: Record<string, { label: string; color: string; bgClass: string }> = {
@@ -46,6 +52,32 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ id: st
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toggling, setToggling] = useState(false);
+
+  const [provisionOpen, setProvisionOpen] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
+  const [provisionError, setProvisionError] = useState<string | null>(null);
+  const [provisioned, setProvisioned] = useState<{ email: string; password: string } | null>(null);
+  const [provForm, setProvForm] = useState({ name: "", email: "", role: "agent", department: "" } as any);
+
+  const handleProvision = async () => {
+    setProvisionError(null);
+    setProvisioned(null);
+    if (!provForm.name.trim() || !provForm.email.trim()) {
+      setProvisionError("Name and email are required");
+      return;
+    }
+    setProvisioning(true);
+    try {
+      const res = await superAdminApi.provisionTenantTeam(id, provForm);
+      setProvisioned({ email: res.email, password: res.tempPassword });
+      success("Team member provisioned");
+      fetchData();
+    } catch (e) {
+      setProvisionError(normalizeApiError(e));
+    } finally {
+      setProvisioning(false);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -267,6 +299,22 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ id: st
           {/* Users Tab */}
           {activeTab === "users" && (
             <div>
+              <div className="px-5 py-4 border-b border-slate-200 dark:border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <p className="text-xs font-semibold text-slate-500 dark:text-white/40">
+                  Team Members
+                </p>
+                <Button
+                  size="sm"
+                  icon={<UserPlus className="w-4 h-4" />}
+                  onClick={() => {
+                    setProvisionError(null);
+                    setProvisioned(null);
+                    setProvisionOpen(true);
+                  }}
+                >
+                  Provision Team Member
+                </Button>
+              </div>
               {users.length === 0 ? (
                 <EmptyState
                   icon={<Users className="w-10 h-10 text-slate-300 dark:text-white/20" />}
@@ -395,6 +443,88 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ id: st
           )}
         </div>
       </div>
+
+      {/* Provision Team Member Modal */}
+      <Modal
+        open={provisionOpen}
+        onClose={() => {
+          if (!provisioning) {
+            setProvisionOpen(false);
+            setProvisioned(null);
+          }
+        }}
+        title="Provision Team Member"
+        description={`Create a user in ${company.name} with a temporary password.`}
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setProvisionOpen(false);
+                setProvisioned(null);
+              }}
+              disabled={provisioning}
+            >
+              {provisioned ? "Close" : "Cancel"}
+            </Button>
+            {!provisioned && (
+              <Button size="sm" onClick={handleProvision} loading={provisioning}>
+                Create Member
+              </Button>
+            )}
+          </>
+        }
+      >
+        {provisioned ? (
+          <div className="rounded-xl border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 p-4 text-center">
+            <KeyRound className="w-6 h-6 mx-auto mb-2 text-emerald-500" />
+            <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Member created</p>
+            <p className="text-xs text-emerald-700/80 dark:text-emerald-300/70 mt-1 break-all">{provisioned.email}</p>
+            <p className="text-xs text-emerald-700/80 dark:text-emerald-300/70 mt-0.5">
+              Temporary password: <code className="font-mono font-bold">{provisioned.password}</code>
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {provisionError && (
+              <div className="rounded-lg border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/5 px-3 py-2 text-xs text-red-600 dark:text-red-400">
+                {provisionError}
+              </div>
+            )}
+            <Input
+              label="Full Name"
+              placeholder="Enter member name"
+              value={provForm.name}
+              onChange={(e) => setProvForm({ ...provForm, name: e.target.value })}
+            />
+            <Input
+              label="Email"
+              type="email"
+              placeholder="member@company.com"
+              value={provForm.email}
+              onChange={(e) => setProvForm({ ...provForm, email: e.target.value })}
+            />
+            <Select
+              label="Role"
+              value={provForm.role}
+              onChange={(e) => setProvForm({ ...provForm, role: e.target.value })}
+              options={[
+                { value: "company_admin", label: "Company Admin" },
+                { value: "manager", label: "Manager" },
+                { value: "agent", label: "Agent" },
+                { value: "viewer", label: "Viewer" },
+              ]}
+            />
+            <Input
+              label="Department (optional)"
+              placeholder="Sales, Support, etc."
+              value={provForm.department || ""}
+              onChange={(e) => setProvForm({ ...provForm, department: e.target.value })}
+            />
+          </div>
+        )}
+      </Modal>
 
       {/* Status Toggle Confirm */}
       <ConfirmDialog

@@ -294,7 +294,7 @@ export default function SettingsPage() {
               className={inputCls}
               value={form.whitelabelDomain}
               onChange={(e) => set("whitelabelDomain", e.target.value)}
-              placeholder="app.yourbrand.com"
+              placeholder="example.com"
             />
           </Field>
           <Field

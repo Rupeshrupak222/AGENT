@@ -8,6 +8,7 @@ import { AutomationQueueService, AutomationJobData } from '../services/automatio
 import { AutomationProviderRegistry } from '../providers/provider-registry.service';
 import { TemplateEngine } from '../engine/template.engine';
 import { MessageSendResult } from '../interfaces/message-provider.interface';
+import { FeatureFlagsService } from '../../feature-flags/feature-flags.service';
 
 @Injectable()
 @Processor('automation-actions')
@@ -21,6 +22,7 @@ export class AutomationActionProcessor implements OnModuleInit {
     private readonly queueService: AutomationQueueService,
     private readonly providerRegistry: AutomationProviderRegistry,
     private readonly templateEngine: TemplateEngine,
+    private readonly featureFlags: FeatureFlagsService,
   ) {}
 
   onModuleInit() {
@@ -39,6 +41,29 @@ export class AutomationActionProcessor implements OnModuleInit {
    */
   async processJob(job: AutomationJobData): Promise<void> {
     const { tenantId, leadId, callId, actionType, automationRuleId } = job;
+
+    // Feature-flag enforcement: WhatsApp automation can be disabled globally.
+    const flagKey = actionType.includes('whatsapp') ? 'whatsapp_automation' : 'email_automation';
+    if (!(await this.featureFlags.isEnabled(flagKey, tenantId))) {
+      this.metrics.increment('automation.skipped.flag_off');
+      this.logger.log(`Skipping automation [${actionType}] for tenant ${tenantId}: feature "${flagKey}" is disabled`);
+      if (this.prisma.isConnected) {
+        await this.prisma.automationLog.create({
+          data: {
+            tenantId,
+            leadId: leadId ?? undefined,
+            callId: callId ?? undefined,
+            type: actionType.includes('whatsapp') ? 'whatsapp' : 'email',
+            template: job.template || 'default',
+            message: '[SKIPPED] Feature disabled for workspace',
+            status: 'skipped' as any,
+            metadata: { reason: 'FEATURE_FLAG_DISABLED', flagKey, trigger: job.triggerName },
+          },
+        }).catch(() => undefined);
+      }
+      return;
+    }
+
     this.metrics.increment('automation.action.started');
     this.logger.log(`Processing automation action [${actionType}] for tenant ${tenantId}, lead ${leadId || 'none'}`);
 

@@ -26,8 +26,10 @@ import { StorageModule } from './modules/storage/storage.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { HealthModule } from './modules/health/health.module';
 import { PlatformModule } from './modules/platform/platform.module';
+import { SuperAdminModule } from './modules/super-admin/super-admin.module';
 import { ResourcesModule } from './modules/resources/resources.module';
 import { MetricsModule } from './common/services/metrics.module';
+import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module';
 import { AppController } from './app.controller';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import { SecurityHeadersMiddleware } from './common/middleware/security-headers.middleware';
@@ -39,6 +41,7 @@ import { SecurityHeadersMiddleware } from './common/middleware/security-headers.
   ],
   imports: [
     MetricsModule,
+    FeatureFlagsModule,
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env', '.env.local'] }),
 
     ThrottlerModule.forRootAsync({
@@ -97,6 +100,7 @@ import { SecurityHeadersMiddleware } from './common/middleware/security-headers.
     IntegrationsModule,
     HealthModule,
     PlatformModule,
+    SuperAdminModule,
     ResourcesModule,
   ],
 })

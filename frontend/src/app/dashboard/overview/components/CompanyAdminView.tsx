@@ -35,6 +35,13 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { AgentVoiceSimulatorModal } from "@/components/agents/AgentVoiceSimulatorModal";
+import { LiveAirTrafficControl } from "./LiveAirTrafficControl";
+import { EnterpriseRoiCalculator } from "./EnterpriseRoiCalculator";
+import { PeakHoursHeatmap } from "./PeakHoursHeatmap";
+import { TraiComplianceRadar } from "./TraiComplianceRadar";
+import { ObjectionMatrix } from "./ObjectionMatrix";
+import { MultiChannelDispatch } from "./MultiChannelDispatch";
+import { IntegrationSyncHealth } from "./IntegrationSyncHealth";
 import { AnimatedNumber, LiveIndicator, FadeIn, SlideUp, ChartReveal } from "@/components/ui/motion";
 import {
   AreaChart,
@@ -714,6 +721,9 @@ export function CompanyAdminView({
         </div>
       </section>
 
+      {/* ── Live Air Traffic Control (In-Flight Audio Waveforms & Supervisor Mode) ── */}
+      <LiveAirTrafficControl recentCalls={recentCalls} agents={agents} />
+
       {/* ── AI Workforce Activity Telemetry Monitor ────────────────── */}
       <section aria-label="AI Workforce Activity Monitor">
         <div className="rounded-2xl p-5 bg-gradient-to-b from-slate-900 to-slate-950 text-white border border-slate-800 shadow-xl overflow-hidden relative">
@@ -1194,6 +1204,18 @@ export function CompanyAdminView({
         </div>
       </div>
 
+      {/* ── Business ROI & Headcount Replacement Intelligence ── */}
+      <EnterpriseRoiCalculator kpis={kpis} />
+
+      {/* ── Peak Dialing Hours & Connect Rate Heatmap ────────── */}
+      <PeakHoursHeatmap />
+
+      {/* ── Customer Objection Radar & Knowledge Gap Defect Finder ── */}
+      <ObjectionMatrix />
+
+      {/* ── Post-Call Omnichannel Dispatch & Automations ─────── */}
+      <MultiChannelDispatch totalCalls={kpis?.totalCalls} appointments={kpis?.appointments} />
+
       {/* ── Team + Agent Performance ──────────────────────────── */}
       <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
         {/* AI Agent Fleet */}
@@ -1571,6 +1593,12 @@ export function CompanyAdminView({
           })}
         </div>
       </div>
+
+      {/* ── TRAI, DLT & NDNC Compliance Radar ────────────────── */}
+      <TraiComplianceRadar />
+
+      {/* ── Enterprise Pipeline Sync Health ──────────────────── */}
+      <IntegrationSyncHealth />
 
       {/* Voice Simulator Modal for Quick Testing */}
       <AgentVoiceSimulatorModal

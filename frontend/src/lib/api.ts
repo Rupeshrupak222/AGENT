@@ -1951,19 +1951,55 @@ export interface PlatformSettingsData {
   defaultCallLimit: number;
 }
 
+const platformClientCache = new Map<string, { data: any; timestamp: number }>();
+
+function getPlatformCache<T>(key: string, ttlMs = 15000): T | null {
+  const entry = platformClientCache.get(key);
+  if (entry && Date.now() - entry.timestamp < ttlMs) {
+    return entry.data as T;
+  }
+  return null;
+}
+
+function setPlatformCache(key: string, data: any) {
+  platformClientCache.set(key, { data, timestamp: Date.now() });
+}
+
+export function invalidatePlatformClientCache() {
+  platformClientCache.clear();
+}
+
 export const platformApi = {
-  dashboard: async (range: 'today' | 'week' | 'month' = 'week'): Promise<PlatformDashboardData> => {
+  dashboard: async (range: 'today' | 'week' | 'month' = 'week', force = false): Promise<PlatformDashboardData> => {
+    const key = `dashboard:${range}`;
+    if (!force) {
+      const cached = getPlatformCache<PlatformDashboardData>(key);
+      if (cached) return cached;
+    }
     const res = await apiClient.get<ApiResponseWrapper<PlatformDashboardData>>('/platform/dashboard', { params: { range } });
+    setPlatformCache(key, res.data.data);
     return res.data.data;
   },
 
-  callTrend: async (days = 30): Promise<PlatformCallTrendItem[]> => {
+  callTrend: async (days = 30, force = false): Promise<PlatformCallTrendItem[]> => {
+    const key = `callTrend:${days}`;
+    if (!force) {
+      const cached = getPlatformCache<PlatformCallTrendItem[]>(key);
+      if (cached) return cached;
+    }
     const res = await apiClient.get<ApiResponseWrapper<PlatformCallTrendItem[]>>('/platform/call-trend', { params: { days } });
+    setPlatformCache(key, res.data.data);
     return res.data.data;
   },
 
-  companyPerformance: async (range: 'today' | 'week' | 'month' = 'month'): Promise<PlatformCompanyPerformance[]> => {
+  companyPerformance: async (range: 'today' | 'week' | 'month' = 'month', force = false): Promise<PlatformCompanyPerformance[]> => {
+    const key = `companyPerformance:${range}`;
+    if (!force) {
+      const cached = getPlatformCache<PlatformCompanyPerformance[]>(key);
+      if (cached) return cached;
+    }
     const res = await apiClient.get<ApiResponseWrapper<PlatformCompanyPerformance[]>>('/platform/company-performance', { params: { range } });
+    setPlatformCache(key, res.data.data);
     return res.data.data;
   },
 
@@ -1995,13 +2031,25 @@ export const platformApi = {
     return res.data.data;
   },
 
-  usage: async (): Promise<PlatformUsageData> => {
+  usage: async (force = false): Promise<PlatformUsageData> => {
+    const key = 'usage';
+    if (!force) {
+      const cached = getPlatformCache<PlatformUsageData>(key);
+      if (cached) return cached;
+    }
     const res = await apiClient.get<ApiResponseWrapper<PlatformUsageData>>('/platform/usage');
+    setPlatformCache(key, res.data.data);
     return res.data.data;
   },
 
-  revenue: async (): Promise<PlatformRevenueData> => {
+  revenue: async (force = false): Promise<PlatformRevenueData> => {
+    const key = 'revenue';
+    if (!force) {
+      const cached = getPlatformCache<PlatformRevenueData>(key);
+      if (cached) return cached;
+    }
     const res = await apiClient.get<ApiResponseWrapper<PlatformRevenueData>>('/platform/revenue');
+    setPlatformCache(key, res.data.data);
     return res.data.data;
   },
 
@@ -2010,13 +2058,543 @@ export const platformApi = {
     return res.data.data;
   },
 
-  getSettings: async (): Promise<PlatformSettingsData> => {
+  getSettings: async (force = false): Promise<PlatformSettingsData> => {
+    const key = 'settings';
+    if (!force) {
+      const cached = getPlatformCache<PlatformSettingsData>(key);
+      if (cached) return cached;
+    }
     const res = await apiClient.get<ApiResponseWrapper<PlatformSettingsData>>('/platform/settings');
+    setPlatformCache(key, res.data.data);
     return res.data.data;
   },
 
   updateSettings: async (data: Partial<PlatformSettingsData>): Promise<PlatformSettingsData> => {
+    invalidatePlatformClientCache();
     const res = await apiClient.patch<ApiResponseWrapper<PlatformSettingsData>>('/platform/settings', data);
+    return res.data.data;
+  },
+};
+
+// ── Super Admin Governance API ─────────────────────────────────
+export interface GovernanceAdmin {
+  id: string;
+  name: string;
+  email: string;
+  isActive: boolean;
+  mfaEnabled: boolean;
+  lastLoginAt: string | null;
+  createdAt: string;
+  tenant: { id: string; name: string; slug: string } | null;
+}
+
+export interface AiProviderItem {
+  id: string;
+  provider: string;
+  name: string;
+  baseUrl: string | null;
+  apiKeyEncrypted: string | null;
+  isEnabled: boolean;
+  defaultModel: string | null;
+  models: any;
+  rateLimit: number;
+  usageCount: number;
+  lastUsedAt: string | null;
+  createdAt: string;
+}
+
+export interface TelephonyGatewayItem {
+  id: string;
+  provider: string;
+  name: string;
+  isEnabled: boolean;
+  settings: any;
+  healthStatus: string;
+  lastCheckedAt: string | null;
+  createdAt: string;
+}
+
+export interface NumberPoolItem {
+  id: string;
+  number: string;
+  isActive: boolean;
+  tenant: { id: string; name: string; slug: string } | null;
+  assignedAgent: { id: string; name: string } | null;
+  createdAt: string;
+}
+
+export interface PlanPriceItem {
+  id: string;
+  plan: string;
+  currency: string;
+  amount: number;
+  isActive: boolean;
+  updatedAt: string;
+}
+
+export interface InvoiceItem {
+  id: string;
+  tenant: { id: string; name: string; slug: string };
+  amount: number;
+  currency: string;
+  status: string;
+  paidAt: string | null;
+  createdAt: string;
+}
+
+export interface RoleDefinition {
+  role: string;
+  label: string;
+  description: string;
+  permissions: string[];
+  isOverridden: boolean;
+}
+
+export interface PermissionGroup {
+  group: string;
+  label: string;
+  permissions: { value: string; label: string }[];
+}
+
+export interface RoleMatrixData {
+  roles: RoleDefinition[];
+  groups: PermissionGroup[];
+}
+
+export interface AnnouncementItem {
+  id: string;
+  title: string;
+  body: string;
+  priority: string;
+  audience: string;
+  tenantIds: string[];
+  startsAt: string | null;
+  expiresAt: string | null;
+  isActive: boolean;
+  createdById: string | null;
+  createdAt: string;
+}
+
+export interface SupportTicketItem {
+  id: string;
+  subject: string;
+  body: string;
+  status: string;
+  priority: string;
+  tenantId: string | null;
+  tenantName: string | null;
+  tenantEmail: string | null;
+  assignedToId: string | null;
+  messages?: { body: string; fromEmail: string; createdAt: string }[];
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SecurityOverview {
+  allowlist: { id: string; cidr: string; label: string | null; isActive: boolean; createdAt: string }[];
+  allowlistCount: number;
+  mfaEnabledCount: number;
+  superAdmins: number;
+  requireMfa: boolean;
+  maintenanceMode: boolean;
+}
+
+export interface PlatformAuditEntry {
+  id: string;
+  action: string;
+  resource: string;
+  resourceId: string | null;
+  details: any;
+  ipAddress: string | null;
+  userAgent: string | null;
+  userId: string | null;
+  userEmail: string | null;
+  createdAt: string;
+}
+
+export interface ExportResult {
+  content: string;
+  mimetype: string;
+  filename: string;
+}
+
+export interface FeatureFlagItem {
+  id: string;
+  key: string;
+  description: string | null;
+  isEnabled: boolean;
+  defaultEnabled: boolean;
+  rollout: number;
+  tenantOverride: Record<string, boolean>;
+  updatedById: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ActivityFeedItem {
+  type: "call" | "company" | "admin";
+  icon: "success" | "error" | "info" | "warning";
+  title: string;
+  detail?: string;
+  meta?: string;
+  timestamp: string;
+}
+
+export interface PlatformApiKeyItem {
+  id: string;
+  name: string;
+  prefix: string;
+  scopes: string[];
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface PlatformWebhookItem {
+  id: string;
+  name: string;
+  url: string;
+  events: string[];
+  secret: string;
+  isActive: boolean;
+  failCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChurnRiskItem {
+  tenantId: string;
+  company: string;
+  plan: string;
+  callsThisMonth: number;
+  callsLastMonth: number;
+  activeAgents: number;
+  leads: number;
+  daysSinceLastCall: number | null;
+  score: number;
+  risk: "high" | "medium" | "low";
+}
+
+export interface ScheduledReportItem {
+  id: string;
+  name: string;
+  type: string;
+  frequency: string;
+  recipients: string[];
+  format: string;
+  enabled: boolean;
+  createdById: string | null;
+  lastRunAt: string | null;
+  lastStatus: string | null;
+  nextRunAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ImpersonateResult {
+  user: { id: string; name: string; email: string; role: string; tenantId: string; tenant: { id: string; name: string; plan: string; slug: string; isActive: boolean } };
+  tenant: { id: string; name: string; plan: string; slug: string; isActive: boolean };
+  accessToken: string;
+  refreshToken: string;
+  impersonation: true;
+}
+
+export const superAdminApi = {
+  // Admins
+  listAdmins: async (): Promise<{ items: GovernanceAdmin[]; total: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: GovernanceAdmin[]; total: number }>>('/platform/admins');
+    return res.data.data;
+  },
+  createAdmin: async (body: { name: string; email: string; password: string }): Promise<GovernanceAdmin & { tempPassword: string }> => {
+    const res = await apiClient.post<ApiResponseWrapper<GovernanceAdmin & { tempPassword: string }>>('/platform/admins', body);
+    return res.data.data;
+  },
+  updateAdminStatus: async (id: string, isActive: boolean): Promise<GovernanceAdmin> => {
+    const res = await apiClient.patch<ApiResponseWrapper<GovernanceAdmin>>(`/platform/admins/${id}/status`, { isActive });
+    return res.data.data;
+  },
+
+  // AI Providers
+  listAiProviders: async (): Promise<AiProviderItem[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<AiProviderItem[]>>('/platform/ai-providers');
+    return res.data.data;
+  },
+  createAiProvider: async (body: any): Promise<AiProviderItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<AiProviderItem>>('/platform/ai-providers', body);
+    return res.data.data;
+  },
+  updateAiProvider: async (id: string, body: any): Promise<AiProviderItem> => {
+    const res = await apiClient.patch<ApiResponseWrapper<AiProviderItem>>(`/platform/ai-providers/${id}`, body);
+    return res.data.data;
+  },
+  deleteAiProvider: async (id: string): Promise<{ ok: boolean }> => {
+    const res = await apiClient.delete<ApiResponseWrapper<{ ok: boolean }>>(`/platform/ai-providers/${id}`);
+    return res.data.data;
+  },
+  probeAiProvider: async (id?: string, scope?: string, provider?: string): Promise<any> => {
+    const url = id ? `/platform/ai-providers/${id}/probe` : '/platform/ai-providers/probe';
+    const res = await apiClient.post<ApiResponseWrapper<any>>(url, scope ? { scope, provider } : {});
+    return res.data.data;
+  },
+
+  // Telephony
+  listGateways: async (): Promise<TelephonyGatewayItem[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<TelephonyGatewayItem[]>>('/platform/telephony/gateways');
+    return res.data.data;
+  },
+  createGateway: async (body: any): Promise<TelephonyGatewayItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<TelephonyGatewayItem>>('/platform/telephony/gateways', body);
+    return res.data.data;
+  },
+  updateGateway: async (id: string, body: any): Promise<TelephonyGatewayItem> => {
+    const res = await apiClient.patch<ApiResponseWrapper<TelephonyGatewayItem>>(`/platform/telephony/gateways/${id}`, body);
+    return res.data.data;
+  },
+  deleteGateway: async (id: string): Promise<{ ok: boolean }> => {
+    const res = await apiClient.delete<ApiResponseWrapper<{ ok: boolean }>>(`/platform/telephony/gateways/${id}`);
+    return res.data.data;
+  },
+  probeGateway: async (id?: string): Promise<any> => {
+    const res = await apiClient.post<ApiResponseWrapper<any>>(`/platform/telephony/gateways/${id}/probe`);
+    return res.data.data;
+  },
+  listNumberPool: async (): Promise<{ items: NumberPoolItem[]; total: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: NumberPoolItem[]; total: number }>>('/platform/telephony/numbers');
+    return res.data.data;
+  },
+
+  // Billing
+  getPricing: async (): Promise<PlanPriceItem[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<PlanPriceItem[]>>('/platform/billing/pricing');
+    return res.data.data;
+  },
+  upsertPricing: async (body: any): Promise<PlanPriceItem> => {
+    const res = await apiClient.put<ApiResponseWrapper<PlanPriceItem>>('/platform/billing/pricing', body);
+    return res.data.data;
+  },
+  listInvoices: async (params?: { page?: number; limit?: number; status?: string; tenantId?: string }): Promise<{ items: InvoiceItem[]; total: number; page: number; pages: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: InvoiceItem[]; total: number; page: number; pages: number }>>('/platform/billing/invoices', { params });
+    return res.data.data;
+  },
+  overrideInvoiceStatus: async (id: string, status: string): Promise<InvoiceItem> => {
+    const res = await apiClient.patch<ApiResponseWrapper<InvoiceItem>>(`/platform/billing/invoices/${id}`, { status });
+    return res.data.data;
+  },
+
+  // Roles
+  getRoleMatrix: async (): Promise<RoleMatrixData> => {
+    const res = await apiClient.get<ApiResponseWrapper<RoleMatrixData>>('/platform/roles');
+    return res.data.data;
+  },
+  updateRolePermissions: async (role: string, permissions: string[]): Promise<any> => {
+    const res = await apiClient.put<ApiResponseWrapper<any>>(`/platform/roles/${role}`, { permissions });
+    return res.data.data;
+  },
+  resetRolePermissions: async (role: string): Promise<{ success: boolean }> => {
+    const res = await apiClient.delete<ApiResponseWrapper<{ success: boolean }>>(`/platform/roles/${role}`);
+    return res.data.data;
+  },
+
+  // Announcements
+  listAnnouncements: async (): Promise<{ items: AnnouncementItem[]; total: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: AnnouncementItem[]; total: number }>>('/platform/announcements');
+    return res.data.data;
+  },
+  createAnnouncement: async (body: any): Promise<AnnouncementItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<AnnouncementItem>>('/platform/announcements', body);
+    return res.data.data;
+  },
+  updateAnnouncement: async (id: string, body: any): Promise<AnnouncementItem> => {
+    const res = await apiClient.patch<ApiResponseWrapper<AnnouncementItem>>(`/platform/announcements/${id}`, body);
+    return res.data.data;
+  },
+  deleteAnnouncement: async (id: string): Promise<{ ok: boolean }> => {
+    const res = await apiClient.delete<ApiResponseWrapper<{ ok: boolean }>>(`/platform/announcements/${id}`);
+    return res.data.data;
+  },
+
+  // Impersonation
+  impersonate: async (userId: string): Promise<ImpersonateResult> => {
+    const res = await apiClient.post<ApiResponseWrapper<ImpersonateResult>>('/platform/impersonate', { userId });
+    return res.data.data;
+  },
+
+  // Support
+  listTickets: async (params?: { page?: number; limit?: number; status?: string; priority?: string }): Promise<{ items: SupportTicketItem[]; total: number; page: number; pages: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: SupportTicketItem[]; total: number; page: number; pages: number }>>('/platform/support/tickets', { params });
+    return res.data.data;
+  },
+  getTicket: async (id: string): Promise<SupportTicketItem> => {
+    const res = await apiClient.get<ApiResponseWrapper<SupportTicketItem>>(`/platform/support/tickets/${id}`);
+    return res.data.data;
+  },
+  updateTicket: async (id: string, body: any): Promise<SupportTicketItem> => {
+    const res = await apiClient.patch<ApiResponseWrapper<SupportTicketItem>>(`/platform/support/tickets/${id}`, body);
+    return res.data.data;
+  },
+  replyTicket: async (id: string, message: string): Promise<SupportTicketItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<SupportTicketItem>>(`/platform/support/tickets/${id}/reply`, { message });
+    return res.data.data;
+  },
+
+  // Security
+  getSecurityOverview: async (): Promise<SecurityOverview> => {
+    const res = await apiClient.get<ApiResponseWrapper<SecurityOverview>>('/platform/security');
+    return res.data.data;
+  },
+  addAllowlist: async (body: { cidr: string; label?: string }): Promise<any> => {
+    const res = await apiClient.post<ApiResponseWrapper<any>>('/platform/security/allowlist', body);
+    return res.data.data;
+  },
+  toggleAllowlist: async (id: string, isActive: boolean): Promise<any> => {
+    const res = await apiClient.patch<ApiResponseWrapper<any>>(`/platform/security/allowlist/${id}`, { isActive });
+    return res.data.data;
+  },
+  deleteAllowlist: async (id: string): Promise<{ ok: boolean }> => {
+    const res = await apiClient.delete<ApiResponseWrapper<{ ok: boolean }>>(`/platform/security/allowlist/${id}`);
+    return res.data.data;
+  },
+  setUserMfa: async (userId: string, enabled: boolean): Promise<any> => {
+    const res = await apiClient.patch<ApiResponseWrapper<any>>(`/platform/security/users/${userId}/mfa`, { enabled });
+    return res.data.data;
+  },
+  setRequireMfa: async (value: boolean): Promise<any> => {
+    const res = await apiClient.post<ApiResponseWrapper<any>>('/platform/security/require-mfa', { value });
+    return res.data.data;
+  },
+  listPlatformAudit: async (params?: { page?: number; limit?: number; action?: string }): Promise<{ items: PlatformAuditEntry[]; total: number; page: number; pages: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: PlatformAuditEntry[]; total: number; page: number; pages: number }>>('/platform/audit', { params });
+    return res.data.data;
+  },
+
+  // Tenants
+  provisionTenantTeam: async (tenantId: string, body: { name: string; email: string; role: string; department?: string }): Promise<any & { tempPassword: string }> => {
+    const res = await apiClient.post<ApiResponseWrapper<any & { tempPassword: string }>>(`/platform/tenants/${tenantId}/team`, body);
+    return res.data.data;
+  },
+  listTenantMembers: async (tenantId: string): Promise<{ items: { id: string; name: string; email: string; role: string; mfaEnabled: boolean; createdAt: string }[]; total: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: { id: string; name: string; email: string; role: string; mfaEnabled: boolean; createdAt: string }[]; total: number }>>(`/platform/tenants/${tenantId}/members`);
+    return res.data.data;
+  },
+
+  // Feature flags
+  listFeatureFlags: async (): Promise<{ items: FeatureFlagItem[]; total: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: FeatureFlagItem[]; total: number }>>('/platform/feature-flags');
+    return res.data.data;
+  },
+  createFeatureFlag: async (body: { key: string; description?: string; isEnabled?: boolean; defaultEnabled?: boolean; rollout?: number; tenantOverride?: Record<string, boolean> }): Promise<FeatureFlagItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<FeatureFlagItem>>('/platform/feature-flags', body);
+    return res.data.data;
+  },
+  updateFeatureFlag: async (id: string, body: Partial<Pick<FeatureFlagItem, "description" | "isEnabled" | "defaultEnabled" | "rollout" | "tenantOverride">>): Promise<FeatureFlagItem> => {
+    const res = await apiClient.patch<ApiResponseWrapper<FeatureFlagItem>>(`/platform/feature-flags/${id}`, body);
+    return res.data.data;
+  },
+  deleteFeatureFlag: async (id: string): Promise<{ success: boolean }> => {
+    const res = await apiClient.delete<ApiResponseWrapper<{ success: boolean }>>(`/platform/feature-flags/${id}`);
+    return res.data.data;
+  },
+
+  // Live activity feed
+  getActivityFeed: async (limit?: number): Promise<{ items: ActivityFeedItem[]; total: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: ActivityFeedItem[]; total: number }>>('/platform/activity', { params: { limit } });
+    return res.data.data;
+  },
+
+  // API keys
+  listApiKeys: async (): Promise<{ items: PlatformApiKeyItem[]; total: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: PlatformApiKeyItem[]; total: number }>>('/platform/api-keys');
+    return res.data.data;
+  },
+  createApiKey: async (body: { name: string; scopes?: string[]; expiresAt?: string }): Promise<PlatformApiKeyItem & { key: string; note: string }> => {
+    const res = await apiClient.post<ApiResponseWrapper<PlatformApiKeyItem & { key: string; note: string }>>('/platform/api-keys', body);
+    return res.data.data;
+  },
+  deleteApiKey: async (id: string): Promise<{ success: boolean }> => {
+    const res = await apiClient.delete<ApiResponseWrapper<{ success: boolean }>>(`/platform/api-keys/${id}`);
+    return res.data.data;
+  },
+
+  // Webhooks
+  listWebhooks: async (): Promise<{ items: PlatformWebhookItem[]; total: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: PlatformWebhookItem[]; total: number }>>('/platform/webhooks');
+    return res.data.data;
+  },
+  createWebhook: async (body: { name?: string; url: string; events?: string[]; secret?: string; isActive?: boolean }): Promise<PlatformWebhookItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<PlatformWebhookItem>>('/platform/webhooks', body);
+    return res.data.data;
+  },
+  updateWebhook: async (id: string, body: Partial<Pick<PlatformWebhookItem, "name" | "url" | "events" | "isActive">>): Promise<PlatformWebhookItem> => {
+    const res = await apiClient.patch<ApiResponseWrapper<PlatformWebhookItem>>(`/platform/webhooks/${id}`, body);
+    return res.data.data;
+  },
+  testWebhook: async (id: string): Promise<{ success: boolean; error?: string }> => {
+    const res = await apiClient.post<ApiResponseWrapper<{ success: boolean; error?: string }>>(`/platform/webhooks/${id}/test`);
+    return res.data.data;
+  },
+  deleteWebhook: async (id: string): Promise<{ success: boolean }> => {
+    const res = await apiClient.delete<ApiResponseWrapper<{ success: boolean }>>(`/platform/webhooks/${id}`);
+    return res.data.data;
+  },
+
+  // Churn risk
+  getChurnRisk: async (): Promise<{ items: ChurnRiskItem[]; total: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: ChurnRiskItem[]; total: number }>>('/platform/insights/churn');
+    return res.data.data;
+  },
+
+  // Scheduled reports
+  listScheduledReports: async (): Promise<{ items: ScheduledReportItem[]; total: number }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: ScheduledReportItem[]; total: number }>>('/platform/reports');
+    return res.data.data;
+  },
+  createScheduledReport: async (body: { name: string; type: string; frequency: string; recipients: string[]; format?: string; enabled?: boolean }): Promise<ScheduledReportItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<ScheduledReportItem>>('/platform/reports', body);
+    return res.data.data;
+  },
+  updateScheduledReport: async (id: string, body: Partial<Pick<ScheduledReportItem, "name" | "type" | "frequency" | "recipients" | "format" | "enabled">>): Promise<ScheduledReportItem> => {
+    const res = await apiClient.patch<ApiResponseWrapper<ScheduledReportItem>>(`/platform/reports/${id}`, body);
+    return res.data.data;
+  },
+  runScheduledReport: async (id: string): Promise<{ success: boolean; status: string; error?: string; summary?: string }> => {
+    const res = await apiClient.post<ApiResponseWrapper<{ success: boolean; status: string; error?: string; summary?: string }>>(`/platform/reports/${id}/run`);
+    return res.data.data;
+  },
+  deleteScheduledReport: async (id: string): Promise<{ success: boolean }> => {
+    const res = await apiClient.delete<ApiResponseWrapper<{ success: boolean }>>(`/platform/reports/${id}`);
+    return res.data.data;
+  },
+
+  // Security / maintenance mode
+  setMaintenanceMode: async (value: boolean): Promise<{ maintenanceMode: boolean }> => {
+    const res = await apiClient.post<ApiResponseWrapper<{ maintenanceMode: boolean }>>('/platform/security/maintenance-mode', { value });
+    return res.data.data;
+  },
+  getSecurity: async (): Promise<{ maintenanceMode: boolean; allowlistCount: number; mfaEnabledCount: number; superAdmins: number; requireMfa: boolean }> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ maintenanceMode: boolean; allowlistCount: number; mfaEnabledCount: number; superAdmins: number; requireMfa: boolean }>>('/platform/security');
+    return res.data.data;
+  },
+
+  // Export
+  exportData: async (resource: string, format: 'csv' | 'json'): Promise<ExportResult> => {
+    const res = await apiClient.get<ApiResponseWrapper<ExportResult>>('/platform/export', { params: { resource, format } });
+    return res.data.data;
+  },
+};
+
+// Tenant-facing governance helpers
+export const announcementsApi = {
+  active: async (): Promise<AnnouncementItem[]> => {
+    const res = await apiClient.get<ApiResponseWrapper<{ items: AnnouncementItem[] }>>('/announcements/active');
+    return res.data.data.items;
+  },
+};
+
+export const supportApi = {
+  submitTicket: async (body: { subject: string; message: string; priority?: string }): Promise<SupportTicketItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<SupportTicketItem>>('/support/tickets', body);
     return res.data.data;
   },
 };

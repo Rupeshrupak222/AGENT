@@ -508,7 +508,7 @@ export default function CompaniesPage() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         title="Create New Company"
-        description="Add a new tenant organization to the platform"
+        description="Create a new company workspace"
         footer={
           <>
             <Button variant="ghost" size="sm" onClick={() => setCreateOpen(false)} disabled={creating}>

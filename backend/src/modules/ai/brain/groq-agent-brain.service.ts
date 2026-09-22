@@ -6,6 +6,7 @@ import {
   AgentTurnInput,
   AgentTurnOutput,
 } from '../../telephony/interfaces/agent-brain.interface';
+import { FeatureFlagsService } from '../../feature-flags/feature-flags.service';
 
 @Injectable()
 export class GroqAgentBrainService implements AgentBrain {
@@ -14,7 +15,10 @@ export class GroqAgentBrainService implements AgentBrain {
   private readonly model: string;
   private readonly baseUrl = 'https://api.groq.com/openai/v1';
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private featureFlags: FeatureFlagsService,
+  ) {
     this.apiKey = this.configService.get<string>('GROQ_API_KEY', '');
     this.model = this.configService.get<string>('GROQ_MODEL', 'llama-3.3-70b-versatile');
   }
@@ -28,9 +32,12 @@ export class GroqAgentBrainService implements AgentBrain {
    */
   async generateResponse(input: AgentTurnInput): Promise<AgentTurnOutput> {
     const startTime = Date.now();
+    const ragEnabled = await this.featureFlags.isEnabled('knowledge_rag', input.context.tenantId);
 
     if (!this.isConfigured) {
-      const responseText = this.generateKnowledgeGroundedResponse(input);
+      const responseText = ragEnabled
+        ? this.generateKnowledgeGroundedResponse(input)
+        : this.genericFallbackResponse(input);
       return {
         responseText,
         suggestedAction: 'continue',
@@ -70,7 +77,7 @@ export class GroqAgentBrainService implements AgentBrain {
       );
 
       return {
-        responseText: cleanedText || this.generateKnowledgeGroundedResponse(input),
+        responseText: cleanedText || (ragEnabled ? this.generateKnowledgeGroundedResponse(input) : this.genericFallbackResponse(input)),
         suggestedAction: 'continue',
         latencyMs,
         metadata: {
@@ -82,9 +89,11 @@ export class GroqAgentBrainService implements AgentBrain {
     } catch (err: any) {
       const latencyMs = Date.now() - startTime;
       const errorMsg = err.response?.data?.error?.message || err.message;
-      this.logger.warn(`Groq API unavailable (${errorMsg}), applying knowledge-grounded fallback.`);
+      this.logger.warn(`Groq API unavailable (${errorMsg}), applying fallback.`);
 
-      const responseText = this.generateKnowledgeGroundedResponse(input);
+      const responseText = ragEnabled
+        ? this.generateKnowledgeGroundedResponse(input)
+        : this.genericFallbackResponse(input);
       return {
         responseText,
         suggestedAction: 'continue',
@@ -92,6 +101,15 @@ export class GroqAgentBrainService implements AgentBrain {
         metadata: { provider: 'knowledge-grounded', fallbackReason: errorMsg },
       };
     }
+  }
+
+  /** Small talk when knowledge grounding is disabled by feature flag. */
+  private genericFallbackResponse(input: AgentTurnInput): string {
+    const { context, userMessage } = input;
+    const msg = (userMessage || '').trim();
+    if (!msg) return 'I apologize, could you repeat that?';
+    if (context.openingScript) return context.openingScript.replace(/\{\{name\}\}/gi, 'there');
+    return 'I want to make sure I help you correctly. Let me check with the right person and get right back to you.';
   }
 
   /**
