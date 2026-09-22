@@ -97,6 +97,9 @@ export const AUDIT_LOG_VIEW = 'audit_log:view' as const;
 export const WORKSPACE_VIEW = 'workspace:view' as const;
 export const WORKSPACE_MANAGE = 'workspace:manage' as const;
 
+// ── Notifications ───────────────────────────────────────────
+export const NOTIFICATIONS_VIEW = 'notifications:view' as const;
+
 // ── Platform (Super Admin only) ─────────────────────────────
 export const PLATFORM_TENANT_CREATE = 'platform:tenant_create' as const;
 export const PLATFORM_TENANT_MANAGE = 'platform:tenant_manage' as const;
@@ -133,6 +136,7 @@ export type Permission =
   | typeof SECURITY_VIEW | typeof SECURITY_MANAGE
   | typeof AUDIT_LOG_VIEW
   | typeof WORKSPACE_VIEW | typeof WORKSPACE_MANAGE
+  | typeof NOTIFICATIONS_VIEW
   | typeof PLATFORM_TENANT_CREATE | typeof PLATFORM_TENANT_MANAGE
   | typeof PLATFORM_TELEPHONY | typeof PLATFORM_AI_PROVIDERS
   | typeof PLATFORM_BILLING_CONFIG | typeof PLATFORM_DIAGNOSTICS | typeof PLATFORM_AUDIT

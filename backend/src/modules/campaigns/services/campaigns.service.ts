@@ -22,6 +22,7 @@ import {
 } from '../dto/campaign.dto';
 import { ScopedActor, campaignScope, leadScope, agentScope } from '../../../common/scope';
 import { FeatureFlagsService } from '../../feature-flags/feature-flags.service';
+import { NotificationsService } from '../../notifications/notifications.service';
 
 @Injectable()
 export class CampaignsService implements OnModuleInit {
@@ -37,6 +38,7 @@ export class CampaignsService implements OnModuleInit {
     @Optional()
     @Inject(forwardRef(() => CallsGateway))
     private readonly callsGateway?: CallsGateway,
+    @Optional() private readonly notifications?: NotificationsService,
   ) {}
 
   onModuleInit() {
@@ -401,6 +403,7 @@ export class CampaignsService implements OnModuleInit {
     this.callsGateway?.broadcastCampaignStatus(campaignId, tenantId, {
       status: CampaignStatus.PAUSED,
     });
+    await this.notifications?.notifyCampaignEvent(campaignId, 'paused');
     return { status: CampaignStatus.PAUSED };
   }
 
@@ -438,6 +441,7 @@ export class CampaignsService implements OnModuleInit {
     this.callsGateway?.broadcastCampaignStatus(campaignId, tenantId, {
       status: CampaignStatus.CANCELLED,
     });
+    await this.notifications?.notifyCampaignEvent(campaignId, 'cancelled');
 
     return { status: CampaignStatus.CANCELLED };
   }
@@ -752,6 +756,7 @@ export class CampaignsService implements OnModuleInit {
         this.callsGateway?.broadcastCampaignStatus(campaignId, campaign.tenantId, {
           status: CampaignStatus.COMPLETED,
         });
+        await this.notifications?.notifyCampaignEvent(campaignId, 'completed');
         return true;
       }
     } catch (err: any) {

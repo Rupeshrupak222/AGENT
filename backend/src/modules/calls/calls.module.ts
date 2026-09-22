@@ -7,9 +7,10 @@ import { TelephonyModule } from '../telephony/telephony.module';
 import { AuthModule } from '../auth/auth.module';
 import { StorageModule } from '../storage/storage.module';
 import { AiModule } from '../ai/ai.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [AuditModule, TelephonyModule, AuthModule, StorageModule, forwardRef(() => AiModule)],
+  imports: [AuditModule, TelephonyModule, AuthModule, StorageModule, forwardRef(() => AiModule), NotificationsModule],
   providers: [CallsService, CallsGateway],
   controllers: [CallsController],
   exports: [CallsService, CallsGateway],

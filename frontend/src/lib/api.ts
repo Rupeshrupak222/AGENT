@@ -2592,6 +2592,66 @@ export const announcementsApi = {
   },
 };
 
+// ── Notifications API ─────────────────────────────────────────
+export type NotificationSeverity = "info" | "success" | "warning" | "critical";
+export type NotificationType = "call" | "campaign" | "billing" | "appointment" | "automation" | "alert" | "system";
+
+export interface NotificationItem {
+  id: string;
+  tenantId: string;
+  type: NotificationType;
+  severity: NotificationSeverity;
+  title: string;
+  message: string;
+  isRead: boolean;
+  data?: {
+    callId?: string;
+    campaignId?: string;
+    leadId?: string;
+    phone?: string;
+    link?: string;
+  } | null;
+  createdAt: string;
+}
+
+export interface NotificationsListResponse {
+  items: NotificationItem[];
+  total: number;
+  unread: number;
+  page: number;
+  limit: number;
+}
+
+export const notificationsApi = {
+  list: async (params?: { page?: number; limit?: number; type?: string; unreadOnly?: boolean }): Promise<NotificationsListResponse> => {
+    const res = await apiClient.get<ApiResponseWrapper<NotificationsListResponse>>('/notifications', {
+      params: {
+        page: params?.page,
+        limit: params?.limit,
+        type: params?.type,
+        unreadOnly: params?.unreadOnly ? 'true' : undefined,
+      },
+    });
+    return res.data.data;
+  },
+  unreadCount: async (): Promise<number> => {
+    const res = await apiClient.get<ApiResponseWrapper<number>>('/notifications/unread-count');
+    return res.data.data;
+  },
+  markRead: async (id: string): Promise<NotificationItem> => {
+    const res = await apiClient.post<ApiResponseWrapper<NotificationItem>>(`/notifications/${id}/read`);
+    return res.data.data;
+  },
+  markAllRead: async (): Promise<{ updated: number }> => {
+    const res = await apiClient.post<ApiResponseWrapper<{ updated: number }>>('/notifications/read-all');
+    return res.data.data;
+  },
+  clearAll: async (): Promise<{ deleted: number }> => {
+    const res = await apiClient.delete<ApiResponseWrapper<{ deleted: number }>>('/notifications');
+    return res.data.data;
+  },
+};
+
 export const supportApi = {
   submitTicket: async (body: { subject: string; message: string; priority?: string }): Promise<SupportTicketItem> => {
     const res = await apiClient.post<ApiResponseWrapper<SupportTicketItem>>('/support/tickets', body);

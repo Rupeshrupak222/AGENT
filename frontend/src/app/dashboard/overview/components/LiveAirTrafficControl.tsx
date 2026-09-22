@@ -357,13 +357,13 @@ export function LiveAirTrafficControl({ recentCalls, agents = [] }: LiveAirTraff
                 </div>
                 <div className="space-y-1.5 max-h-32 overflow-y-auto font-sans leading-relaxed text-slate-200">
                   <p>
-                    <span className="font-bold text-brand-400">AI:</span> "Thank you for holding, Mr. Sharma. I have retrieved your commercial roof dimensions."
+                    <span className="font-bold text-brand-400">AI:</span> &ldquo;Thank you for holding, Mr. Sharma. I have retrieved your commercial roof dimensions.&rdquo;
                   </p>
                   <p>
-                    <span className="font-bold text-sky-400">Customer:</span> "Does this quote include the net metering approval from MSEDCL?"
+                    <span className="font-bold text-sky-400">Customer:</span> &ldquo;Does this quote include the net metering approval from MSEDCL?&rdquo;
                   </p>
                   <p className="bg-brand-500/10 p-2 rounded-lg border border-brand-500/20 text-white font-medium">
-                    <span className="font-bold text-brand-400">AI (speaking now):</span> "Yes, exactly! All state grid permissions and subsidy filing are handled end-to-end by our authorized liaison team."
+                    <span className="font-bold text-brand-400">AI (speaking now):</span> &ldquo;Yes, exactly! All state grid permissions and subsidy filing are handled end-to-end by our authorized liaison team.&rdquo;
                   </p>
                 </div>
               </div>

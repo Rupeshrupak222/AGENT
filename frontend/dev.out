@@ -1,0 +1,20 @@
+
+> agentcall-ai-frontend@1.0.0 dev
+> next dev
+
+   ▲ Next.js 15.5.25
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.31:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 25.6s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 681ms (116 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 30.5s (1737 modules)
+ GET /login?next=%2Fdashboard%2Foverview 200 in 33243ms
+ ✓ Compiled in 3.3s (758 modules)
+ GET /login?next=%2Fdashboard%2Foverview 200 in 295ms
+ GET /login?next=%2Fdashboard%2Foverview 200 in 404ms
+[?25h

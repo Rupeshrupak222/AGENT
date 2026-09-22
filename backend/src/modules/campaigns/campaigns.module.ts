@@ -8,12 +8,14 @@ import { OutboundCallProcessor } from './processors/outbound-call.processor';
 import { PrismaModule } from '../prisma/prisma.module';
 import { TelephonyModule } from '../telephony/telephony.module';
 import { CallsModule } from '../calls/calls.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     PrismaModule,
     forwardRef(() => TelephonyModule),
     forwardRef(() => CallsModule),
+    NotificationsModule,
     BullModule.registerQueue({
       name: 'outbound-calls',
     }),

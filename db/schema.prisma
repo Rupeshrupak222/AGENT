@@ -930,6 +930,23 @@ model Announcement {
   @@map("Announcement")
 }
 
+// ── Notification (in-app feed) ───────────────────────────────
+model Notification {
+  id        String   @id @default(cuid())
+  tenantId  String
+  type      String   // call | campaign | billing | appointment | automation | alert | system
+  severity  String   @default("info") // info | success | warning | critical
+  title     String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  data      Json?    // callId, campaignId, leadId, link, etc.
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, isRead])
+  @@index([tenantId, createdAt])
+  @@map("Notification")
+}
+
 // ── Support Ticket (platform support inbox) ───────────────────
 model SupportTicket {
   id           String   @id @default(cuid())

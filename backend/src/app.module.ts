@@ -30,6 +30,7 @@ import { SuperAdminModule } from './modules/super-admin/super-admin.module';
 import { ResourcesModule } from './modules/resources/resources.module';
 import { MetricsModule } from './common/services/metrics.module';
 import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AppController } from './app.controller';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import { SecurityHeadersMiddleware } from './common/middleware/security-headers.middleware';
@@ -102,6 +103,7 @@ import { SecurityHeadersMiddleware } from './common/middleware/security-headers.
     PlatformModule,
     SuperAdminModule,
     ResourcesModule,
+    NotificationsModule,
   ],
 })
 export class AppModule implements NestModule {

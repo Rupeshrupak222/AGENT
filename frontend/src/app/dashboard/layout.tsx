@@ -41,7 +41,7 @@ import {
   Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { bootstrapAuth, callsApi, CallItem, announcementsApi, AnnouncementItem } from "@/lib/api";
+import { bootstrapAuth, notificationsApi, NotificationItem, announcementsApi, AnnouncementItem } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/components/ui/Toast";
@@ -51,6 +51,7 @@ import { EnvironmentBadge, EnvironmentMode } from "@/components/ui/EnvironmentBa
 import { CommandPalette } from "@/components/ui/CommandPalette";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { UserProfileModal } from "@/components/dashboard/UserProfileModal";
 
 interface NavItem {
   icon: any;
@@ -200,36 +201,48 @@ const COMPANY_ADMIN_GROUPS: { label: string; items: NavItem[] }[] = [
   },
 ];
 
-const NOTIF_STATUS_STYLE: Record<CallItem["status"], string> = {
-  queued: "bg-slate-400",
-  ringing: "bg-amber-400",
-  in_progress: "bg-amber-400",
-  completed: "bg-emerald-500",
-  missed: "bg-rose-500",
-  failed: "bg-rose-500",
-  transferred: "bg-sky-500",
+const NOTIF_SEVERITY_STYLE: Record<NotificationItem["severity"], string> = {
+  info: "bg-sky-500",
+  success: "bg-emerald-500",
+  warning: "bg-amber-400",
+  critical: "bg-rose-500",
 };
 
-const NOTIF_STATUS_LABEL: Record<CallItem["status"], string> = {
-  queued: "Queued",
-  ringing: "Ringing",
-  in_progress: "In progress",
-  completed: "Completed",
-  missed: "Missed",
-  failed: "Failed",
-  transferred: "Transferred",
+const NOTIF_TYPE_LABEL: Record<NotificationItem["type"], string> = {
+  call: "Call",
+  campaign: "Campaign",
+  billing: "Billing",
+  appointment: "Appointment",
+  automation: "Automation",
+  alert: "Alert",
+  system: "System",
 };
+
+function formatNotifTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  const diff = Date.now() - then;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
 
 function SidebarContent({
   collapsed = false,
   mobile = false,
   onClose,
   onNavigate,
+  onOpenProfile,
 }: {
   collapsed?: boolean;
   mobile?: boolean;
   onClose?: () => void;
   onNavigate?: () => void;
+  onOpenProfile?: () => void;
 }) {
   const pathname = usePathname();
   const { user, tenant, logout } = useAuthStore();
@@ -368,10 +381,13 @@ active
           {show && <span>Sign Out</span>}
         </button>
         {show && user && (
-          <Link
-            href="/dashboard/profile"
-            onClick={onNavigate}
-            className="flex items-center gap-3 px-3 py-2 mt-2 rounded-xl bg-slate-100/70 dark:bg-brand-500/10 hover:bg-slate-200/70 dark:hover:bg-brand-500/20 border border-slate-200 dark:border-brand-500/20 transition-all cursor-pointer group"
+          <button
+            type="button"
+            onClick={() => {
+              onNavigate?.();
+              onOpenProfile?.();
+            }}
+            className="w-full flex items-center gap-3 px-3 py-2 mt-2 rounded-xl bg-slate-100/70 dark:bg-brand-500/10 hover:bg-slate-200/70 dark:hover:bg-brand-500/20 border border-slate-200 dark:border-brand-500/20 transition-all cursor-pointer group text-left"
           >
             <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-sm bg-gradient-to-br from-brand-500 to-brand-700 group-hover:scale-105 transition-transform">
               {user.name?.[0]?.toUpperCase() ?? "U"}
@@ -384,19 +400,22 @@ active
                 {tenant?.name ?? user.role?.replace("_", " ")}
               </p>
             </div>
-          </Link>
+          </button>
         )}
         {!show && user && (
-          <Link
-            href="/dashboard/profile"
-            onClick={onNavigate}
+          <button
+            type="button"
+            onClick={() => {
+              onNavigate?.();
+              onOpenProfile?.();
+            }}
             title={`${user.name} (${user.role?.replace("_", " ")})`}
-            className="flex items-center justify-center py-2 mt-2 cursor-pointer group"
+            className="w-full flex items-center justify-center py-2 mt-2 cursor-pointer group"
           >
             <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm bg-gradient-to-br from-brand-500 to-brand-700 group-hover:scale-110 transition-transform">
               {user.name?.[0]?.toUpperCase() ?? "U"}
             </div>
-          </Link>
+          </button>
         )}
       </div>
     </div>
@@ -449,10 +468,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
-  const [recentCalls, setRecentCalls] = useState<CallItem[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notifUnread, setNotifUnread] = useState(0);
   const [notifError, setNotifError] = useState(false);
+  const [notifBusy, setNotifBusy] = useState(false);
   const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
   const [dismissedAnnouncements, setDismissedAnnouncements] = useState<string[]>([]);
 
@@ -538,23 +560,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
   }, [mounted, isAuthenticated, pathname, accessToken]);
 
-  // Live notification feed: most recent calls in the workspace
+  // Live notification feed: fetch recent notifications + unread count, poll every 30s
   useEffect(() => {
     if (!mounted || !isAuthenticated) return;
     let active = true;
-    callsApi
-      .list({ limit: 4 })
-      .then((res) => {
+    const load = async () => {
+      try {
+        const [res, count] = await Promise.all([
+          notificationsApi.list({ limit: 10 }),
+          notificationsApi.unreadCount(),
+        ]);
         if (active) {
-          setRecentCalls(res.items || []);
+          setNotifications(res.items || []);
+          setNotifUnread(count);
           setNotifError(false);
         }
-      })
-      .catch(() => {
+      } catch {
         if (active) setNotifError(true);
-      });
+      }
+    };
+    load();
+    const interval = setInterval(load, 30000);
+    const onFocus = () => {
+      load();
+    };
+    window.addEventListener("focus", onFocus);
     return () => {
       active = false;
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
     };
   }, [mounted, isAuthenticated]);
 
@@ -669,6 +703,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <SidebarContent
           collapsed={!isHovered}
           onNavigate={() => setIsHovered(false)}
+          onOpenProfile={() => setIsProfileModalOpen(true)}
         />
       </aside>
 
@@ -690,7 +725,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
               className="fixed left-0 top-0 h-full w-72 z-50 lg:hidden flex flex-col"
             >
-              <SidebarContent mobile onClose={() => setMobileOpen(false)} />
+              <SidebarContent
+                mobile
+                onClose={() => setMobileOpen(false)}
+                onOpenProfile={() => {
+                  setMobileOpen(false);
+                  setIsProfileModalOpen(true);
+                }}
+              />
             </motion.div>
           </>
         )}
@@ -850,7 +892,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Notifications */}
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
-                aria-label="Recent activity"
+                aria-label="Notifications"
                 aria-expanded={notifOpen}
                 onClick={() => {
                   setNotifOpen(!notifOpen);
@@ -859,8 +901,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-slate-100/70 dark:bg-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.08] border border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/60"
               >
                 <Bell className="w-4 h-4" />
-                {recentCalls.some((c) => c.status === "failed" || c.status === "missed") && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-[#0c0102]" />
+                {notifUnread > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-[#0c0102]">
+                    {notifUnread > 9 ? "9+" : notifUnread}
+                  </span>
                 )}
               </button>
               <AnimatePresence>
@@ -873,55 +917,105 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   >
                     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-white/[0.06]">
                       <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                        Recent Activity
+                        Notifications
                       </span>
-                      <Link
-                        href="/dashboard/calls"
-                        className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-rose-300 border border-brand-200 dark:border-brand-500/30"
-                      >
-                        View all
-                      </Link>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-rose-300 border border-brand-200 dark:border-brand-500/30">
+                        {notifUnread > 0 ? `${notifUnread} unread` : "All caught up"}
+                      </span>
                     </div>
-                    {notifError ? (
-                      <p className="px-4 py-6 text-sm text-center text-slate-500 dark:text-white/40">
-                        Unable to load recent activity.
-                      </p>
-                    ) : recentCalls.length === 0 ? (
-                      <p className="px-4 py-6 text-sm text-center text-slate-500 dark:text-white/40">
-                        No recent activity yet.
-                      </p>
-                    ) : (
-                      recentCalls.map((c) => (
-                        <Link
-                          key={c.id}
-                          href="/dashboard/calls"
-                          className="flex gap-2.5 items-start px-4 py-3 transition-all border-b border-slate-200/70 dark:border-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.03]"
+                    <div className="min-h-[120px] max-h-[340px] overflow-y-auto">
+                      {notifError ? (
+                        <p className="px-4 py-6 text-sm text-center text-slate-500 dark:text-white/40">
+                          Unable to load notifications.
+                        </p>
+                      ) : notifications.length === 0 ? (
+                        <p className="px-4 py-6 text-sm text-center text-slate-500 dark:text-white/40">
+                          No notifications yet.
+                        </p>
+                      ) : (
+                        notifications.map((n) => (
+                          <Link
+                            key={n.id}
+                            href={n.data?.link || "/dashboard/notifications"}
+                            onClick={(e) => {
+                              if (n.data?.link?.startsWith("/"))
+                                return;
+                              e.preventDefault();
+                            }}
+                            className={`flex gap-2.5 items-start px-4 py-3 transition-all border-b border-slate-200/70 dark:border-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.03] ${!n.isRead ? "bg-brand-50 dark:bg-brand-500/[0.06]" : "opacity-80"}`}
+                          >
+                            <div
+                              className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${NOTIF_SEVERITY_STYLE[n.severity] ?? NOTIF_SEVERITY_STYLE.info}`}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-medium text-slate-800 dark:text-white/85 truncate">
+                                  {n.title}
+                                </p>
+                                {!n.isRead && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0" />
+                                )}
+                              </div>
+                              <p className="text-xs mt-0.5 text-slate-500 dark:text-white/45 line-clamp-2">
+                                {n.message}
+                              </p>
+                              <p className="text-[10px] mt-1 uppercase tracking-wide text-slate-400 dark:text-white/30">
+                                {NOTIF_TYPE_LABEL[n.type] ?? n.type} · {formatNotifTime(n.createdAt)}
+                              </p>
+                            </div>
+                          </Link>
+                        ))
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-200/70 dark:border-white/[0.06]">
+                      {notifUnread > 0 ? (
+                        <button
+                          onClick={async () => {
+                            if (notifBusy) return;
+                            setNotifBusy(true);
+                            try {
+                              await notificationsApi.markAllRead();
+                              setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+                              setNotifUnread(0);
+                            } catch {
+                              // Ignored; next poll reconciles
+                            } finally {
+                              setNotifBusy(false);
+                            }
+                          }}
+                          className="text-xs font-semibold text-slate-500 dark:text-white/40 hover:text-brand-600 dark:hover:text-brand-400 transition-colors cursor-pointer"
                         >
-                          <div
-                            className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${NOTIF_STATUS_STYLE[c.status]}`}
-                          />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm text-slate-700 dark:text-white/80 truncate">
-                              Call with {c.lead?.name || c.phone}
-                            </p>
-                            <p className="text-xs mt-0.5 text-slate-500 dark:text-white/40 capitalize">
-                              {NOTIF_STATUS_LABEL[c.status]} · {c.direction} ·{" "}
-                              {new Date(c.startedAt).toLocaleTimeString("en-IN", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </p>
-                          </div>
+                          Mark all read
+                        </button>
+                      ) : (
+                        <span />
+                      )}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={async () => {
+                            if (notifBusy) return;
+                            setNotifBusy(true);
+                            try {
+                              await notificationsApi.clearAll();
+                              setNotifications([]);
+                              setNotifUnread(0);
+                            } catch {
+                              // Ignored; next poll reconciles
+                            } finally {
+                              setNotifBusy(false);
+                            }
+                          }}
+                          className="text-xs font-semibold text-slate-500 dark:text-white/40 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
+                        >
+                          Clear all
+                        </button>
+                        <Link
+                          href="/dashboard/notifications"
+                          className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline"
+                        >
+                          View all →
                         </Link>
-                      ))
-                    )}
-                    <div className="px-4 py-2.5 border-t border-slate-200/70 dark:border-white/[0.06]">
-                      <Link
-                        href="/dashboard/calls"
-                        className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline"
-                      >
-                        View all →
-                      </Link>
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -943,12 +1037,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={() => {
-                  setProfileOpen(!profileOpen);
+                  setIsProfileModalOpen(true);
                   setNotifOpen(false);
+                  setProfileOpen(false);
                 }}
-                aria-label="Account menu"
-                aria-expanded={profileOpen}
-                className="flex items-center gap-2 h-9 px-2 rounded-xl transition-all hover:bg-slate-100 dark:hover:bg-white/[0.06]"
+                aria-label="User Profile & Clearance"
+                className="flex items-center gap-2 h-9 px-2 rounded-xl transition-all hover:bg-slate-100 dark:hover:bg-white/[0.06] cursor-pointer"
               >
                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm bg-gradient-to-br from-brand-500 to-brand-700">
                   {user?.name?.[0]?.toUpperCase() ?? "U"}
@@ -1120,6 +1214,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <CommandPalette
         isOpen={commandOpen}
         onClose={() => setCommandOpen(false)}
+      />
+
+      {/* User Profile Pop-Up Modal */}
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
       />
     </div>
   );

@@ -17,6 +17,7 @@ import {
   SECURITY_VIEW, SECURITY_MANAGE,
   AUDIT_LOG_VIEW,
   WORKSPACE_VIEW, WORKSPACE_MANAGE,
+  NOTIFICATIONS_VIEW,
   PLATFORM_TENANT_CREATE, PLATFORM_TENANT_MANAGE,
   PLATFORM_TELEPHONY, PLATFORM_AI_PROVIDERS,
   PLATFORM_BILLING_CONFIG, PLATFORM_DIAGNOSTICS, PLATFORM_AUDIT, PLATFORM_FEATURE_FLAGS,
@@ -194,6 +195,12 @@ export const GROUPED_PERMISSIONS: PermissionGroup[] = [
     permissions: [
       { value: WORKSPACE_VIEW, label: 'View workspace' },
       { value: WORKSPACE_MANAGE, label: 'Manage workspace' },
+    ],
+  },
+  {
+    group: 'Notifications',
+    permissions: [
+      { value: NOTIFICATIONS_VIEW, label: 'View & manage notifications' },
     ],
   },
 ];

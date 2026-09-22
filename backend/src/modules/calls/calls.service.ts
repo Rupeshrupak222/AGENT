@@ -5,6 +5,7 @@ import { CloudflareR2StorageProvider } from '../storage/providers/r2-storage.pro
 import { PostCallQueueService } from '../ai/services/post-call-queue.service';
 import { RecordingProcessor } from '../telephony/processors/recording.processor';
 import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { ScopedActor, callScope, leadScope, agentScope } from '../../common/scope';
 
 export interface InitiateCallDto {
@@ -24,6 +25,7 @@ export class CallsService implements OnModuleInit {
     @Optional() private storageProvider?: CloudflareR2StorageProvider,
     @Optional() @Inject(forwardRef(() => PostCallQueueService)) private postCallQueueService?: PostCallQueueService,
     @Optional() private recordingProcessor?: RecordingProcessor,
+    @Optional() private notifications?: NotificationsService,
   ) {}
 
   async onModuleInit() {
@@ -72,6 +74,17 @@ export class CallsService implements OnModuleInit {
         }
       });
     }
+
+    // 3. Register Notification Hook -> Persist in-app notifications on terminal call status
+    this.telephonyService.registerCallStatusHook(async (callId, status, duration, outcome) => {
+      if (this.notifications) {
+        try {
+          await this.notifications.notifyCallStatus(callId, status, duration, outcome);
+        } catch (err: any) {
+          this.logger.warn(`Failed to create call notification for ${callId}: ${err.message}`);
+        }
+      }
+    });
   }
 
   async initiateCall(tenantId: string, dto: InitiateCallDto, actor?: ScopedActor) {
