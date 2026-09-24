@@ -50,6 +50,16 @@ import type {
   AgentItem,
 } from "@/lib/api";
 import { AgentVoiceSimulatorModal } from "@/components/agents/AgentVoiceSimulatorModal";
+import { CampaignCommand } from "./CampaignCommand";
+import { CallDefectPanel } from "./CallDefectPanel";
+import { LiveEventFeed } from "./LiveEventFeed";
+import { UpcomingSchedule } from "./UpcomingSchedule";
+import { CallQualityScorecard } from "./CallQualityScorecard";
+import { PeakHourAdvisor } from "./PeakHourAdvisor";
+import { ComplianceSnapshot } from "./ComplianceSnapshot";
+import { AutomationRunLog } from "./AutomationRunLog";
+import { IntegrationHealth } from "./IntegrationHealth";
+import { KnowledgeHealth } from "./KnowledgeHealth";
 import type { PeriodPreset, DashboardRange } from "@/lib/dashboard-range";
 import {
   OUTCOME_COLORS,
@@ -1381,6 +1391,36 @@ export function ManagerView({
             ))}
           </div>
         )}
+      </div>
+
+      {/* ── Operations: Campaigns · Defects ───────────────────── */}
+      <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
+        <CampaignCommand dashboard={dashboard} isLoading={isLoading} onRefresh={onRefresh} />
+        <CallDefectPanel kpis={kpis} timeSeries={dashboard?.timeSeries} isLoading={isLoading} />
+      </div>
+
+      {/* ── Live activity ─────────────────────────────────────── */}
+      <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
+        <LiveEventFeed />
+        <UpcomingSchedule />
+      </div>
+
+      {/* ── Quality · Staffing ─────────────────────────────────── */}
+      <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
+        <CallQualityScorecard dashboard={dashboard} isLoading={isLoading} />
+        <PeakHourAdvisor range={range} />
+      </div>
+
+      {/* ── Compliance · Automations ───────────────────────────── */}
+      <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
+        <ComplianceSnapshot dashboard={dashboard} isLoading={isLoading} />
+        <AutomationRunLog />
+      </div>
+
+      {/* ── Infra: Integrations · Knowledge ───────────────────── */}
+      <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
+        <IntegrationHealth />
+        <KnowledgeHealth />
       </div>
 
       {/* Quick Audio Test Simulator Modal */}

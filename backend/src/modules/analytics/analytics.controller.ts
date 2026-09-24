@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -88,5 +88,22 @@ export class AnalyticsController {
   @ApiQuery({ name: 'range', enum: ['today', 'week', 'month'], required: false })
   executiveReport(@CurrentUser() u: any, @Query('range') range?: any) {
     return this.svc.getExecutiveReport(u.tenantId, range ?? 'month', u);
+  }
+
+  @Get('report/digest')
+  @Permissions(ANALYTICS_EXPORT)
+  @ApiOperation({ summary: 'Get the current company email digest setting (requires ANALYTICS_EXPORT)' })
+  getDigest(@CurrentUser() u: any) {
+    return this.svc.getCompanyDigest(u.tenantId);
+  }
+
+  @Post('report/digest')
+  @Permissions(ANALYTICS_EXPORT)
+  @ApiOperation({ summary: 'Create or update the scheduled company email digest (requires ANALYTICS_EXPORT)' })
+  setDigest(
+    @CurrentUser() u: any,
+    @Body() body: { enabled?: boolean; frequency?: string; recipients?: string[] },
+  ) {
+    return this.svc.setCompanyDigest(u.tenantId, u, body ?? {});
   }
 }

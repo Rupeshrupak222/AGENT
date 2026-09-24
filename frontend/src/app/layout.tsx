@@ -147,6 +147,48 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `(function () {
+  var EXTRA_ATTRS = [
+    "bis_skin_checked",
+    "data-new-gr-c-s-check-loaded",
+    "data-gr-ext-installed",
+    "data-et-loader-check",
+    "data-hj-suppressed",
+  ];
+  function stripAttributes(node) {
+    if (node.nodeType !== 1) return;
+    for (var i = 0; i < EXTRA_ATTRS.length; i++) {
+      if (node.hasAttribute(EXTRA_ATTRS[i])) node.removeAttribute(EXTRA_ATTRS[i]);
+    }
+  }
+  function stripAll() {
+    var nodes = document.querySelectorAll("*");
+    for (var i = 0; i < nodes.length; i++) stripAttributes(nodes[i]);
+  }
+  stripAll();
+  new MutationObserver(function (mutations) {
+    for (var i = 0; i < mutations.length; i++) {
+      var mutation = mutations[i];
+      if (mutation.type === "attributes") {
+        stripAttributes(mutation.target);
+      } else if (mutation.type === "childList") {
+        for (var j = 0; j < mutation.addedNodes.length; j++) {
+          stripAttributes(mutation.addedNodes[j]);
+        }
+      }
+    }
+  }).observe(document.documentElement, {
+    subtree: true,
+    attributes: true,
+    attributeFilter: EXTRA_ATTRS,
+    childList: true,
+  });
+})();`,
+          }}
+        />
       </head>
       <body suppressHydrationWarning className={`${inter.variable} ${mono.variable} min-h-screen bg-page text-slate-900 dark:text-white antialiased transition-colors duration-200`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>

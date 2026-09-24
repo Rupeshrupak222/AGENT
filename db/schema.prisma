@@ -29,8 +29,6 @@ enum Role {
   super_admin
   company_admin
   manager
-  agent
-  viewer
 }
 
 enum AgentRole {
@@ -248,7 +246,7 @@ model User {
   name        String
   email       String   @unique
   password    String
-  role        Role     @default(agent)
+  role        Role     @default(manager)
   avatar      String?
   phone       String?
   isActive    Boolean  @default(true)
@@ -1018,11 +1016,13 @@ model FeatureFlag {
 model ScheduledReport {
   id         String   @id @default(cuid())
   name       String
-  type       String   @default("companies") // companies | calls | agents | leads | summary
+  type       String   @default("companies") // companies | calls | agents | leads | summary | company-digest
   frequency  String   @default("weekly")   // daily | weekly | monthly
   recipients String[] @default([])         // emails
-  format     String   @default("csv")       // csv | summary
+  format     String   @default("csv")       // csv | summary | html
   enabled    Boolean  @default(true)
+  tenantId   String?                        // company-scoped digest (company-digest type)
+  companyName String?                       // cached company name for digests
   createdById String?
   lastRunAt  DateTime?
   lastStatus String?  // success | failed | sent
@@ -1030,5 +1030,6 @@ model ScheduledReport {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  @@index([tenantId])
   @@map("ScheduledReport")
 }

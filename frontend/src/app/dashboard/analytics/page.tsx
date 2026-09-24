@@ -68,13 +68,13 @@ interface DerivedInsight {
 function ChartTip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-slate-900/95 border border-white/10 backdrop-blur-md rounded-lg p-3 text-xs shadow-xl text-white">
-      {label && <p className="font-semibold text-slate-200 mb-1.5">{label}</p>}
+    <div className="bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-white/10 backdrop-blur-md rounded-lg p-3 text-xs shadow-xl text-slate-900 dark:text-white">
+      {label && <p className="font-semibold text-slate-800 dark:text-slate-200 mb-1.5">{label}</p>}
       {payload.map((p: any) => (
         <div key={p.name} className="flex items-center gap-2 mb-0.5">
           <div className="w-2 h-2 rounded-full" style={{ background: p.color }} />
-          <span className="text-slate-400 capitalize">{p.name}:</span>
-          <span className="text-white font-mono font-bold">{p.value}</span>
+          <span className="text-slate-500 dark:text-slate-400 capitalize">{p.name}:</span>
+          <span className="text-slate-900 dark:text-white font-mono font-bold">{p.value}</span>
         </div>
       ))}
     </div>
@@ -527,18 +527,18 @@ End of Report — AgentCall AI Autonomous Telemetry
             </div>
 
             {/* Side-by-side financial comparison */}
-            <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 p-4 rounded-xl bg-slate-900/40 border border-white/10 flex-shrink-0">
-              <div className="text-center px-3 border-r border-white/10">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 flex-shrink-0">
+              <div className="text-center px-3 border-r border-slate-200 dark:border-white/10">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
                   Human BPO Cost
                 </span>
-                <span className="text-lg font-black text-rose-400 font-mono">
+                <span className="text-lg font-black text-rose-500 dark:text-rose-400 font-mono">
                   {currencySymbol}{humanCost.toLocaleString()}
                 </span>
               </div>
 
-              <div className="text-center px-3 border-r border-white/10">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
+              <div className="text-center px-3 border-r border-slate-200 dark:border-white/10">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
                   AI Fleet Cost
                 </span>
                 <span className="text-lg font-black text-indigo-400 font-mono">

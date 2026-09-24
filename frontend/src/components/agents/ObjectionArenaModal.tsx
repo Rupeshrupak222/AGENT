@@ -165,7 +165,7 @@ export function ObjectionArenaModal({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Preset Objection Chips */}
           <div className="space-y-2">
-            <span className="text-xs font-bold text-white/70 uppercase tracking-wider block">
+            <span className="text-xs font-bold text-slate-600 dark:text-white/70 uppercase tracking-wider block">
               Select Customer Objection Scenario:
             </span>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
@@ -199,14 +199,14 @@ export function ObjectionArenaModal({
             {/* Left: Customer & Agent turns (7 cols) */}
             <div className="lg:col-span-7 space-y-4">
               {/* Customer Objection */}
-              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/25 space-y-1.5">
+              <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/25 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5" /> Skeptical Lead / Caller:
                   </span>
-                  <span className="text-[10px] uppercase font-mono text-rose-300">Pushback Trigger</span>
+                  <span className="text-[10px] uppercase font-mono text-rose-600 dark:text-rose-300">Pushback Trigger</span>
                 </div>
-                <p className="text-xs text-slate-100 font-medium leading-relaxed">
+                <p className="text-xs text-rose-950 dark:text-slate-100 font-medium leading-relaxed">
                   &ldquo;{selectedScenario.customerObjection}&rdquo;
                 </p>
               </div>
@@ -214,33 +214,33 @@ export function ObjectionArenaModal({
               {/* Agent Counter-Response */}
               <div className="p-4 rounded-2xl bg-brand-500/10 border border-brand-500/25 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-brand-300 flex items-center gap-1.5">
-                    <Bot className="w-3.5 h-3.5 text-brand-400" /> {agent?.name || "Adyapan AI"} Response:
+                  <span className="text-xs font-bold text-brand-700 dark:text-brand-300 flex items-center gap-1.5">
+                    <Bot className="w-3.5 h-3.5 text-brand-500 dark:text-brand-400" /> {agent?.name || "Adyapan AI"} Response:
                   </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
                     High Conversion Tactic
                   </span>
                 </div>
-                <p className="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">
+                <p className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">
                   {selectedScenario.benchmarkAgentResponse}
                 </p>
               </div>
 
               {/* Recommended Prompt Tuning */}
-              <div className="p-4 rounded-2xl bg-slate-950 border border-white/10 space-y-2">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
                     Recommended Agent Prompt Instruction
                   </span>
                   <button
                     type="button"
                     onClick={handleCopyTuningPrompt}
-                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white/10 hover:bg-white/15 text-white transition-all flex items-center gap-1"
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-200 hover:bg-slate-300 text-slate-800 dark:bg-white/10 dark:hover:bg-white/15 dark:text-white transition-all flex items-center gap-1"
                   >
                     <Copy className="w-3 h-3" /> Copy Instruction
                   </button>
                 </div>
-                <p className="text-xs text-slate-300 italic bg-black/40 p-2.5 rounded-xl border border-white/5 leading-relaxed">
+                <p className="text-xs text-slate-800 dark:text-slate-300 italic bg-white dark:bg-black/40 p-2.5 rounded-xl border border-slate-200 dark:border-white/5 leading-relaxed">
                   &ldquo;{selectedScenario.recommendedPromptTuning}&rdquo;
                 </p>
               </div>
@@ -248,24 +248,24 @@ export function ObjectionArenaModal({
 
             {/* Right: Scorecard & Telemetry (5 cols) */}
             <div className="lg:col-span-5 space-y-4">
-              <div className="p-5 rounded-2xl bg-slate-950 border border-white/10 space-y-4 text-center">
-                <span className="text-xs font-bold text-white/70 uppercase tracking-wider block">
+              <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-4 text-center">
+                <span className="text-xs font-bold text-slate-600 dark:text-white/70 uppercase tracking-wider block">
                   Objection Handling Scorecard
                 </span>
 
                 <div className="w-24 h-24 rounded-full border-4 border-emerald-500 bg-emerald-500/10 mx-auto flex flex-col items-center justify-center shadow-lg shadow-emerald-500/20">
-                  <span className="text-2xl font-black text-white font-mono">{selectedScenario.score}</span>
-                  <span className="text-[10px] font-bold text-emerald-400 uppercase">Grade A+</span>
+                  <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">{selectedScenario.score}</span>
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">Grade A+</span>
                 </div>
 
                 <div className="space-y-3 pt-2 text-left">
                   {/* Empathy */}
                   <div>
                     <div className="flex justify-between text-xs font-semibold mb-1">
-                      <span className="text-white/70">Empathy & Listening</span>
-                      <span className="text-emerald-400 font-mono">{selectedScenario.empathy}%</span>
+                      <span className="text-slate-600 dark:text-white/70">Empathy & Listening</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-mono">{selectedScenario.empathy}%</span>
                     </div>
-                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                       <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${selectedScenario.empathy}%` }} />
                     </div>
                   </div>
@@ -273,10 +273,10 @@ export function ObjectionArenaModal({
                   {/* Value Prop */}
                   <div>
                     <div className="flex justify-between text-xs font-semibold mb-1">
-                      <span className="text-white/70">Value Proposition Proof</span>
-                      <span className="text-brand-400 font-mono">{selectedScenario.valueProp}%</span>
+                      <span className="text-slate-600 dark:text-white/70">Value Proposition Proof</span>
+                      <span className="text-brand-600 dark:text-brand-400 font-mono">{selectedScenario.valueProp}%</span>
                     </div>
-                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                       <div className="h-full bg-brand-500 rounded-full" style={{ width: `${selectedScenario.valueProp}%` }} />
                     </div>
                   </div>
@@ -284,17 +284,17 @@ export function ObjectionArenaModal({
                   {/* Closing CTA */}
                   <div>
                     <div className="flex justify-between text-xs font-semibold mb-1">
-                      <span className="text-white/70">Micro-Commitment CTA</span>
-                      <span className="text-amber-400 font-mono">{selectedScenario.closingCta}%</span>
+                      <span className="text-slate-600 dark:text-white/70">Micro-Commitment CTA</span>
+                      <span className="text-amber-600 dark:text-amber-400 font-mono">{selectedScenario.closingCta}%</span>
                     </div>
-                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                       <div className="h-full bg-amber-500 rounded-full" style={{ width: `${selectedScenario.closingCta}%` }} />
                     </div>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-900 border border-white/10 text-xs text-slate-300 text-left leading-relaxed">
-                  <span className="font-bold text-white block mb-1">AI Evaluator Critique:</span>
+                <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-xs text-slate-700 dark:text-slate-300 text-left leading-relaxed">
+                  <span className="font-bold text-slate-900 dark:text-white block mb-1">AI Evaluator Critique:</span>
                   {selectedScenario.analysis}
                 </div>
               </div>
@@ -303,14 +303,14 @@ export function ObjectionArenaModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-white/10 bg-slate-950 flex items-center justify-between">
-          <span className="text-xs text-white/40">
+        <div className="p-4 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950 flex items-center justify-between">
+          <span className="text-xs text-slate-500 dark:text-white/40">
             Evaluated against enterprise objection benchmarks and conversion heuristics
           </span>
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-slate-800 hover:bg-slate-700 transition-colors"
+            className="px-5 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-white bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors"
           >
             Close Arena
           </button>

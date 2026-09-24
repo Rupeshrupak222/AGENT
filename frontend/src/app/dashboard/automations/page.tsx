@@ -972,14 +972,14 @@ export default function AutomationsPage() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-xl bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl z-10 space-y-6 text-white"
+              className="relative w-full max-w-xl bg-white dark:bg-[#140b07] border border-slate-200 dark:border-white/10 rounded-3xl p-6 shadow-2xl z-10 space-y-6 text-slate-900 dark:text-white"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
                 <div>
-                  <h3 className="text-base font-bold text-white">Create Automation Rule</h3>
-                  <p className="text-xs text-white/50 mt-0.5">Step {modalStep} of 4: {modalStep === 1 ? "Trigger & Channel" : modalStep === 2 ? "Conditions" : modalStep === 3 ? "Message Template" : "Review & Test"}</p>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Create Automation Rule</h3>
+                  <p className="text-xs text-slate-500 dark:text-white/50 mt-0.5">Step {modalStep} of 4: {modalStep === 1 ? "Trigger & Channel" : modalStep === 2 ? "Conditions" : modalStep === 3 ? "Message Template" : "Review & Test"}</p>
                 </div>
-                <button onClick={() => setShowModal(false)} className="text-white/40 hover:text-white text-lg">×</button>
+                <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-700 dark:text-white/40 dark:hover:text-white text-lg">×</button>
               </div>
 
               {/* Progress Stepper */}
@@ -988,7 +988,7 @@ export default function AutomationsPage() {
                   <div
                     key={step}
                     className={`h-1 flex-1 rounded-full transition-all ${
-                      step <= modalStep ? "bg-brand-500" : "bg-white/10"
+                      step <= modalStep ? "bg-brand-500" : "bg-slate-200 dark:bg-white/10"
                     }`}
                   />
                 ))}
@@ -1000,24 +1000,24 @@ export default function AutomationsPage() {
                 {modalStep === 1 && (
                   <div className="space-y-4">
                     <div>
-                      <label className="text-xs font-semibold text-white/70 block mb-1.5">Rule Name</label>
+                      <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">Rule Name</label>
                       <input
                         type="text"
                         required
                         placeholder="e.g. WhatsApp follow-up on Qualified Demo Request"
                         value={newRule.name}
                         onChange={e => setNewRule({ ...newRule, name: e.target.value })}
-                        className="w-full h-10 rounded-xl px-3 text-sm bg-white/[0.04] border border-white/15 text-white outline-none focus:border-brand-500"
+                        className="w-full h-10 rounded-xl px-3 text-sm bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs font-semibold text-white/70 block mb-1.5">WHEN (Trigger Event)</label>
+                        <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">WHEN (Trigger Event)</label>
                         <select
                           value={newRule.trigger}
                           onChange={e => setNewRule({ ...newRule, trigger: e.target.value })}
-                          className="w-full h-10 rounded-xl px-3 text-xs bg-slate-800 border border-white/15 text-white outline-none"
+                          className="w-full h-10 rounded-xl px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
                         >
                           <option value="call_analysis_completed">AI Analysis Completed</option>
                           <option value="lead_qualified">Lead Qualified (Score &gt;= 75)</option>
@@ -1029,11 +1029,11 @@ export default function AutomationsPage() {
                       </div>
 
                       <div>
-                        <label className="text-xs font-semibold text-white/70 block mb-1.5">THEN (Action Channel)</label>
+                        <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">THEN (Action Channel)</label>
                         <select
                           value={newRule.action}
                           onChange={e => setNewRule({ ...newRule, action: e.target.value })}
-                          className="w-full h-10 rounded-xl px-3 text-xs bg-slate-800 border border-white/15 text-white outline-none"
+                          className="w-full h-10 rounded-xl px-3 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
                         >
                           <option value="send_whatsapp">Send WhatsApp (Meta Cloud)</option>
                           <option value="send_email">Send Email (Resend)</option>
@@ -1047,27 +1047,27 @@ export default function AutomationsPage() {
                 {modalStep === 2 && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-semibold text-white/70">IF Conditions (Declarative Rule Matching)</label>
+                      <label className="text-xs font-semibold text-slate-700 dark:text-white/70">IF Conditions (Declarative Rule Matching)</label>
                       <button
                         type="button"
                         onClick={() => setNewRule({
                           ...newRule,
                           conditions: [...newRule.conditions, { field: "leadScore", operator: ">=", value: 70 }]
                         })}
-                        className="text-[11px] text-brand-400 hover:underline flex items-center gap-1"
+                        className="text-[11px] text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3" /> Add Condition
                       </button>
                     </div>
 
                     {newRule.conditions.length === 0 ? (
-                      <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 text-center text-xs text-white/50">
+                      <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 text-center text-xs text-slate-500 dark:text-white/50">
                         No conditions configured. This automation will fire for <strong>every</strong> {TRIGGER_LABELS[newRule.trigger]?.label || newRule.trigger} event.
                       </div>
                     ) : (
                       <div className="space-y-2">
                         {newRule.conditions.map((cond, idx) => (
-                          <div key={idx} className="flex items-center gap-2 bg-white/[0.03] p-2.5 rounded-xl border border-white/10">
+                          <div key={idx} className="flex items-center gap-2 bg-slate-50 dark:bg-white/[0.03] p-2.5 rounded-xl border border-slate-200 dark:border-white/10">
                             <select
                               value={cond.field}
                               onChange={e => {
@@ -1075,7 +1075,7 @@ export default function AutomationsPage() {
                                 next[idx].field = e.target.value;
                                 setNewRule({ ...newRule, conditions: next });
                               }}
-                              className="h-8 rounded-lg px-2 text-xs bg-slate-800 border border-white/10 text-white flex-1"
+                              className="h-8 rounded-lg px-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white flex-1"
                             >
                               <option value="leadScore">Lead Score</option>
                               <option value="intent">AI Intent</option>
@@ -1091,7 +1091,7 @@ export default function AutomationsPage() {
                                 next[idx].operator = e.target.value as any;
                                 setNewRule({ ...newRule, conditions: next });
                               }}
-                              className="h-8 rounded-lg px-2 text-xs bg-slate-800 border border-white/10 text-white w-24"
+                              className="h-8 rounded-lg px-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white w-24"
                             >
                               <option value=">=">&gt;=</option>
                               <option value=">">&gt;</option>
@@ -1111,7 +1111,7 @@ export default function AutomationsPage() {
                                 setNewRule({ ...newRule, conditions: next });
                               }}
                               placeholder="e.g. 75 or positive"
-                              className="h-8 rounded-lg px-2 text-xs bg-slate-800 border border-white/10 text-white flex-1 font-mono"
+                              className="h-8 rounded-lg px-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white flex-1 font-mono"
                             />
 
                             <button
@@ -1120,7 +1120,7 @@ export default function AutomationsPage() {
                                 const next = newRule.conditions.filter((_, i) => i !== idx);
                                 setNewRule({ ...newRule, conditions: next });
                               }}
-                              className="p-1 text-white/40 hover:text-rose-400"
+                              className="p-1 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -1134,21 +1134,21 @@ export default function AutomationsPage() {
                 {/* Step 3: Message Template */}
                 {modalStep === 3 && (
                   <div className="space-y-3">
-                    <label className="text-xs font-semibold text-white/70 block">Message Template</label>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block">Message Template</label>
                     <textarea
                       rows={4}
                       value={newRule.template}
                       onChange={e => setNewRule({ ...newRule, template: e.target.value })}
-                      className="w-full rounded-xl p-3 text-xs bg-white/[0.04] border border-white/15 text-white outline-none focus:border-brand-500 font-mono"
+                      className="w-full rounded-xl p-3 text-xs bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none focus:border-brand-500 font-mono"
                     />
-                    <div className="flex items-center gap-1.5 flex-wrap text-[10px] text-white/40">
+                    <div className="flex items-center gap-1.5 flex-wrap text-[10px] text-slate-500 dark:text-white/40">
                       <span>Allowed tags:</span>
                       {["{{lead.name}}", "{{lead.phone}}", "{{lead.company}}", "{{analysis.leadScore}}", "{{appointment.date}}"].map(tag => (
                         <button
                           key={tag}
                           type="button"
                           onClick={() => setNewRule({ ...newRule, template: `${newRule.template} ${tag}` })}
-                          className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-white/70 font-mono"
+                          className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/20 text-slate-700 dark:text-white/70 font-mono"
                         >
                           {tag}
                         </button>
@@ -1160,53 +1160,53 @@ export default function AutomationsPage() {
                 {/* Step 4: Review & Live Preview */}
                 {modalStep === 4 && (
                   <div className="space-y-4">
-                    <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2 text-xs">
+                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 space-y-2 text-xs">
                       <div className="flex justify-between">
-                        <span className="text-white/50">Rule:</span>
-                        <span className="font-bold">{newRule.name || "Untitled"}</span>
+                        <span className="text-slate-500 dark:text-white/50">Rule:</span>
+                        <span className="font-bold text-slate-900 dark:text-white">{newRule.name || "Untitled"}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-white/50">Trigger:</span>
-                        <span>{TRIGGER_LABELS[newRule.trigger]?.label}</span>
+                        <span className="text-slate-500 dark:text-white/50">Trigger:</span>
+                        <span className="text-slate-800 dark:text-white">{TRIGGER_LABELS[newRule.trigger]?.label}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-white/50">Action:</span>
-                        <span>{ACTION_ICONS[newRule.action]?.label}</span>
+                        <span className="text-slate-500 dark:text-white/50">Action:</span>
+                        <span className="text-slate-800 dark:text-white">{ACTION_ICONS[newRule.action]?.label}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-white/50">Conditions:</span>
-                        <span>{newRule.conditions.length === 0 ? "Always fires" : `${newRule.conditions.length} condition(s)`}</span>
+                        <span className="text-slate-500 dark:text-white/50">Conditions:</span>
+                        <span className="text-slate-800 dark:text-white">{newRule.conditions.length === 0 ? "Always fires" : `${newRule.conditions.length} condition(s)`}</span>
                       </div>
                     </div>
 
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-xs font-semibold text-white/70">Live Dry-Run Preview</label>
+                        <label className="text-xs font-semibold text-slate-700 dark:text-white/70">Live Dry-Run Preview</label>
                         <button
                           type="button"
                           onClick={handleRunPreview}
-                          className="text-[11px] text-brand-400 hover:underline flex items-center gap-1"
+                          className="text-[11px] text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1"
                         >
                           <Play className="w-3 h-3" /> Test Trigger Logic
                         </button>
                       </div>
 
-                      <div className="p-3 rounded-xl bg-slate-950 border border-white/10 font-mono text-xs text-white/80 space-y-2">
+                      <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-white/10 font-mono text-xs text-slate-800 dark:text-white/80 space-y-2">
                         {dryRunLoading ? (
-                          <div className="flex items-center gap-2 text-white/40">
+                          <div className="flex items-center gap-2 text-slate-500 dark:text-white/40">
                             <Loader2 className="w-3.5 h-3.5 animate-spin" /> Evaluating live rule engine...
                           </div>
                         ) : previewResult ? (
                           <>
                             <div className="flex items-center gap-2">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${previewResult.conditionsMet ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'}`}>
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${previewResult.conditionsMet ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30'}`}>
                                 {previewResult.conditionsMet ? "✓ Conditions Match" : "✕ Conditions Do Not Match"}
                               </span>
                             </div>
-                            <p className="border-t border-white/10 pt-2 text-white/90 whitespace-pre-wrap">{previewResult.renderedMessage}</p>
+                            <p className="border-t border-slate-200 dark:border-white/10 pt-2 text-slate-800 dark:text-white/90 whitespace-pre-wrap">{previewResult.renderedMessage}</p>
                           </>
                         ) : (
-                          <p className="text-white/40">Click &quot;Test Trigger Logic&quot; to evaluate variables against the live rule engine.</p>
+                          <p className="text-slate-500 dark:text-white/40">Click &quot;Test Trigger Logic&quot; to evaluate variables against the live rule engine.</p>
                         )}
                       </div>
                     </div>
@@ -1214,12 +1214,12 @@ export default function AutomationsPage() {
                 )}
 
                 {/* Modal Navigation Buttons */}
-                <div className="flex justify-between items-center pt-3 border-t border-white/10">
+                <div className="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-white/10">
                   {modalStep > 1 ? (
                     <button
                       type="button"
                       onClick={() => setModalStep((s) => (s - 1) as any)}
-                      className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/[0.05] text-white/70 hover:text-white"
+                      className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.05] dark:hover:bg-white/10 text-slate-700 dark:text-white/70 hover:text-slate-900 dark:hover:text-white"
                     >
                       Back
                     </button>
@@ -1229,7 +1229,7 @@ export default function AutomationsPage() {
                     <button
                       type="button"
                       onClick={() => setShowModal(false)}
-                      className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/[0.05] text-white/50 hover:text-white"
+                      className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.05] dark:hover:bg-white/10 text-slate-700 dark:text-white/50 hover:text-slate-900 dark:hover:text-white"
                     >
                       Cancel
                     </button>
@@ -1275,23 +1275,23 @@ export default function AutomationsPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl z-10 space-y-4 text-white"
+              className="relative w-full max-w-md bg-white dark:bg-[#140b07] border border-slate-200 dark:border-white/10 rounded-3xl p-6 shadow-2xl z-10 space-y-4 text-slate-900 dark:text-white"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
                 <div className="flex items-center gap-2">
-                  <Send className="w-4 h-4 text-brand-500" />
-                  <h3 className="text-base font-bold text-white">Send Direct Test Message</h3>
+                  <Send className="w-4 h-4 text-brand-600 dark:text-brand-500" />
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Send Direct Test Message</h3>
                 </div>
-                <button onClick={() => setShowTestModal(false)} className="text-white/40 hover:text-white text-lg">×</button>
+                <button onClick={() => setShowTestModal(false)} className="text-slate-400 hover:text-slate-700 dark:text-white/40 dark:hover:text-white text-lg">×</button>
               </div>
 
               <form onSubmit={handleSendTest} className="space-y-4 text-xs">
                 <div>
-                  <label className="font-semibold text-white/70 block mb-1">Destination Channel</label>
+                  <label className="font-semibold text-slate-700 dark:text-white/70 block mb-1">Destination Channel</label>
                   <select
                     value={testActionData.actionType}
                     onChange={e => setTestActionData({ ...testActionData, actionType: e.target.value as any })}
-                    className="w-full h-9 rounded-xl px-3 bg-slate-800 border border-white/15 text-white"
+                    className="w-full h-9 rounded-xl px-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
                   >
                     <option value="send_whatsapp">WhatsApp (Meta Cloud)</option>
                     <option value="send_email">Email (Resend)</option>
@@ -1299,7 +1299,7 @@ export default function AutomationsPage() {
                 </div>
 
                 <div>
-                  <label className="font-semibold text-white/70 block mb-1">
+                  <label className="font-semibold text-slate-700 dark:text-white/70 block mb-1">
                     {testActionData.actionType === 'send_whatsapp' ? 'Recipient Phone Number (E.164)' : 'Recipient Email Address'}
                   </label>
                   <input
@@ -1308,42 +1308,42 @@ export default function AutomationsPage() {
                     placeholder={testActionData.actionType === 'send_whatsapp' ? '+919876543210' : 'test@example.com'}
                     value={testActionData.destination}
                     onChange={e => setTestActionData({ ...testActionData, destination: e.target.value })}
-                    className="w-full h-9 rounded-xl px-3 bg-white/[0.04] border border-white/15 text-white font-mono"
+                    className="w-full h-9 rounded-xl px-3 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white font-mono outline-none"
                   />
                 </div>
 
                 {testActionData.actionType === 'send_email' && (
                   <div>
-                    <label className="font-semibold text-white/70 block mb-1">Subject</label>
+                    <label className="font-semibold text-slate-700 dark:text-white/70 block mb-1">Subject</label>
                     <input
                       type="text"
                       value={testActionData.subject}
                       onChange={e => setTestActionData({ ...testActionData, subject: e.target.value })}
-                      className="w-full h-9 rounded-xl px-3 bg-white/[0.04] border border-white/15 text-white"
+                      className="w-full h-9 rounded-xl px-3 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="font-semibold text-white/70 block mb-1">Test Message Body</label>
+                  <label className="font-semibold text-slate-700 dark:text-white/70 block mb-1">Test Message Body</label>
                   <textarea
                     rows={3}
                     value={testActionData.message}
                     onChange={e => setTestActionData({ ...testActionData, message: e.target.value })}
-                    className="w-full rounded-xl p-2.5 bg-white/[0.04] border border-white/15 text-white font-mono"
+                    className="w-full rounded-xl p-2.5 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white font-mono outline-none"
                   />
                 </div>
 
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] flex items-start gap-2">
-                  <ShieldAlert className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-400" />
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-[11px] flex items-start gap-2">
+                  <ShieldAlert className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
                   <span>Test messages are sent to this designated contact only. They will not broadcast to contacts or leads.</span>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
+                <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-white/10">
                   <button
                     type="button"
                     onClick={() => setShowTestModal(false)}
-                    className="px-3 py-1.5 rounded-xl bg-white/[0.05] text-white/60 hover:text-white"
+                    className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.05] dark:hover:bg-white/10 text-slate-700 dark:text-white/60 hover:text-slate-900 dark:hover:text-white"
                   >
                     Cancel
                   </button>

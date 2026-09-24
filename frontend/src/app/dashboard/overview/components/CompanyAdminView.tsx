@@ -32,16 +32,32 @@ import {
   FileText,
   Volume2,
   Play,
+  Printer,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { AgentVoiceSimulatorModal } from "@/components/agents/AgentVoiceSimulatorModal";
 import { LiveAirTrafficControl } from "./LiveAirTrafficControl";
 import { EnterpriseRoiCalculator } from "./EnterpriseRoiCalculator";
-import { PeakHoursHeatmap } from "./PeakHoursHeatmap";
-import { TraiComplianceRadar } from "./TraiComplianceRadar";
 import { ObjectionMatrix } from "./ObjectionMatrix";
 import { MultiChannelDispatch } from "./MultiChannelDispatch";
-import { IntegrationSyncHealth } from "./IntegrationSyncHealth";
+import { PipelineFunnel } from "./PipelineFunnel";
+import { CallDefectPanel } from "./CallDefectPanel";
+import { ClosedWonRevenue } from "./ClosedWonRevenue";
+import { LiveEventFeed } from "./LiveEventFeed";
+import { UpcomingSchedule } from "./UpcomingSchedule";
+import { SpendBurnRate } from "./SpendBurnRate";
+import { InventoryHealth } from "./InventoryHealth";
+import { ScheduledDigest } from "./ScheduledDigest";
+import { CampaignCommand } from "./CampaignCommand";
+import { AutomationRunLog } from "./AutomationRunLog";
+import { CostPerLead } from "./CostPerLead";
+import { IntegrationHealth } from "./IntegrationHealth";
+import { KnowledgeHealth } from "./KnowledgeHealth";
+import { AgentLeaderboard } from "./AgentLeaderboard";
+import { CallQualityScorecard } from "./CallQualityScorecard";
+import { PeakHourAdvisor } from "./PeakHourAdvisor";
+import { ComplianceSnapshot } from "./ComplianceSnapshot";
+import { MissedRevenue } from "./MissedRevenue";
 import { AnimatedNumber, LiveIndicator, FadeIn, SlideUp, ChartReveal } from "@/components/ui/motion";
 import {
   AreaChart,
@@ -105,6 +121,7 @@ interface CompanyAdminViewProps {
   isRefreshing: boolean;
   companyName: string;
   companyPlan: string | null;
+  canManageDigest?: boolean;
 }
 
 function fmtBucket(iso: string, granularity: DashboardGranularity): string {
@@ -377,6 +394,7 @@ export function CompanyAdminView({
   isRefreshing,
   companyName,
   companyPlan,
+  canManageDigest = false,
 }: CompanyAdminViewProps) {
   const { success } = useToast();
 
@@ -494,6 +512,91 @@ export function CompanyAdminView({
     success("Company operational CSV report exported successfully.");
   };
 
+  const handleExportPdf = () => {
+    if (!dashboard) return;
+    const d = dashboard;
+    const k = d.kpis.current;
+
+    const kpiRows = [
+      ["Calls Handled", k.totalCalls],
+      ["Connected Calls", k.connectedCalls],
+      ["Missed Calls", k.missedCalls],
+      ["Failed Calls", k.failedCalls],
+      ["Transferred Calls", k.transferredCalls],
+      ["Inbound Calls", k.inboundCalls],
+      ["Outbound Calls", k.outboundCalls],
+      ["Connect Rate", `${k.connectRate}%`],
+      ["Total Minutes", k.totalMinutes],
+      ["Qualified Leads", k.qualifiedLeads],
+      ["Appointments", k.appointments],
+      ["Closed Won", k.closedWon],
+      ["Conversion Rate", `${k.conversionRate}%`],
+      ["Avg Sentiment", `${k.avgSentiment} / 5`],
+      ["AI Analyses Run", k.aiAnalyses],
+    ];
+
+    const win = window.open("", "_blank", "width=900,height=1100");
+    if (!win) {
+      success("Popup blocked — allow popups to export the PDF report.");
+      return;
+    }
+
+    const rowsHtml = kpiRows
+      .map(
+        ([label, value]) =>
+          `<tr><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:12px;">${label}</td><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;color:#0f172a;font-size:12px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;">${value}</td></tr>`
+      )
+      .join("");
+
+    const outcomeRows = d.outcomes
+      .map(
+        (o) =>
+          `<tr><td style="padding:6px 12px;border-bottom:1px solid #f1f5f9;color:#334155;font-size:12px;text-transform:capitalize;">${o.outcome.replace(/_/g, " ")}</td><td style="padding:6px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:700;font-size:12px;">${o.count} (${o.pct}%)</td></tr>`
+      )
+      .join("");
+
+    win.document.write(`<!doctype html><html><head><title>AgentCall AI — Company Report</title>
+      <style>
+        body{font-family:Segoe UI,Roboto,-apple-system,Helvetica,Arial,sans-serif;margin:0;background:#f1f5f9;color:#0f172a;}
+        .sheet{max-width:820px;margin:24px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;}
+        .hero{background:linear-gradient(135deg,#7c3f1d,#b45309);color:#fff;padding:24px 28px;}
+        .hero h1{margin:0;font-size:22px;letter-spacing:.5px;} .hero p{margin:4px 0 0;opacity:.85;font-size:13px;}
+        .body{padding:24px 28px;}
+        h2{font-size:13px;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;border-bottom:1px solid #e2e8f0;padding-bottom:8px;margin:28px 0 12px;}
+        table{width:100%;border-collapse:collapse;margin-top:8px;}
+        .footer{background:#f8fafc;border-top:1px solid #e2e8f0;padding:16px 28px;font-size:11px;color:#94a3b8;}
+        @media print { body{background:#fff;} .sheet{border:none;margin:0;box-shadow:none;} }
+      </style></head><body>
+      <div class="sheet">
+        <div class="hero">
+          <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;opacity:.75;">AgentCall AI</div>
+          <h1>${companyName || "Company"} — Operational Report</h1>
+          <p>${d.period.label} · generated ${new Date(d.generatedAt).toLocaleString()} · vs ${d.comparison.label}</p>
+        </div>
+        <div class="body">
+          <h2>Key Performance Indicators</h2>
+          <table>${rowsHtml}</table>
+          <h2>Call Outcomes</h2>
+          <table>${outcomeRows || "<tr><td style='padding:8px 12px;color:#94a3b8;'>No outcome data in this period.</td></tr>"}</table>
+          <h2>AI Agent Performance</h2>
+          <table>
+            <tr style="background:#f8fafc;"><th style="text-align:left;padding:8px 12px;font-size:11px;color:#64748b;">Agent</th><th style="text-align:right;padding:8px 12px;font-size:11px;color:#64748b;">Calls</th><th style="text-align:right;padding:8px 12px;font-size:11px;color:#64748b;">Connect %</th><th style="text-align:right;padding:8px 12px;font-size:11px;color:#64748b;">Qualified</th></tr>
+            ${d.agentPerformance
+              .map(
+                (a) =>
+                  `<tr><td style="padding:6px 12px;border-bottom:1px solid #f1f5f9;font-size:12px;">${a.name} <span style="color:#94a3b8;">· ${a.role}</span></td><td style="padding:6px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-size:12px;">${a.totalCalls}</td><td style="padding:6px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-size:12px;">${a.connectRate.toFixed(1)}%</td><td style="padding:6px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-size:12px;">${a.qualifiedLeads}</td></tr>`
+              )
+              .join("") || "<tr><td style='padding:8px 12px;color:#94a3b8;'>No agent activity recorded.</td></tr>"}
+          </table>
+        </div>
+        <div class="footer">AgentCall AI · autonomous calling operations · Report period ${d.period.from} → ${d.period.to}</div>
+      </div>
+      <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 350); };</script>
+    </body></html>`);
+    win.document.close();
+    success("Company PDF report opened — use Save as PDF from the print dialog.");
+  };
+
   const periodLabel = dashboard?.period?.label ?? fmtRangeLabel(range);
 
   const callsLimit = tenantUsage?.limits?.calls ?? -1;
@@ -545,6 +648,13 @@ export function CompanyAdminView({
             className="inline-flex items-center gap-2 h-9 px-3.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.12] border border-slate-200 dark:border-white/15 text-slate-700 dark:text-white/80 disabled:opacity-40 transition-colors"
           >
             <Download className="w-3.5 h-3.5 text-brand-500 dark:text-brand-400" /> Export CSV
+          </button>
+          <button
+            onClick={handleExportPdf}
+            disabled={!dashboard}
+            className="inline-flex items-center gap-2 h-9 px-3.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.12] border border-slate-200 dark:border-white/15 text-slate-700 dark:text-white/80 disabled:opacity-40 transition-colors"
+          >
+            <Printer className="w-3.5 h-3.5 text-brand-500 dark:text-brand-400" /> PDF
           </button>
           <Link
             href="/dashboard/billing"
@@ -726,28 +836,28 @@ export function CompanyAdminView({
 
       {/* ── AI Workforce Activity Telemetry Monitor ────────────────── */}
       <section aria-label="AI Workforce Activity Monitor">
-        <div className="rounded-2xl p-5 bg-gradient-to-b from-slate-900 to-slate-950 text-white border border-slate-800 shadow-xl overflow-hidden relative">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-white/10">
+        <div className="rounded-2xl p-5 bg-white dark:bg-gradient-to-b dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden relative">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/10">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-brand-500/20 border border-brand-500/40 flex items-center justify-center">
-                <Bot className="w-5 h-5 text-brand-400" />
+                <Bot className="w-5 h-5 text-brand-600 dark:text-brand-400" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-bold tracking-tight text-white">AI Workforce Activity</h2>
+                  <h2 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">AI Workforce Activity</h2>
                   <LiveIndicator label="SWARM ONLINE" color="emerald" />
                 </div>
-                <p className="text-xs text-slate-400">Real-time autonomous voice bot orchestration & queue telemetry</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Real-time autonomous voice bot orchestration & queue telemetry</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3 flex-wrap">
-              <div className="px-3 py-1 rounded-xl bg-white/[0.06] border border-white/10 flex items-center gap-2 text-xs font-mono">
-                <span className="text-slate-400">Plan Quota:</span>
-                <span className="font-bold text-white">
+              <div className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/10 flex items-center gap-2 text-xs font-mono">
+                <span className="text-slate-500 dark:text-slate-400">Plan Quota:</span>
+                <span className="font-bold text-slate-900 dark:text-white">
                   {formatNumber(callsUsed)} / {callsUnlimited ? "∞" : formatNumber(callsLimit)}
                 </span>
-                <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div className="w-16 h-1.5 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-emerald-500 rounded-full"
                     style={{ width: `${Math.min(100, callsPct ?? 0)}%` }}
@@ -756,9 +866,9 @@ export function CompanyAdminView({
               </div>
               <Link
                 href="/dashboard/calls"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/20 text-slate-900 dark:text-white border border-slate-200 dark:border-white/15 transition-colors"
               >
-                <Phone className="w-3.5 h-3.5 text-brand-400" /> Calls Console →
+                <Phone className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" /> Calls Console →
               </Link>
             </div>
           </div>
@@ -768,22 +878,22 @@ export function CompanyAdminView({
             <motion.div
               whileHover={{ y: -3 }}
               transition={{ type: "spring", stiffness: 320, damping: 22 }}
-              className="p-3 rounded-xl bg-white/[0.04] border border-white/5 hover:border-emerald-500/40 hover:bg-emerald-500/[0.06] transition-colors group/fleet"
+              className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/5 hover:border-emerald-500/40 hover:bg-emerald-500/[0.06] transition-colors group/fleet"
             >
-              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
                 <span>Active Channels</span>
-                <span className="text-emerald-400 font-mono font-semibold">Ready</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-mono font-semibold">Ready</span>
               </div>
-              <p className="text-lg font-bold font-mono text-white group-hover/fleet:text-emerald-300 transition-colors">
+              <p className="text-lg font-bold font-mono text-slate-900 dark:text-white group-hover/fleet:text-emerald-600 dark:group-hover/fleet:text-emerald-300 transition-colors">
                 {kpis?.totalCalls ? Math.min(12, Math.max(1, Math.round(kpis.totalCalls * 0.05))) : 0}
-                <span className="text-xs font-normal text-slate-500 font-sans ml-1">in flight</span>
+                <span className="text-xs font-normal text-slate-400 dark:text-slate-500 font-sans ml-1">in flight</span>
               </p>
               <div className="flex gap-1 mt-2">
                 {[1, 2, 3, 4, 5, 6, 7].map((bar, idx) => (
                   <div
                     key={bar}
                     className={`h-1.5 flex-1 rounded-full transition-colors ${
-                      idx < 4 ? "bg-emerald-500" : "bg-white/10"
+                      idx < 4 ? "bg-emerald-500" : "bg-slate-200 dark:bg-white/10"
                     }`}
                   />
                 ))}
@@ -793,24 +903,24 @@ export function CompanyAdminView({
             <motion.div
               whileHover={{ y: -3 }}
               transition={{ type: "spring", stiffness: 320, damping: 22 }}
-              className="p-3 rounded-xl bg-white/[0.04] border border-white/5 hover:border-amber-400/40 hover:bg-amber-400/[0.06] transition-colors group/fleet"
+              className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/5 hover:border-amber-400/40 hover:bg-amber-400/[0.06] transition-colors group/fleet"
             >
-              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
                 <span>Swarm Buffer Depth</span>
-                <span className={`font-mono font-semibold ${queuedDepth > 0 ? "text-amber-400" : "text-emerald-400"}`}>
+                <span className={`font-mono font-semibold ${queuedDepth > 0 ? "text-amber-500 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`}>
                   {queuedDepth > 0 ? "Queued" : "Empty"}
                 </span>
               </div>
-              <p className="text-lg font-bold font-mono text-white group-hover/fleet:text-amber-300 transition-colors">
+              <p className="text-lg font-bold font-mono text-slate-900 dark:text-white group-hover/fleet:text-amber-600 dark:group-hover/fleet:text-amber-300 transition-colors">
                 {queuedDepth}
-                <span className="text-xs font-normal text-slate-500 font-sans ml-1">leads queued</span>
+                <span className="text-xs font-normal text-slate-400 dark:text-slate-500 font-sans ml-1">leads queued</span>
               </p>
               <div className="flex gap-1 mt-2">
                 {[1, 2, 3, 4, 5].map((bar, idx) => (
                   <div
                     key={bar}
                     className={`h-1.5 flex-1 rounded-full transition-colors ${
-                      queuedDepth > 0 ? (idx === 0 ? "bg-amber-400" : "bg-white/10") : "bg-white/10"
+                      queuedDepth > 0 ? (idx === 0 ? "bg-amber-400" : "bg-slate-200 dark:bg-white/10") : "bg-slate-200 dark:bg-white/10"
                     }`}
                   />
                 ))}
@@ -820,22 +930,22 @@ export function CompanyAdminView({
             <motion.div
               whileHover={{ y: -3 }}
               transition={{ type: "spring", stiffness: 320, damping: 22 }}
-              className="p-3 rounded-xl bg-white/[0.04] border border-white/5 hover:border-cyan-400/40 hover:bg-cyan-400/[0.06] transition-colors group/fleet"
+              className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/5 hover:border-cyan-400/40 hover:bg-cyan-400/[0.06] transition-colors group/fleet"
             >
-              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
                 <span>Speech Sentiment DSP</span>
-                <span className="text-cyan-400 font-mono font-semibold">Analyzer</span>
+                <span className="text-cyan-600 dark:text-cyan-400 font-mono font-semibold">Analyzer</span>
               </div>
-              <p className="text-lg font-bold font-mono text-white group-hover/fleet:text-cyan-300 transition-colors">
+              <p className="text-lg font-bold font-mono text-slate-900 dark:text-white group-hover/fleet:text-cyan-600 dark:group-hover/fleet:text-cyan-300 transition-colors">
                 {speechQuality.toFixed(0)}%
-                <span className="text-xs font-normal text-slate-500 font-sans ml-1">positive</span>
+                <span className="text-xs font-normal text-slate-400 dark:text-slate-500 font-sans ml-1">positive</span>
               </p>
               <div className="flex gap-1 mt-2">
                 {[1, 2, 3, 4, 5, 6].map((bar, idx) => (
                   <div
                     key={bar}
                     className={`h-1.5 flex-1 rounded-full transition-colors ${
-                      idx < desiredBars ? "bg-cyan-400" : "bg-white/10"
+                      idx < desiredBars ? "bg-cyan-500 dark:bg-cyan-400" : "bg-slate-200 dark:bg-white/10"
                     }`}
                   />
                 ))}
@@ -845,22 +955,22 @@ export function CompanyAdminView({
             <motion.div
               whileHover={{ y: -3 }}
               transition={{ type: "spring", stiffness: 320, damping: 22 }}
-              className="p-3 rounded-xl bg-white/[0.04] border border-white/5 hover:border-purple-400/40 hover:bg-purple-400/[0.06] transition-colors group/fleet"
+              className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/5 hover:border-purple-400/40 hover:bg-purple-400/[0.06] transition-colors group/fleet"
             >
-              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
                 <span>Autonomous Desks</span>
-                <span className="text-purple-400 font-mono font-semibold">EN · HI · TE</span>
+                <span className="text-purple-600 dark:text-purple-400 font-mono font-semibold">EN · HI · TE</span>
               </div>
-              <p className="text-lg font-bold font-mono text-white group-hover/fleet:text-purple-300 transition-colors">
+              <p className="text-lg font-bold font-mono text-slate-900 dark:text-white group-hover/fleet:text-purple-600 dark:group-hover/fleet:text-purple-300 transition-colors">
                 {agentLanguageCounts.all || 0}
-                <span className="text-xs font-normal text-slate-500 font-sans ml-1">agents active</span>
+                <span className="text-xs font-normal text-slate-400 dark:text-slate-500 font-sans ml-1">agents active</span>
               </p>
               <div className="flex gap-1 mt-2">
                 {[1, 2, 3, 4].map((bar, idx) => (
                   <div
                     key={bar}
                     className={`h-1.5 flex-1 rounded-full transition-colors ${
-                      idx < 3 ? "bg-purple-400" : "bg-white/10"
+                      idx < 3 ? "bg-purple-500 dark:bg-purple-400" : "bg-slate-200 dark:bg-white/10"
                     }`}
                   />
                 ))}
@@ -1204,11 +1314,52 @@ export function CompanyAdminView({
         </div>
       </div>
 
+      {/* ── Pipeline Funnel · Defect Monitor · Revenue Track ─── */} 
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
+        <PipelineFunnel kpis={kpis} prev={prev} isLoading={isLoading} />
+        <CallDefectPanel kpis={kpis} timeSeries={dashboard?.timeSeries} isLoading={isLoading} />
+        <ClosedWonRevenue kpis={kpis} prev={prev} isLoading={isLoading} />
+      </div>
+
+      {/* ── Live Events · Upcoming Schedule · Spend ───────────── */}
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
+        <LiveEventFeed />
+        <UpcomingSchedule />
+        <SpendBurnRate kpis={kpis} tenantUsage={tenantUsage} isLoading={isLoading} />
+      </div>
+
+      {/* ── Inventory Health · Scheduled Digest ──────────────── */}
+      <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
+        <InventoryHealth />
+        {canManageDigest && <ScheduledDigest />}
+      </div>
+
+      {/* ── Ops Command: Campaigns · Automations · Spend ROI ───── */}
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
+        <CampaignCommand dashboard={dashboard} isLoading={isLoading} onRefresh={onRefresh} />
+        <AutomationRunLog />
+        <CostPerLead dashboard={dashboard} isLoading={isLoading} />
+      </div>
+
+      {/* ── Infra: Integrations · Knowledge · Leaders ─────────── */}
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
+        <IntegrationHealth />
+        <KnowledgeHealth />
+        <AgentLeaderboard dashboard={dashboard} isLoading={isLoading} />
+      </div>
+
+      {/* ── Quality: Scorecard · Peak Hours · Compliance ──────── */}
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
+        <CallQualityScorecard dashboard={dashboard} isLoading={isLoading} />
+        <PeakHourAdvisor range={range} />
+        <ComplianceSnapshot dashboard={dashboard} isLoading={isLoading} />
+      </div>
+
+      {/* ── Missed Revenue Impact Banner ──────────────────────── */}
+      <MissedRevenue dashboard={dashboard} isLoading={isLoading} />
+
       {/* ── Business ROI & Headcount Replacement Intelligence ── */}
       <EnterpriseRoiCalculator kpis={kpis} />
-
-      {/* ── Peak Dialing Hours & Connect Rate Heatmap ────────── */}
-      <PeakHoursHeatmap />
 
       {/* ── Customer Objection Radar & Knowledge Gap Defect Finder ── */}
       <ObjectionMatrix />
@@ -1593,12 +1744,6 @@ export function CompanyAdminView({
           })}
         </div>
       </div>
-
-      {/* ── TRAI, DLT & NDNC Compliance Radar ────────────────── */}
-      <TraiComplianceRadar />
-
-      {/* ── Enterprise Pipeline Sync Health ──────────────────── */}
-      <IntegrationSyncHealth />
 
       {/* Voice Simulator Modal for Quick Testing */}
       <AgentVoiceSimulatorModal

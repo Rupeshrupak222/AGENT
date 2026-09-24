@@ -91,6 +91,15 @@ export class CallsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
+      // Only super_admin, company_admin and manager may use the platform
+      const allowedRoles = ['super_admin', 'superadmin', 'owner', 'company_admin', 'admin', 'manager', 'supervisor'];
+      if (!allowedRoles.includes((user.role || '').toLowerCase())) {
+        this.logger.warn(`Connection rejected: unsupported role ${user.role} (${client.id})`);
+        client.emit('error', { message: 'Access restricted: unsupported role' });
+        client.disconnect();
+        return;
+      }
+
       // Validate tenant is active
       const tenant = await this.prisma.tenant.findUnique({
         where: { id: user.tenantId },
@@ -167,11 +176,6 @@ export class CallsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         userId: client.userId,
       });
       return { event: 'error', message: 'Call not found' };
-    }
-
-    // Role-based access: viewer cannot join call rooms
-    if (client.role === 'viewer') {
-      return { event: 'error', message: 'Viewers cannot join call rooms' };
     }
 
     client.join(`call:${data.callId}`);

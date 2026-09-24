@@ -1,4 +1,10 @@
+import * as path from 'path';
+import * as dotenv from '../backend/node_modules/dotenv';
 import { PrismaClient } from '@prisma/client';
+
+dotenv.config({ path: path.resolve(__dirname, '../backend/.env') });
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config();
 
 if (!process.env.DATABASE_URL) {
   process.env.DATABASE_URL = 'postgresql://postgres:postgres_dev_password@localhost:5432/agentcall_db?schema=public';

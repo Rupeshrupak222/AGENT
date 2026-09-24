@@ -304,10 +304,10 @@ describe('Day 25 Staging Release Candidate & Production Safety Suite', () => {
     let metrics: MetricsService;
 
     beforeEach(() => {
-      mockJwt = { verifyAsync: jest.fn().mockResolvedValue({ sub: 'user-1', tenantId: 'tenant-a', role: 'agent' }) };
+      mockJwt = { verifyAsync: jest.fn().mockResolvedValue({ sub: 'user-1', tenantId: 'tenant-a', role: 'manager' }) };
       mockPrisma = {
         isConnected: true,
-        user: { findUnique: jest.fn().mockResolvedValue({ id: 'user-1', tenantId: 'tenant-a', role: 'agent', isActive: true, name: 'Agent One', email: 'a@x.io' }) },
+        user: { findUnique: jest.fn().mockResolvedValue({ id: 'user-1', tenantId: 'tenant-a', role: 'manager', isActive: true, name: 'Agent One', email: 'a@x.io' }) },
         tenant: { findUnique: jest.fn().mockResolvedValue({ id: 'tenant-a', isActive: true }) },
         call: { findFirst: jest.fn() },
         campaign: { findFirst: jest.fn() },

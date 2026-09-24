@@ -39,7 +39,7 @@ describe('AgentsService Operator & Scoping Suite', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('throws ForbiddenException if operatorUserId is not an active agent-role user in the tenant', async () => {
+    it('throws ForbiddenException if operatorUserId is not an active manager/company-admin user in the tenant', async () => {
       mockPrisma.user.findFirst.mockResolvedValue(null);
 
       await expect(
@@ -52,12 +52,12 @@ describe('AgentsService Operator & Scoping Suite', () => {
       ).rejects.toThrow(ForbiddenException);
 
       expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({
-        where: { id: 'op-invalid', tenantId: 'tenant-1', role: 'agent', isActive: true },
+        where: { id: 'op-invalid', tenantId: 'tenant-1', role: { in: ['manager', 'company_admin'] }, isActive: true },
         select: { id: true },
       });
     });
 
-    it('allows company_admin to assign an active agent-role operator', async () => {
+    it('allows company_admin to assign an active manager-role operator', async () => {
       mockPrisma.user.findFirst.mockResolvedValue({ id: 'op-valid' });
       mockPrisma.aIAgent.create.mockResolvedValue({
         id: 'agent-1',

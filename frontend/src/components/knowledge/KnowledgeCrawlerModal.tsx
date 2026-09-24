@@ -181,11 +181,11 @@ export const KnowledgeCrawlerModal: React.FC<KnowledgeCrawlerModalProps> = ({
             {/* Progress Bar */}
             {isCrawling && (
               <div className="space-y-1.5 pt-1 animate-in fade-in">
-                <div className="flex justify-between text-[11px] text-white/60">
+                <div className="flex justify-between text-[11px] text-slate-600 dark:text-white/60">
                   <span>Extracting DOM trees & generating vector embeddings...</span>
-                  <span className="font-mono text-emerald-400">{crawlProgress}%</span>
+                  <span className="font-mono text-emerald-600 dark:text-emerald-400">{crawlProgress}%</span>
                 </div>
-                <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-300"
                     style={{ width: `${crawlProgress}%` }}
@@ -195,43 +195,43 @@ export const KnowledgeCrawlerModal: React.FC<KnowledgeCrawlerModalProps> = ({
             )}
 
             {crawlComplete && (
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs text-emerald-300">
+              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span>
                     Knowledge Sync Active: <strong>{extractedFaqs.length} Verified QA pairs</strong> indexed in Pinecone/pgvector.
                   </span>
                 </div>
-                <span className="text-[10px] font-mono text-white/50">0 Contradictions Found</span>
+                <span className="text-[10px] font-mono text-slate-500 dark:text-white/50">0 Contradictions Found</span>
               </div>
             )}
           </div>
 
           {/* Section 2: Ingested FAQ Catalog */}
-          <div className="p-5 rounded-2xl bg-black/40 border border-white/10 space-y-3">
+          <div className="p-5 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
                 Ingested Knowledge Base Records
               </h4>
-              <span className="text-[11px] text-white/40">Auto-Refreshed Every 24 Hours</span>
+              <span className="text-[11px] text-slate-500 dark:text-white/40">Auto-Refreshed Every 24 Hours</span>
             </div>
 
             <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
               {extractedFaqs.map((faq) => (
-                <div key={faq.id} className="p-3.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-1.5">
+                <div key={faq.id} className="p-3.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-white/5 space-y-1.5 shadow-xs">
                   <div className="flex items-start justify-between gap-3">
-                    <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <HelpCircle className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                    <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <HelpCircle className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 flex-shrink-0" />
                       {faq.question}
                     </p>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex-shrink-0">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 flex-shrink-0">
                       {faq.confidence}% Confidence
                     </span>
                   </div>
-                  <p className="text-xs text-slate-300 leading-relaxed pl-5">{faq.answer}</p>
-                  <div className="pl-5 pt-1 flex items-center gap-2 text-[10px] text-white/40">
-                    <ExternalLink className="w-3 h-3 text-white/30" />
+                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed pl-5">{faq.answer}</p>
+                  <div className="pl-5 pt-1 flex items-center gap-2 text-[10px] text-slate-400 dark:text-white/40">
+                    <ExternalLink className="w-3 h-3 text-slate-400 dark:text-white/30" />
                     <span className="truncate max-w-sm font-mono">{faq.sourceUrl}</span>
                   </div>
                 </div>
@@ -240,12 +240,12 @@ export const KnowledgeCrawlerModal: React.FC<KnowledgeCrawlerModalProps> = ({
           </div>
 
           {/* Section 3: Semantic Retrieval Playground */}
-          <div className="p-5 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 space-y-3">
-            <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-              <Search className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="p-5 rounded-2xl bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-500/30 space-y-3">
+            <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+              <Search className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
               Agent Knowledge Retrieval Playground
             </h4>
-            <p className="text-[11px] text-white/50">
+            <p className="text-[11px] text-slate-600 dark:text-white/50">
               Test how an autonomous voice agent retrieves answers to live caller inquiries from this knowledge forge.
             </p>
 
@@ -255,7 +255,7 @@ export const KnowledgeCrawlerModal: React.FC<KnowledgeCrawlerModalProps> = ({
                 placeholder="Ask a customer question (e.g. Can I withdraw my money anytime?)..."
                 value={testQuery}
                 onChange={(e) => setTestQuery(e.target.value)}
-                className="flex-1 px-3.5 py-2 rounded-xl bg-black/50 border border-white/15 text-xs text-white placeholder-white/30 focus:outline-none focus:border-emerald-500"
+                className="flex-1 px-3.5 py-2 rounded-xl bg-white dark:bg-black/50 border border-slate-300 dark:border-white/15 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:border-emerald-500"
               />
               <button
                 type="submit"
@@ -268,17 +268,17 @@ export const KnowledgeCrawlerModal: React.FC<KnowledgeCrawlerModalProps> = ({
             </form>
 
             {retrievalResult && (
-              <div className="p-3.5 rounded-xl bg-black/40 border border-emerald-500/20 space-y-2 text-xs">
-                <div className="flex items-center justify-between text-emerald-400 font-bold">
+              <div className="p-3.5 rounded-xl bg-white dark:bg-black/40 border border-slate-200 dark:border-emerald-500/20 space-y-2 text-xs shadow-xs">
+                <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400 font-bold">
                   <span className="flex items-center gap-1.5">
                     <Bot className="w-3.5 h-3.5" /> Retrieved Agent Voice Answer:
                   </span>
-                  <span className="font-mono text-[10px] text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded">
+                  <span className="font-mono text-[10px] text-emerald-700 dark:text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded font-bold">
                     Cosine Similarity: {retrievalResult.similarity}
                   </span>
                 </div>
-                <p className="text-slate-200 leading-relaxed">{retrievalResult.answer}</p>
-                <div className="text-[10px] text-white/40 pt-1 font-mono">
+                <p className="text-slate-800 dark:text-slate-200 leading-relaxed">{retrievalResult.answer}</p>
+                <div className="text-[10px] text-slate-500 dark:text-white/40 pt-1 font-mono">
                   Ground Truth Citation: {retrievalResult.citation}
                 </div>
               </div>
@@ -287,9 +287,9 @@ export const KnowledgeCrawlerModal: React.FC<KnowledgeCrawlerModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between bg-slate-950/60">
-          <div className="flex items-center gap-2 text-xs text-white/40">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+        <div className="px-6 py-4 border-t border-slate-200 dark:border-white/10 flex items-center justify-between bg-slate-50 dark:bg-slate-950/60">
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-white/40">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>Hallucination Guard: Grounded-Only Responses Enforced</span>
           </div>
 
@@ -297,7 +297,7 @@ export const KnowledgeCrawlerModal: React.FC<KnowledgeCrawlerModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 dark:text-white/60 dark:hover:text-white dark:hover:bg-white/10 transition-colors"
             >
               Close
             </button>

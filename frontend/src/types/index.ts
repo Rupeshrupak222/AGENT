@@ -2,7 +2,7 @@
 // Core shared types for AgentCall AI frontend
 // ──────────────────────────────────────────
 
-export type Role = "super_admin" | "company_admin" | "manager" | "agent" | "viewer";
+export type Role = "super_admin" | "company_admin" | "manager";
 
 export type PlanType = "starter" | "growth" | "business" | "enterprise";
 

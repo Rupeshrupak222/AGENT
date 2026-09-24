@@ -19,7 +19,7 @@ export default function PermissionsPage() {
   const [resetTarget, setResetTarget] = useState<{ role: string; label: string } | null>(null);
   const [resetting, setResetting] = useState(false);
 
-  const editableRoles = ["company_admin", "manager", "agent", "viewer"];
+  const editableRoles = ["company_admin", "manager"];
 
   const fetchData = useCallback(async () => {
     setLoading(true);

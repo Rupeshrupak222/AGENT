@@ -179,3 +179,18 @@ After deployment, verify that all services are operational:
      - Platform Super Admin: `superadmin@agentcall.ai` / `Demo@1234`
      - Company Executive Admin: `admin@acmecorp.com` / `Demo@1234`
      - Operations Manager: `manager@acmecorp.com` / `Demo@1234`
+
+## 6. Company Operations Email Digest
+
+Company admins can enable a scheduled ops digest from **Dashboard → Overview → Scheduled Email Digest**, delivered daily (12:00 UTC+0 server time), weekly, or monthly. The payload is a compact HTML summary of KPIs, alerts, funnel, and agent performance.
+
+- The digest runs on a server-side cron in the analytics module (`AnalyticsService.deliverCompanyDigests`).
+- **Database migration required**: migration `20260922000000_company_report_digest` adds `tenantId` / `companyName` + index to the `ScheduledReport` table. It is applied by the normal `npx prisma migrate deploy` step (Section 2). If you are deploying to an existing database, apply this migration before relying on the feature.
+- **Email delivery** uses the Resend provider (`ResendEmailAdapter`). Set these in the backend environment to actually send mail:
+  ```bash
+  RESEND_API_KEY=re_xxxxxxxx
+  RESEND_FROM_EMAIL=notifications@agentcall.ai
+  RESEND_FROM_NAME=AgentCall
+  ```
+  Without `RESEND_API_KEY`, digests are still generated and marked `generated`, but no email is sent. Recipients default to the tenant's `company_admin`/`admin`/`super_admin` users when none are configured.
+- Permission: the digest endpoints require `ANALYTICS_EXPORT`, which is included in the `company_admin` and `super_admin` roles.

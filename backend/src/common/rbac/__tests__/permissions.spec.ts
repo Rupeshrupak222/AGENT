@@ -99,50 +99,42 @@ describe('RBAC Permission System', () => {
       });
     });
 
-    describe('agent', () => {
-      it('should have limited operational permissions', () => {
-        expect(hasPermission('agent', LEAD_VIEW)).toBe(true);
-        expect(hasPermission('agent', LEAD_UPDATE)).toBe(true);
-        expect(hasPermission('agent', CALL_VIEW)).toBe(true);
-        expect(hasPermission('agent', CALL_INITIATE)).toBe(true);
-        expect(hasPermission('agent', CALL_DISPOSITION)).toBe(true);
-        expect(hasPermission('agent', RECORDING_VIEW)).toBe(true);
+    describe('deprecated roles (agent/viewer) are fully denied', () => {
+      it('should deny all permissions to the removed agent role', () => {
+        expect(hasPermission('agent', LEAD_VIEW)).toBe(false);
+        expect(hasPermission('agent', LEAD_UPDATE)).toBe(false);
+        expect(hasPermission('agent', CALL_VIEW)).toBe(false);
+        expect(hasPermission('agent', CALL_INITIATE)).toBe(false);
+        expect(hasPermission('agent', CALL_DISPOSITION)).toBe(false);
+        expect(hasPermission('agent', RECORDING_VIEW)).toBe(false);
       });
 
-      it('should NOT have creation permissions', () => {
+      it('should deny all permissions to the removed viewer role', () => {
+        expect(hasPermission('viewer', TENANT_VIEW)).toBe(false);
+        expect(hasPermission('viewer', TEAM_VIEW)).toBe(false);
+        expect(hasPermission('viewer', AI_AGENT_VIEW)).toBe(false);
+        expect(hasPermission('viewer', LEAD_VIEW)).toBe(false);
+        expect(hasPermission('viewer', CALL_VIEW)).toBe(false);
+        expect(hasPermission('viewer', RECORDING_VIEW)).toBe(false);
+        expect(hasPermission('viewer', ANALYTICS_VIEW)).toBe(false);
+        expect(hasPermission('viewer', AUTOMATION_VIEW)).toBe(false);
+        expect(hasPermission('viewer', CALENDAR_VIEW)).toBe(false);
+        expect(hasPermission('viewer', AUDIT_LOG_VIEW)).toBe(false);
+      });
+
+      it('should not award manager-level permissions to removed roles', () => {
         expect(hasPermission('agent', LEAD_CREATE)).toBe(false);
         expect(hasPermission('agent', AI_AGENT_CREATE)).toBe(false);
         expect(hasPermission('agent', CAMPAIGN_CREATE)).toBe(false);
-      });
-
-      it('should NOT have management permissions', () => {
         expect(hasPermission('agent', BILLING_VIEW)).toBe(false);
         expect(hasPermission('agent', TEAM_INVITE)).toBe(false);
         expect(hasPermission('agent', SECURITY_VIEW)).toBe(false);
         expect(hasPermission('agent', AI_PROMPT_UPDATE)).toBe(false);
-      });
-
-      it('should NOT have monitoring/intervention permissions', () => {
         expect(hasPermission('agent', CALL_MONITOR)).toBe(false);
         expect(hasPermission('agent', CALL_INTERVENE)).toBe(false);
       });
-    });
 
-    describe('viewer', () => {
-      it('should have read-only permissions', () => {
-        expect(hasPermission('viewer', TENANT_VIEW)).toBe(true);
-        expect(hasPermission('viewer', TEAM_VIEW)).toBe(true);
-        expect(hasPermission('viewer', AI_AGENT_VIEW)).toBe(true);
-        expect(hasPermission('viewer', LEAD_VIEW)).toBe(true);
-        expect(hasPermission('viewer', CALL_VIEW)).toBe(true);
-        expect(hasPermission('viewer', RECORDING_VIEW)).toBe(true);
-        expect(hasPermission('viewer', ANALYTICS_VIEW)).toBe(true);
-        expect(hasPermission('viewer', AUTOMATION_VIEW)).toBe(true);
-        expect(hasPermission('viewer', CALENDAR_VIEW)).toBe(true);
-        expect(hasPermission('viewer', AUDIT_LOG_VIEW)).toBe(true);
-      });
-
-      it('should NOT have any write permissions', () => {
+      it('should not award any write/manage permissions to removed roles', () => {
         expect(hasPermission('viewer', LEAD_CREATE)).toBe(false);
         expect(hasPermission('viewer', LEAD_UPDATE)).toBe(false);
         expect(hasPermission('viewer', LEAD_DELETE)).toBe(false);
@@ -158,9 +150,6 @@ describe('RBAC Permission System', () => {
         expect(hasPermission('viewer', RECORDING_EXPORT)).toBe(false);
         expect(hasPermission('viewer', LEAD_EXPORT)).toBe(false);
         expect(hasPermission('viewer', ANALYTICS_EXPORT)).toBe(false);
-      });
-
-      it('should NOT have monitoring permissions', () => {
         expect(hasPermission('viewer', CALL_MONITOR)).toBe(false);
         expect(hasPermission('viewer', CALL_INTERVENE)).toBe(false);
       });
@@ -187,33 +176,30 @@ describe('RBAC Permission System', () => {
 
   describe('hasAnyPermission', () => {
     it('should return true when user has at least one permission', () => {
-      expect(hasAnyPermission('agent', [BILLING_MANAGE, LEAD_VIEW])).toBe(true);
+      expect(hasAnyPermission('manager', [LEAD_CREATE, LEAD_VIEW])).toBe(true);
     });
 
     it('should return false when user has none of the permissions', () => {
-      expect(hasAnyPermission('viewer', [LEAD_CREATE, BILLING_MANAGE])).toBe(false);
+      expect(hasAnyPermission('manager', [LEAD_EXPORT, BILLING_MANAGE])).toBe(false);
     });
   });
 
   describe('role-permission map completeness', () => {
-    it('should have entries for all 5 roles', () => {
+    it('should have entries for all 3 canonical roles', () => {
       expect(ROLE_PERMISSIONS).toHaveProperty('super_admin');
       expect(ROLE_PERMISSIONS).toHaveProperty('company_admin');
       expect(ROLE_PERMISSIONS).toHaveProperty('manager');
-      expect(ROLE_PERMISSIONS).toHaveProperty('agent');
-      expect(ROLE_PERMISSIONS).toHaveProperty('viewer');
     });
 
-    it('viewer should have strictly fewer permissions than company_admin', () => {
-      const viewerPerms = ROLE_PERMISSIONS.viewer.length;
-      const adminPerms = ROLE_PERMISSIONS.company_admin.length;
-      expect(viewerPerms).toBeLessThan(adminPerms);
+    it('should NOT have entries for removed roles', () => {
+      expect(ROLE_PERMISSIONS).not.toHaveProperty('agent');
+      expect(ROLE_PERMISSIONS).not.toHaveProperty('viewer');
     });
 
-    it('agent should have strictly fewer permissions than manager', () => {
-      const agentPerms = ROLE_PERMISSIONS.agent.length;
+    it('manager should have strictly fewer permissions than company_admin', () => {
       const managerPerms = ROLE_PERMISSIONS.manager.length;
-      expect(agentPerms).toBeLessThan(managerPerms);
+      const adminPerms = ROLE_PERMISSIONS.company_admin.length;
+      expect(managerPerms).toBeLessThan(adminPerms);
     });
   });
 });

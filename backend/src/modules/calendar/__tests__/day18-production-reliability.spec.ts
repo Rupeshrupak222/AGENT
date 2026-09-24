@@ -226,6 +226,12 @@ async function nextSlot(ctx: Ctx, offsetDays = 1): Promise<any> {
 describe('DAY 18 — Production Reliability & Security Test Suite', () => {
   let ctx: Ctx;
 
+  beforeAll(() => {
+    process.env.CALCOM_API_KEY = '';
+    process.env.CALCOM_API_URL = '';
+    process.env.CALCOM_EVENT_TYPE_ID = '';
+  });
+
   beforeEach(async () => {
     ctx = await buildContext();
   });

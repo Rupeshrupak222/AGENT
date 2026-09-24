@@ -856,6 +856,29 @@ export const teamApi = {
   remove: async (id: string): Promise<void> => {
     await apiClient.delete(`/users/${id}`);
   },
+
+  uploadMyAvatar: async (file: File): Promise<AuthUser> => {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await apiClient.post<ApiResponseWrapper<AuthUser>>(
+      "/users/me/avatar",
+      form,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+    return res.data.data;
+  },
+
+  updateMyProfile: async (dto: {
+    name?: string;
+    phone?: string;
+    settings?: Record<string, any>;
+  }): Promise<AuthUser> => {
+    const res = await apiClient.patch<ApiResponseWrapper<AuthUser>>(
+      "/users/me",
+      dto
+    );
+    return res.data.data;
+  },
 };
 
 // ── Tenant / Workspace Config API ─────────────────────────────────
@@ -2786,6 +2809,32 @@ export const companyDashboardApi = {
 // ── Company Usage API ─────────────────────────────────────────────
 export const companyUsageApi = {
   get: (): Promise<TenantUsage> => tenantApi.usage(),
+};
+
+// ── Company Report / Email Digest API ─────────────────────────────
+export interface CompanyDigestSetting {
+  id: string | null;
+  enabled: boolean;
+  frequency: "daily" | "weekly" | "monthly";
+  recipients: string[];
+  lastStatus: string | null;
+  lastRunAt: string | null;
+  nextRunAt: string | null;
+}
+
+export const companyReportApi = {
+  getDigest: async (): Promise<CompanyDigestSetting> => {
+    const res = await apiClient.get<ApiResponseWrapper<CompanyDigestSetting>>("/analytics/report/digest");
+    return res.data.data;
+  },
+  setDigest: async (dto: {
+    enabled?: boolean;
+    frequency?: string;
+    recipients?: string[];
+  }): Promise<CompanyDigestSetting> => {
+    const res = await apiClient.post<ApiResponseWrapper<CompanyDigestSetting>>("/analytics/report/digest", dto);
+    return res.data.data;
+  },
 };
 
 // ── Company Audit API ─────────────────────────────────────────────

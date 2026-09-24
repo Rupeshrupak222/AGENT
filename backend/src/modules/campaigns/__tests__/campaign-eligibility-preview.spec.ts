@@ -7,6 +7,7 @@ describe('CampaignsService - Eligibility Preview', () => {
   let mockEligibility: any;
   let mockQueue: any;
   let mockTelephony: any;
+  let mockFeatureFlags: any;
 
   beforeEach(() => {
     mockPrisma = {
@@ -91,10 +92,16 @@ describe('CampaignsService - Eligibility Preview', () => {
       registerCallStatusHook: jest.fn(),
     };
 
+    mockFeatureFlags = {
+      isEnabled: jest.fn().mockResolvedValue(true),
+      requireEnabled: jest.fn().mockResolvedValue(undefined),
+    };
+
     service = new CampaignsService(
       mockPrisma as any,
       mockEligibility as any,
       mockQueue as any,
+      mockFeatureFlags as any,
       mockTelephony as any,
     );
   });

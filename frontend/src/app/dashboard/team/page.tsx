@@ -32,7 +32,7 @@ const ROLE_META: Record<string, { label: string; cls: string; icon: any; blurb: 
   super_admin: { label: "Platform Owner", cls: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/30", icon: Crown, blurb: "Platform-wide ownership" },
 };
 
-const INVITE_ROLES = ["viewer", "agent", "manager"];
+const INVITE_ROLES = ["manager"];
 
 export default function TeamPage() {
   const { can } = usePermissions();
@@ -44,7 +44,7 @@ export default function TeamPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [showInvite, setShowInvite] = useState(false);
-  const [invite, setInvite] = useState({ name: "", email: "", role: "agent" });
+  const [invite, setInvite] = useState({ name: "", email: "", role: "manager" });
   const [inviting, setInviting] = useState(false);
   const [tempPwd, setTempPwd] = useState<string | null>(null);
   const [changingId, setChangingId] = useState<string | null>(null);
@@ -93,7 +93,7 @@ export default function TeamPage() {
         role: invite.role,
       });
       setShowInvite(false);
-      setInvite({ name: "", email: "", role: "agent" });
+      setInvite({ name: "", email: "", role: "manager" });
       setTempPwd((res as any)?.tempPassword ?? null);
       await load();
     } catch (e) {
@@ -289,8 +289,8 @@ export default function TeamPage() {
                       aria-label={`Change role for ${m.name}`}
                       className="h-8 rounded-lg px-2 text-[11px] font-semibold bg-white dark:bg-white/[0.06] border border-slate-200 dark:border-white/15 text-slate-700 dark:text-white/70 outline-none focus:border-brand-500 disabled:opacity-50"
                     >
-                      {["viewer", "agent", "manager"].map((r) => (
-                        <option key={r} value={r}>{ROLE_META[r].label}</option>
+                      {Array.from(new Set(["manager", "company_admin", m.role])).map((r) => (
+                        <option key={r} value={r}>{ROLE_META[r]?.label ?? r}</option>
                       ))}
                     </select>
                   )}

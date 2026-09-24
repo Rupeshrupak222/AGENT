@@ -171,9 +171,14 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                 {/* Avatar with live status indicator */}
                 <div className="relative flex-shrink-0">
                   <div
-                    className={`w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br ${roleConfig.avatarGradient} flex items-center justify-center text-2xl font-black text-white shadow-xl`}
+                    className={`w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br ${roleConfig.avatarGradient} flex items-center justify-center text-2xl font-black text-white shadow-xl overflow-hidden`}
                   >
-                    {user?.name?.[0]?.toUpperCase() ?? "U"}
+                    {user?.avatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={user.avatar} alt={user?.name || ""} className="w-full h-full object-cover" />
+                    ) : (
+                      user?.name?.[0]?.toUpperCase() ?? "U"
+                    )}
                   </div>
                   <span
                     title="Active session"

@@ -35,8 +35,6 @@ const ROLE_OPTIONS = [
   { value: "super_admin", label: "Super Admin" },
   { value: "company_admin", label: "Company Admin" },
   { value: "manager", label: "Manager" },
-  { value: "agent", label: "Agent" },
-  { value: "viewer", label: "Viewer" },
 ];
 
 const ROLE_BADGE: Record<string, { variant: "brand" | "purple" | "info" | "success" | "gray" }> = {

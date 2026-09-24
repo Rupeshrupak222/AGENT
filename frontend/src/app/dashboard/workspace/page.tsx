@@ -29,7 +29,7 @@ export default function WorkspacePage() {
   const [inviting, setInviting] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<any>("agent");
+  const [inviteRole, setInviteRole] = useState<any>("manager");
   const { success: toastSuccess, error: toastError } = useToast();
 
   const loadMembers = async () => {
@@ -108,12 +108,11 @@ export default function WorkspacePage() {
       </div>
 
       {/* Workspace overview */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {[
           { label: "Active Seats", value: `${members.length}`, color: "text-slate-900 dark:text-white" },
           { label: "Admins", value: members.filter(m => m.role === "company_admin").length, color: "text-brand-600 dark:text-brand-400" },
           { label: "Managers", value: members.filter(m => m.role === "manager").length, color: "text-purple-600 dark:text-purple-400" },
-          { label: "Agents", value: members.filter(m => m.role === "agent").length, color: "text-emerald-600 dark:text-emerald-400" },
         ].map((s) => (
           <div key={s.label} className="p-4 rounded-2xl panel-card border border-slate-200 dark:border-white/[0.08] shadow-lg">
             <p className={`text-2xl font-mono font-black ${s.color}`}>{s.value}</p>
@@ -186,8 +185,6 @@ export default function WorkspacePage() {
                         ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-500/30"
                         : member.role === "manager"
                         ? "bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30"
-                        : member.role === "viewer"
-                        ? "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/60 border border-slate-200 dark:border-white/15"
                         : "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30"
                     }`}>
                       {member.role.replace("_", " ")}
@@ -240,10 +237,8 @@ export default function WorkspacePage() {
                   onChange={e => setInviteRole(e.target.value as any)}
                   className="w-full h-10 rounded-xl px-3 text-xs bg-input border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white outline-none"
                 >
-                  <option value="agent">Agent (Operates assigned AI voice agents & calls)</option>
                   <option value="manager">Manager (Can manage agents, team & campaigns)</option>
                   <option value="company_admin">Company Admin (Full workspace & billing access)</option>
-                  <option value="viewer">Viewer (Read-only access)</option>
                 </select>
               </div>
 

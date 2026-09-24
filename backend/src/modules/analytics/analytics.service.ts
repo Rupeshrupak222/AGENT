@@ -1,8 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
+import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PLAN_LIMITS, isUnlimited } from '../../common/plans';
 import { ScopedActor, agentScope, leadScope, isManager } from '../../common/scope';
+import { ResendEmailAdapter } from '../automations/providers/email/resend.adapter';
 
 export type DashboardGranularity = 'hour' | 'day' | 'week' | 'month';
 export type DashboardSeverity = 'critical' | 'warning' | 'info';
@@ -26,7 +29,14 @@ export class AnalyticsService {
     avgSentiment: 0, aiAnalyses: 0,
   };
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private config?: ConfigService,
+  ) {
+    if (!this.prisma.isConnected) {
+      this.logger.warn('Company digest delivery paused: database offline');
+    }
+  }
 
   /** Agent IDs a manager supervises or an agent operates; null when the actor is unscoped. */
   private async managedAgentIds(tenantId: string, actor?: ScopedActor | null): Promise<string[] | null> {
@@ -747,5 +757,215 @@ export class AnalyticsService {
       agentPerformance,
       generatedAt: new Date().toISOString(),
     };
+  }
+
+  // ── Company Email Digest (opt-in weekly/daily/monthly report) ────
+
+  async getCompanyDigest(tenantId: string) {
+    if (!this.prisma.isConnected) {
+      return { enabled: false, frequency: 'weekly', recipients: [], lastStatus: null, nextRunAt: null, lastRunAt: null };
+    }
+    const existing = await this.prisma.scheduledReport.findFirst({
+      where: { tenantId, type: 'company-digest' },
+      orderBy: { createdAt: 'desc' },
+    });
+    return {
+      id: existing?.id ?? null,
+      enabled: existing?.enabled ?? false,
+      frequency: (existing?.frequency as string) ?? 'weekly',
+      recipients: existing?.recipients ?? [],
+      lastStatus: existing?.lastStatus ?? null,
+      lastRunAt: existing?.lastRunAt?.toISOString() ?? null,
+      nextRunAt: existing?.nextRunAt?.toISOString() ?? null,
+    };
+  }
+
+  async setCompanyDigest(tenantId: string, actor: ScopedActor, dto: { enabled?: boolean; frequency?: string; recipients?: string[] }) {
+    if (!this.prisma.isConnected) throw new Error('Database offline');
+    const frequency = ['daily', 'weekly', 'monthly'].includes(dto.frequency as string) ? dto.frequency as string : 'weekly';
+    const enabled = dto.enabled !== false;
+    const recipients = (Array.isArray(dto.recipients) ? dto.recipients.map(String).map((e) => e.trim()).filter(Boolean) : []);
+
+    const existing = await this.prisma.scheduledReport.findFirst({
+      where: { tenantId, type: 'company-digest' },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const nextRunAt = this.computeDigestNextRun(frequency);
+
+    const saved = existing
+      ? await this.prisma.scheduledReport.update({
+          where: { id: existing.id },
+          data: { enabled, frequency, recipients, nextRunAt },
+        })
+      : await this.prisma.scheduledReport.create({
+          data: {
+            name: 'Company executive digest',
+            type: 'company-digest',
+            frequency,
+            recipients,
+            format: 'html',
+            enabled,
+            tenantId,
+            companyName: await this.companyName(tenantId),
+            createdById: actor?.id ?? null,
+            nextRunAt,
+          },
+        });
+
+    return {
+      id: saved.id,
+      enabled: saved.enabled,
+      frequency: saved.frequency,
+      recipients: saved.recipients,
+      lastStatus: saved.lastStatus,
+      lastRunAt: saved.lastRunAt?.toISOString() ?? null,
+      nextRunAt: saved.nextRunAt?.toISOString() ?? null,
+    };
+  }
+
+  @Cron('0 12 * * *', { name: 'company-digest-delivery' })
+  async deliverCompanyDigests() {
+    if (!this.prisma.isConnected) {
+      this.logger.warn('Company digest cron skipped (database offline)');
+      return;
+    }
+    const now = new Date();
+    const due = await this.prisma.scheduledReport.findMany({
+      where: { tenantId: { not: null }, type: 'company-digest', enabled: true, nextRunAt: { lte: now } },
+      take: 50,
+    });
+
+    for (const report of due) {
+      try {
+        await this.deliverSingleDigest(report);
+      } catch (err: any) {
+        this.logger.warn(`Company digest delivery failed for ${report.tenantId}: ${err.message}`);
+        await this.prisma.scheduledReport.update({
+          where: { id: report.id },
+          data: { lastStatus: 'failed', nextRunAt: this.computeDigestNextRun(report.frequency as string) },
+        });
+      }
+    }
+  }
+
+  private async deliverSingleDigest(report: any) {
+    const tenantId = report.tenantId as string;
+    const recipients: string[] = report.recipients?.length
+      ? report.recipients
+      : await this.companyAdminEmails(tenantId);
+
+    const payload = await this.buildCompanyDigestPayload(tenantId, report.frequency as string);
+    const resendKey = this.config?.get<string>('RESEND_API_KEY', '');
+
+    let status = 'generated';
+    if (resendKey && recipients.length) {
+      try {
+        const adapter = new ResendEmailAdapter();
+        let failures = 0;
+        for (const to of recipients) {
+          const result = await adapter.sendEmail(
+            { apiKey: resendKey, fromEmail: this.config?.get('RESEND_FROM_EMAIL', 'onboarding@resend.dev') || 'onboarding@resend.dev', fromName: this.config?.get('RESEND_FROM_NAME', 'AgentCall') || 'AgentCall' },
+            { subject: payload.subject, html: payload.html, to },
+          );
+          if (result.error) failures += 1;
+        }
+        status = failures > 0 ? 'failed' : 'sent';
+      } catch (err: any) {
+        this.logger.warn(`Resend delivery failed for tenant ${tenantId}: ${err.message}`);
+        status = 'failed';
+      }
+    }
+
+    await this.prisma.scheduledReport.update({
+      where: { id: report.id },
+      data: { lastRunAt: new Date(), lastStatus: status, nextRunAt: this.computeDigestNextRun(report.frequency as string) },
+    });
+  }
+
+  private computeDigestNextRun(frequency: string): Date {
+    const next = new Date();
+    if (frequency === 'daily') next.setDate(next.getDate() + 1);
+    else if (frequency === 'monthly') next.setMonth(next.getMonth() + 1);
+    else next.setDate(next.getDate() + 7);
+    next.setHours(12, 0, 0, 0);
+    return next;
+  }
+
+  private async companyName(tenantId: string): Promise<string | null> {
+    try {
+      const t = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { name: true } });
+      return t?.name ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async companyAdminEmails(tenantId: string): Promise<string[]> {
+    try {
+      const users = await this.prisma.user.findMany({
+        where: { tenantId, isActive: true, email: { notIn: [''] } },
+        select: { email: true, role: true },
+        take: 50,
+      });
+      const emails = users.filter((u) => ['company_admin', 'admin', 'super_admin'].includes((u as any).role)).map((u) => u.email as string);
+      return Array.from(new Set(emails.filter(Boolean)));
+    } catch {
+      return [];
+    }
+  }
+
+  private async buildCompanyDigestPayload(tenantId: string, frequency: string): Promise<{ subject: string; html: string }> {
+    const now = new Date();
+    const endOffset = 24 * 60 * 60 * 1000;
+    const to = new Date(Math.min(now.getTime() + endOffset - 1, now.getTime()));
+    const from = new Date(to.getTime() - (frequency === 'daily' ? 1 : frequency === 'monthly' ? 30 : 7) * endOffset);
+    const prev = { from: new Date(from.getTime() - (to.getTime() - from.getTime())), to: new Date(from.getTime() - 1) };
+
+    const dashboard = await this.getCompanyDashboard(tenantId, { from: from.toISOString(), to: to.toISOString(), prevFrom: prev.from.toISOString(), prevTo: prev.to.toISOString(), granularity: 'day' });
+    const company = await this.companyName(tenantId);
+    const k = dashboard.kpis.current;
+    const labels: Record<string, string> = {
+      daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly',
+    };
+    const dateLabel = now.toISOString().slice(0, 10);
+    const subject = `[AgentCall] ${company || 'Company'} ${labels[frequency] || 'Periodic'} Ops Digest · ${dateLabel}`;
+
+    const rows = [
+      ['Calls handled', k.totalCalls],
+      ['Connected calls', k.connectedCalls],
+      ['Missed calls', k.missedCalls],
+      ['Failed calls', k.failedCalls],
+      ['Transferred calls', k.transferredCalls],
+      ['Inbound calls', k.inboundCalls],
+      ['Outbound calls', k.outboundCalls],
+      ['Connect rate', `${k.connectRate}%`],
+      ['Qualified leads', k.qualifiedLeads],
+      ['Appointments booked', k.appointments],
+      ['Closed won', k.closedWon],
+      ['Avg sentiment', `${k.avgSentiment}/5`],
+      ['AI analyses run', k.aiAnalyses],
+    ];
+    const rowsHtml = rows.map(([label, value]) =>
+      `<tr><td style="padding:6px 10px;border-bottom:1px solid #eee;color:#64748b;">${label}</td><td style="padding:6px 10px;border-bottom:1px solid #eee;font-weight:700;color:#0f172a;text-align:right;">${value}</td></tr>`
+    ).join('');
+
+    const html = `<!doctype html><html><body style="margin:0;background:#f1f5f9;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+      <div style="max-width:600px;margin:24px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;">
+        <div style="background:linear-gradient(135deg,#7c3f1d,#b45309);padding:20px 24px;color:#fff;">
+          <div style="font-size:11px;letter-spacing:2px;opacity:.8;text-transform:uppercase;">AgentCall AI</div>
+          <div style="font-size:20px;font-weight:800;">${company || 'Company'} · Operations Digest</div>
+          <div style="font-size:12px;opacity:.85;margin-top:4px;">${labels[frequency] || 'Periodic'} summary · ${dateLabel}</div>
+        </div>
+        <div style="padding:20px 24px;">
+          <p style="color:#475569;font-size:13px;line-height:1.6;">Here is the ${(labels[frequency] || 'Periodic').toLowerCase()} operational summary across your autonomous AI calling workforce.</p>
+          <table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:13px;">${rowsHtml}</table>
+          <div style="margin-top:24px;background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;color:#92400e;font-size:12px;">
+            <strong>Top alert:</strong> ${dashboard.alerts[0] ? dashboard.alerts[0].title + ' — ' + dashboard.alerts[0].message : 'No critical alerts. Operations are running smoothly.'}
+          </div>
+          <p style="color:#94a3b8;font-size:11px;margin-top:18px;">Generated by AgentCall AI · Login to your dashboard for the live view.</p>
+        </div>
+      </div></body></html>`;
+    return { subject, html };
   }
 }

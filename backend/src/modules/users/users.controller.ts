@@ -1,6 +1,8 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { UsersService } from './users.service';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
@@ -28,6 +30,21 @@ export class UsersController {
   @Permissions(TEAM_VIEW)
   findOne(@CurrentUser() u: any, @Param('id') id: string) {
     return this.svc.findOne(u.tenantId, id);
+  }
+
+  @Patch('me')
+  @ApiBody({ type: UpdateProfileDto })
+  updateMe(@CurrentUser() u: any, @Body() dto: UpdateProfileDto) {
+    return this.svc.updateProfile(u.id, u.tenantId, dto);
+  }
+
+  @Post('me/avatar')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 2 * 1024 * 1024 } }),
+  )
+  updateAvatar(@CurrentUser() u: any, @UploadedFile() file: Express.Multer.File) {
+    return this.svc.updateAvatar(u.id, u.tenantId, file);
   }
 
   @Post('invite')

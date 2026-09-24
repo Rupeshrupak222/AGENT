@@ -57,7 +57,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ id: st
   const [provisioning, setProvisioning] = useState(false);
   const [provisionError, setProvisionError] = useState<string | null>(null);
   const [provisioned, setProvisioned] = useState<{ email: string; password: string } | null>(null);
-  const [provForm, setProvForm] = useState({ name: "", email: "", role: "agent", department: "" } as any);
+  const [provForm, setProvForm] = useState({ name: "", email: "", role: "manager", department: "" } as any);
 
   const handleProvision = async () => {
     setProvisionError(null);
@@ -512,8 +512,6 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ id: st
               options={[
                 { value: "company_admin", label: "Company Admin" },
                 { value: "manager", label: "Manager" },
-                { value: "agent", label: "Agent" },
-                { value: "viewer", label: "Viewer" },
               ]}
             />
             <Input

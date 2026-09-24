@@ -298,6 +298,7 @@ describe('Day 21 Release Candidate & Production UI Hardening Suite', () => {
         mockPrisma,
         { isWithinCallingWindow: jest.fn(), checkDailyLimit: jest.fn(), validateLeadEligibility: jest.fn() } as any,
         mockQueue,
+        { isEnabled: jest.fn().mockResolvedValue(true), requireEnabled: jest.fn().mockResolvedValue(undefined) } as any,
         mockTelephony,
         mockGateway as any,
       );

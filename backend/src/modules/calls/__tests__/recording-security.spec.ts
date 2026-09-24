@@ -53,8 +53,11 @@ describe('Call Recording & Intelligence Multi-Tenant Security', () => {
     callsService = new CallsService(
       mockPrisma as any,
       { registerCallStatusHook: jest.fn() } as any,
+      { isEnabled: jest.fn().mockResolvedValue(true), requireEnabled: jest.fn().mockResolvedValue(undefined) } as any,
       mockStorage as any,
       mockQueue as any,
+      undefined as any,
+      undefined as any,
     );
   });
 

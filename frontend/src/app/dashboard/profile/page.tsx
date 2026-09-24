@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -22,13 +22,17 @@ import {
   RefreshCw,
   LogOut,
   UserCircle2,
+  Camera,
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { useToast } from "@/components/ui/Toast";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { PERMISSIONS, hasPermission } from "@/lib/permissions";
-import { authApi } from "@/lib/api";
+import { authApi, teamApi, normalizeApiError } from "@/lib/api";
+
+const ALLOWED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2 MB
 
 // ── Role Metadata Definition ────────────────────────────────────
 interface RoleConfig {
@@ -193,6 +197,10 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"overview" | "permissions" | "security">("overview");
   const [switchingRole, setSwitchingRole] = useState<string | null>(null);
 
+  // Profile photo upload
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
   // Sync state if user changes
   useEffect(() => {
     if (user) {
@@ -206,12 +214,39 @@ export default function ProfilePage() {
     }
   }, [user, userRole, currentRoleConfig]);
 
+  // Handle profile photo upload
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file
+    if (!file) return;
+
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      error("Please choose a JPG, PNG or WebP image.");
+      return;
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      error("Profile photo must be 2MB or smaller.");
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const updated = await teamApi.uploadMyAvatar(file);
+      updateUser({ avatar: updated.avatar });
+      success("Profile photo updated successfully.");
+    } catch (err) {
+      error(normalizeApiError(err));
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
   // Handle Save Profile
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
-      updateUser({
+      const updated = await teamApi.updateMyProfile({
         name,
         phone,
         settings: {
@@ -222,9 +257,14 @@ export default function ProfilePage() {
           timezone,
         },
       });
+      updateUser({
+        name: updated.name || name,
+        phone: updated.phone || phone,
+        settings: updated.settings || user?.settings || {},
+      });
       success("Profile details updated successfully.");
-    } catch {
-      error("Failed to update profile.");
+    } catch (err) {
+      error(normalizeApiError(err));
     } finally {
       setIsSaving(false);
     }
@@ -372,12 +412,42 @@ export default function ProfilePage() {
             <div className="flex items-start sm:items-center gap-4 sm:gap-5">
               {/* Avatar Circle with Badge */}
               <div className="relative flex-shrink-0">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-2xl font-bold text-white shadow-xl bg-gradient-to-br from-brand-500 to-brand-700 ring-4 ring-white/10">
-                  {name?.[0]?.toUpperCase() ?? "U"}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-2xl font-bold text-white shadow-xl bg-gradient-to-br from-brand-500 to-brand-700 ring-4 ring-white/10 overflow-hidden">
+                  {user?.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={user.avatar}
+                      alt={name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    name?.[0]?.toUpperCase() ?? "U"
+                  )}
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900 flex items-center justify-center">
                   <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
                 </div>
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={isUploadingAvatar}
+                  title={isUploadingAvatar ? "Uploading..." : "Change profile photo"}
+                  aria-label="Change profile photo"
+                  className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-slate-900/80 dark:bg-white/15 hover:bg-brand-600 disabled:opacity-60 text-white ring-2 ring-white dark:ring-slate-900 flex items-center justify-center transition-all cursor-pointer"
+                >
+                  {isUploadingAvatar ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Camera className="w-3.5 h-3.5" />
+                  )}
+                </button>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept={ALLOWED_AVATAR_TYPES.join(",")}
+                  className="hidden"
+                  onChange={handleAvatarFileChange}
+                />
               </div>
 
               {/* User Info & Identity */}

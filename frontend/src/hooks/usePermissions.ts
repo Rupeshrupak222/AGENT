@@ -36,8 +36,6 @@ export function usePermissions() {
   const isRole = (r: string) => role === r;
   const isAdmin = isRole("company_admin") || isRole("super_admin");
   const isManager = isRole("manager") || isAdmin;
-  const isAgent = isRole("agent") || isManager;
-  const isViewer = isRole("viewer") || isAgent;
   const isSuperAdmin = isRole("super_admin");
 
   return {
@@ -48,8 +46,6 @@ export function usePermissions() {
     isRole,
     isAdmin,
     isManager,
-    isAgent,
-    isViewer,
     isSuperAdmin,
     PERMISSIONS,
   };

@@ -63,13 +63,21 @@ export default function OverviewPage() {
   const rawRole = (user?.role || "").toLowerCase().trim();
   const isSuperAdmin = rawRole === "super_admin" || rawRole === "superadmin" || rawRole === "owner";
   const isManager = rawRole === "manager" || rawRole === "supervisor";
-  const isCompanyAdmin = rawRole === "company_admin" || rawRole === "admin" || (!isSuperAdmin && !isManager);
+  const isCompanyAdmin = rawRole === "company_admin" || rawRole === "admin";
+  const isAllowedRole = isSuperAdmin || isManager || isCompanyAdmin;
+  const canManageDigest = rawRole === "company_admin" || rawRole === "admin";
 
   useEffect(() => {
     if (isSuperAdmin) {
       router.replace("/dashboard/admin");
     }
   }, [isSuperAdmin, router]);
+
+  useEffect(() => {
+    if (!isAllowedRole) {
+      router.replace("/login");
+    }
+  }, [isAllowedRole, router]);
 
   const range = useMemo<DashboardRange>(
     () => computeRange(period, customFrom, customTo),
@@ -268,7 +276,7 @@ export default function OverviewPage() {
           workspaceName={tenant?.name ?? "Your Workspace"}
           workspacePlan={tenant?.plan ?? null}
         />
-      ) : (
+      ) : isCompanyAdmin ? (
         <CompanyAdminView
           dashboard={companyDashboard}
           recentCalls={recentCalls}
@@ -286,8 +294,9 @@ export default function OverviewPage() {
           isRefreshing={isRefreshing}
           companyName={tenant?.name ?? "Your Company"}
           companyPlan={tenant?.plan ?? null}
+          canManageDigest={canManageDigest}
         />
-      )}
+      ) : null}
     </div>
   );
 }

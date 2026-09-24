@@ -21,6 +21,7 @@ describe('DAY 16 — CRM Automation Engine + Meta WhatsApp + Resend Email Test S
   let queueService: AutomationQueueService;
   let providerRegistry: AutomationProviderRegistry;
   let processor: AutomationActionProcessor;
+  let featureFlags: any;
 
   beforeEach(() => {
     templateEngine = new TemplateEngine();
@@ -30,6 +31,7 @@ describe('DAY 16 — CRM Automation Engine + Meta WhatsApp + Resend Email Test S
     resendEmail = new ResendEmailAdapter();
     mockEmail = new MockEmailAdapter();
     metrics = new MetricsService();
+    featureFlags = { isEnabled: jest.fn().mockResolvedValue(true) };
 
     // Mock Bull Queue
     const mockBullQueue: any = {
@@ -79,6 +81,7 @@ describe('DAY 16 — CRM Automation Engine + Meta WhatsApp + Resend Email Test S
       queueService,
       providerRegistry,
       templateEngine,
+      featureFlags,
     );
     processor.onModuleInit();
   });
@@ -408,6 +411,7 @@ describe('DAY 16 — CRM Automation Engine + Meta WhatsApp + Resend Email Test S
         queueService,
         providerRegistry,
         templateEngine,
+        featureFlags,
       );
 
       await dndProcessor.processJob(jobWithDnd);
@@ -448,6 +452,7 @@ describe('DAY 16 — CRM Automation Engine + Meta WhatsApp + Resend Email Test S
         queueService,
         providerRegistry,
         templateEngine,
+        featureFlags,
       );
 
       // Attempting to access Tenant A's lead using Tenant B context must return null

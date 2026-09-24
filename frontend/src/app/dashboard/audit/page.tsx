@@ -164,7 +164,7 @@ export default function AuditPage() {
           <option value="">All Resources</option>
           <option value="tenant">tenant</option>
           <option value="user">user</option>
-          <option value="agent">agent</option>
+          <option value="ai_agent">ai_agent</option>
           <option value="lead">lead</option>
           <option value="call">call</option>
           <option value="campaign">campaign</option>

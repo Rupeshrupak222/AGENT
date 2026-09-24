@@ -520,27 +520,27 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
           <div className="flex-1 overflow-y-auto p-6 space-y-5">
             {/* Quick Metrics Bar */}
             <div className="grid grid-cols-4 gap-2.5 text-center">
-              <div className="p-2.5 rounded-2xl bg-black/40 border border-white/10">
-                <p className="text-[10px] text-white/40 font-medium">Contact / Caller</p>
-                <p className="text-xs font-bold text-white truncate mt-0.5">
+              <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10">
+                <p className="text-[10px] text-slate-500 dark:text-white/40 font-medium">Contact / Caller</p>
+                <p className="text-xs font-bold text-slate-900 dark:text-white truncate mt-0.5">
                   {detail.lead?.name || detail.phone}
                 </p>
               </div>
-              <div className="p-2.5 rounded-2xl bg-black/40 border border-white/10">
-                <p className="text-[10px] text-white/40 font-medium">AI Employee</p>
-                <p className="text-xs font-bold text-amber-300 truncate mt-0.5">
+              <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10">
+                <p className="text-[10px] text-slate-500 dark:text-white/40 font-medium">AI Employee</p>
+                <p className="text-xs font-bold text-amber-600 dark:text-amber-300 truncate mt-0.5">
                   {detail.agent?.name || "Autonomous Voice"}
                 </p>
               </div>
-              <div className="p-2.5 rounded-2xl bg-black/40 border border-white/10">
-                <p className="text-[10px] text-white/40 font-medium">Duration</p>
-                <p className="text-xs font-bold font-mono text-emerald-400 mt-0.5">
+              <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10">
+                <p className="text-[10px] text-slate-500 dark:text-white/40 font-medium">Duration</p>
+                <p className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
                   {detail.duration ? formatDuration(detail.duration) : "0s"}
                 </p>
               </div>
-              <div className="p-2.5 rounded-2xl bg-black/40 border border-white/10">
-                <p className="text-[10px] text-white/40 font-medium">Status / Disposition</p>
-                <p className="text-xs font-bold capitalize text-white truncate mt-0.5">
+              <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10">
+                <p className="text-[10px] text-slate-500 dark:text-white/40 font-medium">Status / Disposition</p>
+                <p className="text-xs font-bold capitalize text-slate-900 dark:text-white truncate mt-0.5">
                   {detail.status.replace("_", " ")}
                 </p>
               </div>
@@ -550,23 +550,23 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
             {activeTab === "transcript" && (
               <div className="space-y-4">
                 {/* Interactive Audio Waveform Player */}
-                <div className="p-4 sm:p-5 rounded-2xl bg-black/40 border border-amber-500/25 space-y-3">
+                <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-amber-500/25 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <Volume2 className="w-4 h-4 text-amber-400" />
+                    <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Volume2 className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                       Session Audio Waveform Player
                     </span>
                     <div className="flex items-center gap-2">
                       {canExportRecording && (
                       <button
                         onClick={exportTranscript}
-                        className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white/10 hover:bg-white/20 text-white flex items-center gap-1.5 transition-colors"
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-200/80 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/20 text-slate-800 dark:text-white flex items-center gap-1.5 transition-colors"
                       >
-                        <Download className="w-3.5 h-3.5 text-amber-400" />
+                        <Download className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                         Export Transcript
                       </button>
                       )}
-                      <span className="text-[10px] text-emerald-400 font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                         {detail.recordingUrl ? "MP3 Audio" : "Voice Synthesis"}
                       </span>
                     </div>
@@ -583,7 +583,7 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                   )}
 
                   {/* Player Controls Bar */}
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/10">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 shadow-sm">
                     <button
                       onClick={togglePlayAudio}
                       className={`p-3 rounded-xl font-bold flex items-center justify-center transition-all flex-shrink-0 ${
@@ -602,7 +602,7 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                           key={i}
                           style={{ height: isPlayingAudio ? `${h}px` : "6px" }}
                           className={`flex-1 rounded-full transition-all duration-150 ${
-                            isPlayingAudio ? "bg-amber-400" : "bg-white/20"
+                            isPlayingAudio ? "bg-amber-500 dark:bg-amber-400" : "bg-slate-300 dark:bg-white/20"
                           }`}
                         />
                       ))}
@@ -610,12 +610,12 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
 
                     {/* Time Counter */}
                     <div className="text-right font-mono text-xs flex-shrink-0">
-                      <span className="text-amber-300 font-bold">{formatDuration(currentTime)}</span>
-                      <span className="text-white/40"> / {formatDuration(totalDuration)}</span>
+                      <span className="text-amber-600 dark:text-amber-300 font-bold">{formatDuration(currentTime)}</span>
+                      <span className="text-slate-500 dark:text-white/40"> / {formatDuration(totalDuration)}</span>
                     </div>
 
                     {/* Speed Switcher */}
-                    <div className="flex items-center gap-1 border-l border-white/10 pl-2">
+                    <div className="flex items-center gap-1 border-l border-slate-200 dark:border-white/10 pl-2">
                       {[1, 1.25, 1.5].map((rate) => (
                         <button
                           key={rate}
@@ -625,8 +625,8 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                           }}
                           className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
                             playbackRate === rate
-                              ? "bg-amber-500/30 text-amber-300 border border-amber-500/40"
-                              : "text-white/40 hover:text-white"
+                              ? "bg-amber-500/30 text-amber-700 dark:text-amber-300 border border-amber-500/40"
+                              : "text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white"
                           }`}
                         >
                           {rate}x
@@ -637,43 +637,43 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                 </div>
 
                 {/* ── Second-by-Second Sentiment Curve & Drop-Off Telemetry ── */}
-                <div className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-3">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                      <span className="text-xs font-bold text-white">Second-by-Second Sentiment Curve & Drop-Off Telemetry</span>
+                      <TrendingUp className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">Second-by-Second Sentiment Curve & Drop-Off Telemetry</span>
                     </div>
-                    <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                    <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
                       Mean Sentiment: +0.76 (Favorable)
                     </span>
                   </div>
 
                   {/* Visual Timeline Bar */}
                   <div className="space-y-1">
-                    <div className="w-full h-4 rounded-lg overflow-hidden flex shadow-inner bg-black/60 border border-white/5">
+                    <div className="w-full h-4 rounded-lg overflow-hidden flex shadow-inner bg-slate-200 dark:bg-black/60 border border-slate-300 dark:border-white/5">
                       <div className="h-full bg-emerald-500 transition-all" style={{ width: "35%" }} title="0s - 15s: Enthusiastic (+0.84)" />
                       <div className="h-full bg-teal-500 transition-all" style={{ width: "30%" }} title="16s - 32s: Consultative Inquiry (+0.72)" />
                       <div className="h-full bg-amber-500 transition-all" style={{ width: "20%" }} title="33s - 42s: Hesitation / Price Check (+0.25)" />
                       <div className="h-full bg-emerald-400 transition-all" style={{ width: "15%" }} title="43s - 55s: Agreement & Closing (+0.88)" />
                     </div>
 
-                    <div className="flex justify-between text-[9px] font-mono text-white/40 px-1">
+                    <div className="flex justify-between text-[9px] font-mono text-slate-500 dark:text-white/40 px-1">
                       <span>0:00 (Intro Pitch)</span>
                       <span>0:18 (Discovery)</span>
-                      <span className="text-amber-400 font-bold">0:38 (Price Quote)</span>
+                      <span className="text-amber-600 dark:text-amber-400 font-bold">0:38 (Price Quote)</span>
                       <span>0:55 (CTA Booked)</span>
                     </div>
                   </div>
 
                   {/* Drop-Off & Script Optimization Pin */}
-                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                    <div className="flex items-center gap-2 text-amber-200">
-                      <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                  <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
+                      <AlertTriangle className="w-4 h-4 text-amber-500 dark:text-amber-400 flex-shrink-0" />
                       <span>
                         <strong>Hesitation Spike at 0:38:</strong> Caller paused for 2.8s upon hearing tier pricing. Agent effectively pivoted to ROI benchmark.
                       </span>
                     </div>
-                    <span className="text-[10px] font-mono text-emerald-300 font-bold whitespace-nowrap bg-amber-500/20 px-2 py-0.5 rounded">
+                    <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-300 font-bold whitespace-nowrap bg-emerald-100 dark:bg-amber-500/20 px-2 py-0.5 rounded">
                       Retention Succeeded (+100%)
                     </span>
                   </div>
@@ -682,31 +682,31 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                 {/* Dialogue Transcript */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <FileText className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                       Interactive Turn-by-Turn Dialogue (Click turn to jump)
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-white/40 font-mono">
+                      <span className="text-[10px] text-slate-500 dark:text-white/40 font-mono">
                         {turns.length} turns
                       </span>
                     </div>
                   </div>
 
                   {/* Compliance & PII Status Bar */}
-                  <div className="p-2.5 rounded-xl bg-slate-900/80 border border-white/10 flex items-center justify-between text-[11px] mb-2.5">
+                  <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 flex items-center justify-between text-[11px] mb-2.5">
                     <div className="flex items-center gap-2">
-                      <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+                      <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
                         <ShieldCheck className="w-3.5 h-3.5" /> SOC2 / GDPR Audit Passed
                       </span>
-                      <span className="text-white/30">|</span>
-                      <span className="text-white/60">Consent Disclosed (00:02)</span>
+                      <span className="text-slate-300 dark:text-white/30">|</span>
+                      <span className="text-slate-600 dark:text-white/60">Consent Disclosed (00:02)</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => setMaskPii(!maskPii)}
                       className={`px-2 py-0.5 rounded-lg font-mono font-bold text-[10px] transition-all flex items-center gap-1 ${
-                        maskPii ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-white/10 text-white/50"
+                        maskPii ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30" : "bg-slate-200/70 dark:bg-white/10 text-slate-600 dark:text-white/50"
                       }`}
                     >
                       <Lock className="w-2.5 h-2.5" />
@@ -715,7 +715,7 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                   </div>
 
                   {turns.length > 0 ? (
-                    <div className="max-h-72 overflow-y-auto space-y-2.5 p-4 rounded-2xl bg-black/40 border border-white/10 text-xs">
+                    <div className="max-h-72 overflow-y-auto space-y-2.5 p-4 rounded-2xl bg-slate-100/70 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs">
                       {turns.map((turn, i) => {
                         const isAgent = turn.speaker?.toLowerCase().includes("agent") || turn.speaker?.toLowerCase().includes("ai");
                         const isHighlighted = activeTurnIndex === i;
@@ -725,18 +725,18 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                             onClick={() => handleJumpTurn(i)}
                             className={`p-3 rounded-xl cursor-pointer transition-all ${
                               isHighlighted
-                                ? "bg-amber-500/25 border border-amber-500/60 shadow-md shadow-amber-500/10 text-white"
+                                ? "bg-amber-100 dark:bg-amber-500/25 border border-amber-400 dark:border-amber-500/60 shadow-md shadow-amber-500/10 text-slate-900 dark:text-white"
                                 : isAgent
-                                ? "bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/20 text-amber-100"
-                                : "bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 text-slate-200"
+                                ? "bg-amber-50/80 hover:bg-amber-100/80 dark:bg-amber-500/10 dark:hover:bg-amber-500/15 border border-amber-200 dark:border-amber-500/20 text-amber-950 dark:text-amber-100"
+                                : "bg-white hover:bg-slate-50 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] border border-slate-200 dark:border-white/5 text-slate-800 dark:text-slate-200 shadow-sm"
                             }`}
                           >
                             <div className="flex items-center justify-between mb-1">
-                              <span className="font-bold text-[11px] uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                                <span className={`w-2 h-2 rounded-full ${isHighlighted ? "bg-amber-400 animate-ping" : isAgent ? "bg-amber-400" : "bg-sky-400"}`} />
+                              <span className="font-bold text-[11px] uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                                <span className={`w-2 h-2 rounded-full ${isHighlighted ? "bg-amber-500 animate-ping" : isAgent ? "bg-amber-500" : "bg-sky-500"}`} />
                                 {turn.speaker}:
                               </span>
-                              <span className="text-[10px] text-white/40 font-mono">
+                              <span className="text-[10px] text-slate-500 dark:text-white/40 font-mono">
                                 {turn.startTime !== undefined ? `${turn.startTime}s - ${turn.endTime}s` : turn.timestamp || `Turn ${i + 1}`}
                               </span>
                             </div>
@@ -746,11 +746,11 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                       })}
                     </div>
                   ) : detail.transcript?.rawText ? (
-                    <div className="p-4 rounded-2xl bg-black/40 border border-white/10 text-xs text-slate-200 max-h-56 overflow-y-auto leading-relaxed whitespace-pre-wrap">
+                    <div className="p-4 rounded-2xl bg-slate-100/70 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs text-slate-800 dark:text-slate-200 max-h-56 overflow-y-auto leading-relaxed whitespace-pre-wrap">
                       {sanitizeText(detail.transcript.rawText)}
                     </div>
                   ) : (
-                    <div className="p-8 text-center text-xs text-white/40 rounded-2xl bg-black/20 border border-dashed border-white/10">
+                    <div className="p-8 text-center text-xs text-slate-400 dark:text-white/40 rounded-2xl bg-slate-100/70 dark:bg-black/20 border border-dashed border-slate-200 dark:border-white/10">
                       No dialogue transcript generated yet.
                     </div>
                   )}
@@ -764,32 +764,32 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                 {analysis ? (
                   <>
                     {/* Executive Summary */}
-                    <div className="p-4 rounded-2xl bg-black/40 border border-amber-500/20">
-                      <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-black/40 border border-amber-500/20">
+                      <h4 className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                         AI Executive Summary
                       </h4>
-                      <p className="text-xs text-slate-200 leading-relaxed">
+                      <p className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed">
                         {analysis.summary || "Conversation completed with standard qualification outcome."}
                       </p>
                     </div>
 
                     {/* Intent, Sentiment, Score */}
                     <div className="grid grid-cols-3 gap-3">
-                      <div className="p-3 rounded-2xl bg-black/40 border border-white/10">
-                        <span className="text-[10px] text-white/40 font-medium">Intent</span>
-                        <p className="text-xs font-bold text-white capitalize mt-0.5">
+                      <div className="p-3 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10">
+                        <span className="text-[10px] text-slate-500 dark:text-white/40 font-medium">Intent</span>
+                        <p className="text-xs font-bold text-slate-900 dark:text-white capitalize mt-0.5">
                           {analysis.intent || "Product Discovery"}
                         </p>
                       </div>
-                      <div className="p-3 rounded-2xl bg-black/40 border border-white/10">
-                        <span className="text-[10px] text-white/40 font-medium">Sentiment</span>
-                        <p className="text-xs font-bold text-emerald-400 capitalize mt-0.5">
+                      <div className="p-3 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10">
+                        <span className="text-[10px] text-slate-500 dark:text-white/40 font-medium">Sentiment</span>
+                        <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 capitalize mt-0.5">
                           {analysis.sentiment || "Positive"}
                         </p>
                       </div>
-                      <div className="p-3 rounded-2xl bg-black/40 border border-white/10">
-                        <span className="text-[10px] text-white/40 font-medium">Lead Score</span>
-                        <p className="text-xs font-bold text-amber-300 font-mono mt-0.5">
+                      <div className="p-3 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10">
+                        <span className="text-[10px] text-slate-500 dark:text-white/40 font-medium">Lead Score</span>
+                        <p className="text-xs font-bold text-amber-600 dark:text-amber-300 font-mono mt-0.5">
                           {analysis.leadScore ?? 78}/100
                         </p>
                       </div>
@@ -797,12 +797,12 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
 
                     {/* Action Items */}
                     {analysis.actionItemsJson && analysis.actionItemsJson.length > 0 && (
-                      <div className="p-4 rounded-2xl bg-black/40 border border-white/10">
-                        <h5 className="text-xs font-bold text-white mb-2">Recommended Next Actions</h5>
-                        <ul className="space-y-1.5 text-xs text-slate-300">
+                      <div className="p-4 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10">
+                        <h5 className="text-xs font-bold text-slate-900 dark:text-white mb-2">Recommended Next Actions</h5>
+                        <ul className="space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
                           {analysis.actionItemsJson.map((act: string, i: number) => (
                             <li key={i} className="flex items-start gap-2">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                               <span>{act}</span>
                             </li>
                           ))}
@@ -813,8 +813,8 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                     <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-brand-500/5 to-purple-500/10 border border-emerald-500/25 space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <Share2 className="w-4 h-4 text-emerald-400" />
-                          <h5 className="text-xs font-bold text-white uppercase tracking-wider">
+                          <Share2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+                          <h5 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                             Automated Omnichannel Follow-Up Engine
                           </h5>
                         </div>
@@ -832,53 +832,53 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                       <div className="grid sm:grid-cols-3 gap-2.5 pt-1">
                         {/* WhatsApp */}
                         <div className={`p-2.5 rounded-xl border text-xs transition-all ${
-                          omniStatus.whatsapp === "sent" ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-200" : "bg-black/30 border-white/10 text-white/70"
+                          omniStatus.whatsapp === "sent" ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-200" : "bg-white dark:bg-black/30 border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/70 shadow-sm"
                         }`}>
                           <div className="flex items-center justify-between mb-1">
                             <span className="font-bold flex items-center gap-1">
-                              <MessageSquare className="w-3 h-3 text-emerald-400" /> WhatsApp
+                              <MessageSquare className="w-3 h-3 text-emerald-500 dark:text-emerald-400" /> WhatsApp
                             </span>
                             <span className="text-[10px] font-mono uppercase">
                               {omniStatus.whatsapp === "sent" ? "Delivered" : "Queued"}
                             </span>
                           </div>
-                          <p className="text-[11px] text-white/50">Course syllabus & brochure PDF sent via Meta Cloud API</p>
+                          <p className="text-[11px] text-slate-500 dark:text-white/50">Course syllabus & brochure PDF sent via Meta Cloud API</p>
                         </div>
 
                         {/* SMS */}
                         <div className={`p-2.5 rounded-xl border text-xs transition-all ${
-                          omniStatus.sms === "sent" ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-200" : "bg-black/30 border-white/10 text-white/70"
+                          omniStatus.sms === "sent" ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-200" : "bg-white dark:bg-black/30 border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/70 shadow-sm"
                         }`}>
                           <div className="flex items-center justify-between mb-1">
                             <span className="font-bold flex items-center gap-1">
-                              <Phone className="w-3 h-3 text-amber-400" /> SMS Twilio
+                              <Phone className="w-3 h-3 text-amber-500 dark:text-amber-400" /> SMS Twilio
                             </span>
                             <span className="text-[10px] font-mono uppercase">
                               {omniStatus.sms === "sent" ? "Sent" : "Queued"}
                             </span>
                           </div>
-                          <p className="text-[11px] text-white/50">Appointment confirmation & counselor portal link</p>
+                          <p className="text-[11px] text-slate-500 dark:text-white/50">Appointment confirmation & counselor portal link</p>
                         </div>
 
                         {/* Email */}
                         <div className={`p-2.5 rounded-xl border text-xs transition-all ${
-                          omniStatus.email === "sent" ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-200" : "bg-black/30 border-white/10 text-white/70"
+                          omniStatus.email === "sent" ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-200" : "bg-white dark:bg-black/30 border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/70 shadow-sm"
                         }`}>
                           <div className="flex items-center justify-between mb-1">
                             <span className="font-bold flex items-center gap-1">
-                              <Mail className="w-3 h-3 text-purple-400" /> Resend Email
+                              <Mail className="w-3 h-3 text-purple-500 dark:text-purple-400" /> Resend Email
                             </span>
                             <span className="text-[10px] font-mono uppercase">
                               {omniStatus.email === "sent" ? "In Inbox" : "Queued"}
                             </span>
                           </div>
-                          <p className="text-[11px] text-white/50">Google Calendar invite with 1-on-1 demo link</p>
+                          <p className="text-[11px] text-slate-500 dark:text-white/50">Google Calendar invite with 1-on-1 demo link</p>
                         </div>
                       </div>
                     </div>
                   </>
                 ) : (
-                  <div className="p-8 text-center text-xs text-white/40 rounded-2xl bg-black/20 border border-dashed border-white/10">
+                  <div className="p-8 text-center text-xs text-slate-400 dark:text-white/40 rounded-2xl bg-slate-100/70 dark:bg-black/20 border border-dashed border-slate-200 dark:border-white/10">
                     <p>Post-call intelligence analysis is not available for this session yet.</p>
                   </div>
                 )}
@@ -890,7 +890,7 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
               <div className="space-y-4">
                 {/* Starter Chips */}
                 <div>
-                  <p className="text-[11px] text-amber-200/60 font-semibold mb-2">
+                  <p className="text-[11px] text-slate-600 dark:text-amber-200/60 font-semibold mb-2">
                     Quick AI Intelligence Queries:
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -903,7 +903,7 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                       <button
                         key={chip}
                         onClick={() => handleAskAi(chip)}
-                        className="px-3 py-1.5 rounded-xl text-[11px] font-medium bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-200 transition-all text-left"
+                        className="px-3 py-1.5 rounded-xl text-[11px] font-medium bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-800 dark:text-amber-200 transition-all text-left"
                       >
                         {chip}
                       </button>
@@ -918,7 +918,7 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                     onChange={(e) => setQuestionInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleAskAi()}
                     placeholder="Ask any question about this call session..."
-                    className="flex-1 h-10 px-3.5 rounded-xl bg-black/50 border border-amber-500/30 text-xs text-white placeholder-white/40 outline-none focus:border-amber-400"
+                    className="flex-1 h-10 px-3.5 rounded-xl bg-white dark:bg-black/50 border border-slate-300 dark:border-amber-500/30 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/40 outline-none focus:border-amber-500"
                   />
                   <button
                     onClick={() => handleAskAi()}
@@ -933,17 +933,17 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                 {/* Q&A Chat Stream */}
                 <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
                   {aiChat.length === 0 ? (
-                    <div className="py-6 text-center text-xs text-white/40 bg-black/20 rounded-2xl border border-dashed border-white/10">
+                    <div className="py-6 text-center text-xs text-slate-400 dark:text-white/40 bg-slate-100/70 dark:bg-black/20 rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
                       Ask any question above or click a starter chip to inspect the call dialogue.
                     </div>
                   ) : (
                     aiChat.map((msg, idx) => (
-                      <div key={idx} className="p-3.5 rounded-2xl bg-black/40 border border-amber-500/20 space-y-2 text-xs">
-                        <div className="flex items-center justify-between text-amber-300 font-semibold">
+                      <div key={idx} className="p-3.5 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-amber-500/20 space-y-2 text-xs">
+                        <div className="flex items-center justify-between text-amber-700 dark:text-amber-300 font-semibold">
                           <span>Q: {msg.q}</span>
-                          <span className="text-[10px] text-white/40">{msg.time}</span>
+                          <span className="text-[10px] text-slate-500 dark:text-white/40">{msg.time}</span>
                         </div>
-                        <div className="text-slate-200 leading-relaxed bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
+                        <div className="text-slate-800 dark:text-slate-200 leading-relaxed bg-amber-50/70 dark:bg-amber-500/10 p-2.5 rounded-xl border border-amber-200 dark:border-amber-500/20">
                           {msg.a}
                         </div>
                       </div>
@@ -960,25 +960,25 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                 {/* Scorecard Hero Banner */}
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-brand-500/10 to-transparent border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center font-black text-lg">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 flex items-center justify-center font-black text-lg">
                       A+
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-bold text-white">10-Point Automated QA Compliance Rating</h3>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase">
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-white">10-Point Automated QA Compliance Rating</h3>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 uppercase">
                           SOC-2 Verified Passed
                         </span>
                       </div>
-                      <p className="text-xs text-white/60 mt-0.5">
+                      <p className="text-xs text-slate-600 dark:text-white/60 mt-0.5">
                         Comprehensive compliance & conversational quality evaluation synthesized from dialogue telemetry.
                       </p>
                     </div>
                   </div>
 
                   <div className="text-right flex-shrink-0">
-                    <span className="text-2xl font-mono font-black text-emerald-400">94.2%</span>
-                    <span className="text-[10px] block text-white/50">Overall QA Score</span>
+                    <span className="text-2xl font-mono font-black text-emerald-600 dark:text-emerald-400">94.2%</span>
+                    <span className="text-[10px] block text-slate-500 dark:text-white/50">Overall QA Score</span>
                   </div>
                 </div>
 
@@ -992,30 +992,30 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                     { label: "Call-to-Action (CTA) Closing", score: 95, desc: "Secured calendar appointment with explicit affirmative." },
                     { label: "Tone Warmth & Brand Persona", score: 94, desc: "Consistent consultative cadence throughout." },
                   ].map((cat, i) => (
-                    <div key={i} className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-2">
+                    <div key={i} className="p-3.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-200">{cat.label}</span>
-                        <span className="font-mono text-xs font-bold text-emerald-400">{cat.score}%</span>
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{cat.label}</span>
+                        <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">{cat.score}%</span>
                       </div>
-                      <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                      <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
                         <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${cat.score}%` }} />
                       </div>
-                      <p className="text-[10px] text-white/50 leading-snug">{cat.desc}</p>
+                      <p className="text-[10px] text-slate-500 dark:text-white/50 leading-snug">{cat.desc}</p>
                     </div>
                   ))}
                 </div>
 
                 {/* Supervisor Live Whisper Mode Console */}
-                <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/30 space-y-3">
+                <div className="p-4 rounded-2xl bg-purple-500/5 dark:bg-purple-950/20 border border-purple-500/30 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Headphones className="w-4 h-4 text-purple-400" />
-                      <h4 className="text-xs font-bold text-white">Supervisor Live Whisper Stream</h4>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300">
+                      <Headphones className="w-4 h-4 text-purple-500 dark:text-purple-400" />
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white">Supervisor Live Whisper Stream</h4>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/20 text-purple-700 dark:text-purple-300">
                         Inaudible to Caller
                       </span>
                     </div>
-                    <span className="text-[10px] text-white/40">Sub-50ms Real-Time Audio Injection</span>
+                    <span className="text-[10px] text-slate-500 dark:text-white/40">Sub-50ms Real-Time Audio Injection</span>
                   </div>
 
                   {/* Preset coaching chips */}
@@ -1030,7 +1030,7 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                         key={i}
                         type="button"
                         onClick={() => handleSendWhisper(chip)}
-                        className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-purple-500/15 border border-purple-500/30 text-purple-200 hover:bg-purple-500/25 transition-colors"
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-purple-500/15 border border-purple-500/30 text-purple-700 dark:text-purple-200 hover:bg-purple-500/25 transition-colors"
                       >
                         + {chip}
                       </button>
@@ -1038,14 +1038,14 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                   </div>
 
                   {/* Whisper Feed */}
-                  <div className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-2 max-h-36 overflow-y-auto">
+                  <div className="p-3 rounded-xl bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10 space-y-2 max-h-36 overflow-y-auto">
                     {whisperFeed.map((w, i) => (
                       <div key={i} className="flex items-start justify-between text-xs gap-3">
                         <div className="flex items-start gap-1.5">
-                          <Radio className="w-3.5 h-3.5 text-purple-400 flex-shrink-0 mt-0.5" />
-                          <span className="text-slate-200">{w.text}</span>
+                          <Radio className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400 flex-shrink-0 mt-0.5" />
+                          <span className="text-slate-800 dark:text-slate-200">{w.text}</span>
                         </div>
-                        <span className="text-[10px] font-mono text-emerald-400 flex-shrink-0">
+                        <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 flex-shrink-0">
                           {w.status.toUpperCase()} ({w.time})
                         </span>
                       </div>
@@ -1065,7 +1065,7 @@ TURN-BY-TURN DIALOGUE TRANSCRIPT
                           handleSendWhisper();
                         }
                       }}
-                      className="flex-1 px-3.5 py-2 rounded-xl bg-black/50 border border-white/15 text-xs text-white placeholder-white/30 focus:outline-none focus:border-purple-500"
+                      className="flex-1 px-3.5 py-2 rounded-xl bg-white dark:bg-black/50 border border-slate-300 dark:border-white/15 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:border-purple-500"
                     />
                     <button
                       type="button"
@@ -1213,11 +1213,11 @@ function NewCallModal({ initialPhone = "", onClose, onSuccess }: NewCallModalPro
         initial={{ opacity: 0, scale: 0.95, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 16 }}
-        className="w-full max-w-lg rounded-2xl bg-surface-sidebar border border-brand-500/25 shadow-2xl p-6 relative overflow-hidden"
+        className="w-full max-w-lg rounded-2xl bg-white dark:bg-surface-sidebar border border-slate-200 dark:border-brand-500/25 shadow-2xl p-6 relative overflow-hidden"
       >
-        <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/[0.08]">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center border border-brand-500/30 shadow-inner">
+            <div className="w-9 h-9 rounded-xl bg-brand-500/20 text-brand-600 dark:text-brand-400 flex items-center justify-center border border-brand-500/30 shadow-inner">
               <PhoneCall className="w-5 h-5" />
             </div>
             <div>
@@ -1232,7 +1232,7 @@ function NewCallModal({ initialPhone = "", onClose, onSuccess }: NewCallModalPro
           <button
             onClick={onClose}
             aria-label="Close new outbound call dialog"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-all"
           >
             <X className="w-4 h-4" />
           </button>
@@ -1241,7 +1241,7 @@ function NewCallModal({ initialPhone = "", onClose, onSuccess }: NewCallModalPro
         {loadingOptions ? (
           <div className="py-12 flex flex-col items-center justify-center gap-3">
             <RefreshCw className="w-6 h-6 animate-spin text-brand-500" />
-            <p className="text-xs text-white/50">Loading AI agents & directory...</p>
+            <p className="text-xs text-slate-500 dark:text-white/50">Loading AI agents & directory...</p>
           </div>
         ) : (
           <form onSubmit={handleInitiate} className="mt-5 space-y-4">
@@ -1249,7 +1249,7 @@ function NewCallModal({ initialPhone = "", onClose, onSuccess }: NewCallModalPro
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-700 dark:text-white/80 flex items-center justify-between">
                 <span>Select AI Voice Agent *</span>
-                <span className="text-[10px] text-brand-400 font-normal">Autonomous Voice</span>
+                <span className="text-[10px] text-brand-600 dark:text-brand-400 font-normal">Autonomous Voice</span>
               </label>
               <select
                 value={selectedAgentId}
@@ -1258,7 +1258,7 @@ function NewCallModal({ initialPhone = "", onClose, onSuccess }: NewCallModalPro
                 className="w-full h-11 px-3.5 rounded-xl text-sm bg-input border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white outline-none focus:border-brand-500 transition-all"
               >
                 {agents.map((ag) => (
-                  <option key={ag.id} value={ag.id} className="bg-neutral-900 text-white">
+                  <option key={ag.id} value={ag.id} className="bg-white dark:bg-neutral-900 text-slate-900 dark:text-white">
                     {ag.name} — {ag.role} ({ag.language})
                   </option>
                 ))}
@@ -1285,11 +1285,11 @@ function NewCallModal({ initialPhone = "", onClose, onSuccess }: NewCallModalPro
                 }}
                 className="w-full h-11 px-3.5 rounded-xl text-sm bg-input border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white outline-none focus:border-brand-500 transition-all"
               >
-                <option value="" className="bg-neutral-900 text-white/60">
+                <option value="" className="bg-white dark:bg-neutral-900 text-slate-500 dark:text-white/60">
                   -- Or enter new phone number below --
                 </option>
                 {leads.map((l) => (
-                  <option key={l.id} value={l.id} className="bg-neutral-900 text-white">
+                  <option key={l.id} value={l.id} className="bg-white dark:bg-neutral-900 text-slate-900 dark:text-white">
                     {l.name} ({l.phone}) {l.company ? `— ${l.company}` : ""}
                   </option>
                 ))}
@@ -1338,15 +1338,15 @@ function NewCallModal({ initialPhone = "", onClose, onSuccess }: NewCallModalPro
             <div
               className={`p-3 rounded-xl border flex items-center justify-between text-[11px] ${
                 gatewayReady === true
-                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"
-                  : "bg-amber-500/10 border-amber-500/30 text-amber-300"
+                  ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-800 dark:text-emerald-300"
+                  : "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300"
               }`}
             >
               <span className="flex items-center gap-1.5">
                 <Radio className="w-3.5 h-3.5" />
                 Outbound Gateway
               </span>
-              <span className={`font-semibold ${gatewayReady === true ? "text-emerald-300" : "text-amber-300"}`}>
+              <span className={`font-semibold ${gatewayReady === true ? "text-emerald-700 dark:text-emerald-300" : "text-amber-700 dark:text-amber-300"}`}>
                 {gatewayReady === null
                   ? "Checking..."
                   : gatewayReady === true
@@ -1402,7 +1402,7 @@ function CallsPageContent() {
   const searchParams = useSearchParams();
   const initialLeadPhone = searchParams.get("leadPhone") || "";
 
-  const { can, isViewer } = usePermissions();
+  const { can } = usePermissions();
   const canInitiate = can(PERMISSIONS.CALL_INITIATE);
   const canMonitor = can(PERMISSIONS.CALL_MONITOR);
   const canIntervene = can(PERMISSIONS.CALL_INTERVENE);
@@ -1568,12 +1568,6 @@ function CallsPageContent() {
             <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
               Calls Console
             </h1>
-            {isViewer && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                <Lock className="w-3.5 h-3.5" />
-                Read-Only Inspection
-              </span>
-            )}
           </div>
           <p className="text-sm text-slate-500 dark:text-white/50 mt-1">
             Real-time call center monitoring and conversational session telemetry
@@ -1811,7 +1805,7 @@ function CallsPageContent() {
                       </div>
 
                       {/* Timer */}
-                      <div className="px-3 py-1.5 rounded-xl bg-black/40 border border-white/10 font-mono text-sm font-bold text-amber-300">
+                      <div className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 font-mono text-sm font-bold text-amber-600 dark:text-amber-300">
                         {liveCall.duration ? formatDuration(liveCall.duration) : "Live"}
                       </div>
                     </div>
@@ -1839,9 +1833,9 @@ function CallsPageContent() {
                         <p className="text-slate-500 dark:text-white/50 italic">Listening for voice packets from audio gateway...</p>
                       )}
                       {activeWhisperSent && (
-                        <div className="flex items-start gap-2 p-2 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px]">
+                        <div className="flex items-start gap-2 p-2 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-[11px]">
                           <span className="font-bold flex items-center gap-1">
-                            <Headphones className="w-3 h-3" /> Supervisor Whisper:
+                            <Headphones className="w-3 h-3 text-amber-600 dark:text-amber-400" /> Supervisor Whisper:
                           </span>
                           <span>&ldquo;{activeWhisperSent}&rdquo;</span>
                         </div>

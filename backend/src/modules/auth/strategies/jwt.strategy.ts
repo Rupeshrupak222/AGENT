@@ -25,14 +25,27 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return secret;
   }
 
+  /** Only super_admin, company_admin and manager may use the platform. */
+  private static hasDashboardAccess(role: string): boolean {
+    const ALLOWED = ['super_admin', 'superadmin', 'owner', 'company_admin', 'admin', 'manager', 'supervisor'];
+    return ALLOWED.includes((role || '').toLowerCase());
+  }
+
   async validate(payload: { sub: string; email: string; tenantId: string; role: string }) {
+    const tokenRole = payload.role || 'company_admin';
+    if (!JwtStrategy.hasDashboardAccess(tokenRole)) {
+      throw new UnauthorizedException('Access restricted: unsupported role');
+    }
+
     // Fast-path for offline development: bypass socket connection timeout
     if (!this.prisma.isConnected) {
       return {
         id:       payload.sub || 'cuid-dev-admin-user',
         email:    payload.email || 'admin@acmecorp.com',
         name:     'Acme Admin (Dev)',
-        role:     payload.role || 'company_admin',
+        role:     tokenRole,
+        avatar:   '',
+        phone:    '',
         tenantId: payload.tenantId || 'cuid-dev-acme-tenant',
         tenant:   { id: payload.tenantId || 'cuid-dev-acme-tenant', name: 'Acme Corp (Demo)', plan: 'growth', isActive: true },
       };
@@ -50,7 +63,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
           id:       payload.sub,
           email:    payload.email,
           name:     'Acme Admin (Dev)',
-          role:     payload.role,
+          role:     tokenRole,
+          avatar:   '',
+          phone:    '',
           tenantId: payload.tenantId,
           tenant:   { id: payload.tenantId, name: 'Acme Corp (Demo)', plan: 'growth', isActive: true },
         };
@@ -59,12 +74,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     if (!user || !user.isActive) throw new UnauthorizedException('User not found or inactive');
     if (!user.tenant.isActive)   throw new UnauthorizedException('Tenant account suspended');
+    if (!JwtStrategy.hasDashboardAccess(user.role)) {
+      throw new UnauthorizedException('Access restricted: unsupported role');
+    }
 
     return {
       id:       user.id,
       email:    user.email,
       name:     user.name,
       role:     user.role,
+      avatar:   user.avatar ?? '',
+      phone:    user.phone ?? '',
       tenantId: user.tenantId,
       tenant:   user.tenant,
     };

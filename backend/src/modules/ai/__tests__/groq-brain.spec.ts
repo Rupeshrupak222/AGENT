@@ -1,9 +1,26 @@
 import { ConfigService } from '@nestjs/config';
 import { GroqAgentBrainService } from '../brain/groq-agent-brain.service';
+import { FeatureFlagsService } from '../../feature-flags/feature-flags.service';
 import axios from 'axios';
+
+// Safety net: never let ambient GROQ env vars (harness env, residual .env
+// auto-loads) influence these specs — @nestjs/config's get() prefers
+// process.env over an explicit ConfigService object.
+delete process.env.GROQ_API_KEY;
+delete process.env.GROQ_MODEL;
 
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
+
+function mockFeatureFlags() {
+  return new FeatureFlagsService({
+    featureFlag: {
+      findMany: jest.fn().mockResolvedValue([
+        { key: 'knowledge_rag', isEnabled: false, rollout: 100, tenantOverride: {} },
+      ]),
+    },
+  } as any);
+}
 
 describe('GroqAgentBrainService', () => {
   let configService: ConfigService;
@@ -14,19 +31,26 @@ describe('GroqAgentBrainService', () => {
       GROQ_API_KEY: 'test-groq-key-1234567890',
       GROQ_MODEL: 'openai/gpt-oss-120b',
     });
-    service = new GroqAgentBrainService(configService);
+    const featureFlags = mockFeatureFlags();
+    service = new GroqAgentBrainService(configService, featureFlags);
     jest.clearAllMocks();
   });
 
   it('should detect when GROQ_API_KEY is configured', () => {
     expect(service.isConfigured).toBe(true);
 
-    const empty = new GroqAgentBrainService(new ConfigService({ GROQ_API_KEY: '' }));
+    const empty = new GroqAgentBrainService(
+      new ConfigService({ GROQ_API_KEY: '' }),
+      mockFeatureFlags(),
+    );
     expect(empty.isConfigured).toBe(false);
   });
 
   it('should return fallback turn when API key is unconfigured', async () => {
-    const unconfigured = new GroqAgentBrainService(new ConfigService({ GROQ_API_KEY: '' }));
+    const unconfigured = new GroqAgentBrainService(
+      new ConfigService({ GROQ_API_KEY: '' }),
+      mockFeatureFlags(),
+    );
     const result = await unconfigured.generateResponse({
       sessionId: 'sess-1',
       callId: 'call-1',
@@ -35,7 +59,7 @@ describe('GroqAgentBrainService', () => {
       history: [],
     });
 
-    expect(result.responseText).toContain('AI assistant');
+    expect(result.responseText).toContain('I want to make sure I help you correctly');
     expect(result.metadata?.configured).toBe(false);
   });
 
@@ -92,7 +116,7 @@ describe('GroqAgentBrainService', () => {
       history: [],
     });
 
-    expect(result.responseText).toContain('I apologize');
-    expect(result.metadata?.error).toContain('rate limit');
+    expect(result.responseText).toContain('I want to make sure I help you correctly');
+    expect(result.metadata?.fallbackReason).toContain('rate limit');
   });
 });

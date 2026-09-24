@@ -763,7 +763,7 @@ export class SuperAdminService {
     if (!this.prisma.isConnected) throw new BadRequestException('Database offline');
     const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
     if (!tenant) throw new NotFoundException('Tenant not found');
-    const allowedRoles: Role[] = ['company_admin', 'manager', 'agent', 'viewer'];
+    const allowedRoles: Role[] = ['company_admin', 'manager'];
     if (!allowedRoles.includes(data.role as Role)) {
       throw new BadRequestException(`Role must be one of: ${allowedRoles.join(', ')}`);
     }

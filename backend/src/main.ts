@@ -166,7 +166,10 @@ async function bootstrap() {
   process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
 
-main().catch((err: any) => {
-  console.error('Fatal bootstrap error:', err?.message || err);
-  process.exit(1);
-});
+const isJest = process.env.JEST_WORKER_ID !== undefined;
+if (!isJest) {
+  main().catch((err: any) => {
+    console.error('Fatal bootstrap error:', err?.message || err);
+    process.exit(1);
+  });
+}

@@ -36,8 +36,6 @@ export const ROLE_METADATA: Record<string, { label: string; description: string 
   super_admin:    { label: 'Super Admin',     description: 'Full platform + tenant access (AgentCall AI staff only).' },
   company_admin:  { label: 'Company Admin',   description: 'Full workspace access for a single company.' },
   manager:        { label: 'Manager',         description: 'Manages team operations and configurations.' },
-  agent:          { label: 'Agent',           description: 'Operates calls and assigned leads.' },
-  viewer:         { label: 'Viewer',          description: 'Read-only access to workspace data.' },
 };
 
 export const ROLE_PERMISSIONS: Record<string, readonly Permission[]> = {
@@ -117,30 +115,6 @@ export const ROLE_PERMISSIONS: Record<string, readonly Permission[]> = {
     NOTIFICATIONS_VIEW,
   ],
 
-  agent: [
-    TEAM_VIEW,
-    LEAD_VIEW, LEAD_UPDATE,
-    CALL_VIEW, CALL_INITIATE, CALL_DISPOSITION,
-    RECORDING_VIEW,
-    AUTOMATION_VIEW,
-    WORKSPACE_VIEW,
-    NOTIFICATIONS_VIEW,
-  ],
-
-  viewer: [
-    TENANT_VIEW,
-    TEAM_VIEW,
-    AI_AGENT_VIEW,
-    LEAD_VIEW,
-    CALL_VIEW,
-    RECORDING_VIEW,
-    ANALYTICS_VIEW,
-    AUTOMATION_VIEW,
-    CALENDAR_VIEW,
-    AUDIT_LOG_VIEW,
-    WORKSPACE_VIEW,
-    NOTIFICATIONS_VIEW,
-  ],
 };
 
 /**

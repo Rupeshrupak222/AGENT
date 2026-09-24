@@ -118,7 +118,7 @@ export function EnterpriseAgentStudioModal({
       .then((members) => {
         if (mounted) {
           const agentUsers = (members || []).filter(
-            (m) => m.role === "agent" && m.isActive !== false
+            (m) => ["manager", "company_admin"].includes(m.role) && m.isActive !== false
           );
           setOperators(agentUsers);
         }

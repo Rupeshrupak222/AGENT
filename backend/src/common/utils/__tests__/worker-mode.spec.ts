@@ -103,7 +103,7 @@ describe('Worker / API process separation (Day 26)', () => {
       useGlobalInterceptors: jest.fn(),
       enableCors: jest.fn(),
       useWebSocketAdapter: jest.fn(),
-      getHttpAdapter: jest.fn(() => ({ getInstance: jest.fn(() => ({ use: jest.fn() })) })),
+      getHttpAdapter: jest.fn(() => ({ getInstance: jest.fn(() => ({ use: jest.fn(), get: jest.fn(), post: jest.fn() })) })),
       listen: jest.fn().mockResolvedValue(undefined),
       close: jest.fn().mockResolvedValue(undefined),
     };

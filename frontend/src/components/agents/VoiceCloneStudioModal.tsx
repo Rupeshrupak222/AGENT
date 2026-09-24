@@ -260,15 +260,15 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
                 </div>
 
                 {/* Upload Existing WAV/MP3 */}
-                <div className="p-5 rounded-2xl bg-black/30 border border-white/10 flex flex-col items-center justify-center text-center p-6 border-dashed border-white/20 hover:border-purple-500/40 transition-colors">
-                  <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/60 mb-3">
-                    <UploadCloud className="w-6 h-6 text-purple-400" />
+                <div className="p-5 rounded-2xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 flex flex-col items-center justify-center text-center p-6 border-dashed border-slate-300 dark:border-white/20 hover:border-purple-500/40 transition-colors">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-200/60 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-600 dark:text-white/60 mb-3">
+                    <UploadCloud className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                   </div>
-                  <h4 className="text-sm font-bold text-white mb-1">Upload Studio Audio File</h4>
-                  <p className="text-xs text-white/40 max-w-xs mb-3">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Upload Studio Audio File</h4>
+                  <p className="text-xs text-slate-500 dark:text-white/40 max-w-xs mb-3">
                     Drag & drop clean WAV, FLAC, or MP3 (20s to 3 min, 44.1kHz, no background music).
                   </p>
-                  <label className="px-4 py-2 rounded-xl text-xs font-bold text-purple-300 bg-purple-500/20 border border-purple-500/40 hover:bg-purple-500/30 cursor-pointer transition-colors">
+                  <label className="px-4 py-2 rounded-xl text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-500/10 dark:bg-purple-500/20 border border-purple-200 dark:border-purple-500/40 hover:bg-purple-500/20 cursor-pointer transition-colors">
                     Browse Audio File
                     <input
                       type="file"
@@ -287,17 +287,17 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
 
               {/* Audio Verification Status */}
               {audioSampleReady && (
-                <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs text-emerald-300">
+                <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300">
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <span>
-                      High-fidelity acoustic sample captured: <strong className="font-mono text-white">{sampleFileName}</strong> (SNR: 38dB, Zero clipping)
+                      High-fidelity acoustic sample captured: <strong className="font-mono text-slate-900 dark:text-white">{sampleFileName}</strong> (SNR: 38dB, Zero clipping)
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setActiveStep("acoustics")}
-                    className="font-bold flex items-center gap-1 hover:underline text-emerald-400"
+                    className="font-bold flex items-center gap-1 hover:underline text-emerald-600 dark:text-emerald-400"
                   >
                     Proceed to Tuning <ArrowRight className="w-3.5 h-3.5" />
                   </button>
@@ -311,11 +311,11 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
             <div className="space-y-6 animate-in fade-in">
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-xs font-semibold text-white/70 block mb-1.5">Accent & Regional Cadence</label>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">Accent & Regional Cadence</label>
                   <select
                     value={accent}
                     onChange={(e) => setAccent(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-sm text-white focus:outline-none focus:border-purple-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-200 dark:border-white/15 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
                   >
                     <option value="en-US-Neural">English (US General American)</option>
                     <option value="en-GB-Neural">English (British Received)</option>
@@ -327,7 +327,7 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-white/70 block mb-1.5">Gender Persona</label>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">Gender Persona</label>
                   <div className="grid grid-cols-3 gap-2">
                     {(["female", "male", "neutral"] as const).map((g) => (
                       <button
@@ -336,8 +336,8 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
                         onClick={() => setGender(g)}
                         className={`py-2 text-xs font-bold rounded-xl capitalize transition-all border ${
                           gender === g
-                            ? "bg-purple-500/20 text-purple-300 border-purple-500/40"
-                            : "bg-black/30 text-white/50 border-white/10 hover:text-white"
+                            ? "bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/40"
+                            : "bg-slate-100 dark:bg-black/30 text-slate-600 dark:text-white/50 border-slate-200 dark:border-white/10 hover:text-slate-900 dark:hover:text-white"
                         }`}
                       >
                         {g}
@@ -347,11 +347,11 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-white/70 block mb-1.5">Emotional Tone</label>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">Emotional Tone</label>
                   <select
                     value={tone}
                     onChange={(e) => setTone(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-sm text-white focus:outline-none focus:border-purple-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-200 dark:border-white/15 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
                   >
                     <option value="Empathetic & Consultative">Empathetic & Consultative</option>
                     <option value="Authoritative & Confident">Authoritative & Confident</option>
@@ -362,11 +362,11 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
               </div>
 
               {/* Sliders */}
-              <div className="p-5 rounded-2xl bg-black/40 border border-white/10 space-y-5">
+              <div className="p-5 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 space-y-5">
                 <div>
-                  <div className="flex justify-between text-xs font-semibold text-white mb-2">
+                  <div className="flex justify-between text-xs font-semibold text-slate-900 dark:text-white mb-2">
                     <span>Voice Consistency / Stability</span>
-                    <span className="font-mono text-purple-400">{stability}%</span>
+                    <span className="font-mono text-purple-600 dark:text-purple-400">{stability}%</span>
                   </div>
                   <input
                     type="range"
@@ -376,16 +376,16 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
                     onChange={(e) => setStability(Number(e.target.value))}
                     className="w-full accent-purple-500 cursor-pointer"
                   />
-                  <div className="flex justify-between text-[10px] text-white/40 mt-1">
+                  <div className="flex justify-between text-[10px] text-slate-500 dark:text-white/40 mt-1">
                     <span>Dynamic / Expressive Inflections</span>
                     <span>Rock Solid / Predictable Consistency</span>
                   </div>
                 </div>
 
                 <div>
-                  <div className="flex justify-between text-xs font-semibold text-white mb-2">
+                  <div className="flex justify-between text-xs font-semibold text-slate-900 dark:text-white mb-2">
                     <span>Speaking Pace (Speed Rate)</span>
-                    <span className="font-mono text-purple-400">{speed.toFixed(2)}x</span>
+                    <span className="font-mono text-purple-600 dark:text-purple-400">{speed.toFixed(2)}x</span>
                   </div>
                   <input
                     type="range"
@@ -396,7 +396,7 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
                     onChange={(e) => setSpeed(Number(e.target.value))}
                     className="w-full accent-purple-500 cursor-pointer"
                   />
-                  <div className="flex justify-between text-[10px] text-white/40 mt-1">
+                  <div className="flex justify-between text-[10px] text-slate-500 dark:text-white/40 mt-1">
                     <span>0.75x (Deliberate & Patient)</span>
                     <span>1.0x (Standard Conversation)</span>
                     <span>1.35x (Quick Telephony)</span>
@@ -404,9 +404,9 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
                 </div>
 
                 <div>
-                  <div className="flex justify-between text-xs font-semibold text-white mb-2">
+                  <div className="flex justify-between text-xs font-semibold text-slate-900 dark:text-white mb-2">
                     <span>Pitch Warmth & Depth</span>
-                    <span className="font-mono text-purple-400">{pitch > 0 ? `+${pitch}` : pitch} Hz</span>
+                    <span className="font-mono text-purple-600 dark:text-purple-400">{pitch > 0 ? `+${pitch}` : pitch} Hz</span>
                   </div>
                   <input
                     type="range"
@@ -416,7 +416,7 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
                     onChange={(e) => setPitch(Number(e.target.value))}
                     className="w-full accent-purple-500 cursor-pointer"
                   />
-                  <div className="flex justify-between text-[10px] text-white/40 mt-1">
+                  <div className="flex justify-between text-[10px] text-slate-500 dark:text-white/40 mt-1">
                     <span>Deeper / Lower Resonance</span>
                     <span>Neutral Core</span>
                     <span>Brighter / Upbeat Resonance</span>
@@ -430,19 +430,19 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
                   onClick={() => setLatencyMode("ultra_low")}
                   className={`p-4 rounded-2xl border cursor-pointer transition-all ${
                     latencyMode === "ultra_low"
-                      ? "bg-purple-500/15 border-purple-500/40 text-white"
-                      : "bg-black/20 border-white/10 text-white/60 hover:text-white"
+                      ? "bg-purple-500/15 border-purple-500/40 text-slate-900 dark:text-white"
+                      : "bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white"
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-xs flex items-center gap-1.5 text-purple-300">
-                      <Zap className="w-3.5 h-3.5 text-amber-400" /> Ultra-Low Latency Mode
+                    <span className="font-bold text-xs flex items-center gap-1.5 text-purple-700 dark:text-purple-300">
+                      <Zap className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> Ultra-Low Latency Mode
                     </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold">
                       ~110ms TTFB
                     </span>
                   </div>
-                  <p className="text-[11px] text-white/50 leading-relaxed">
+                  <p className="text-[11px] text-slate-500 dark:text-white/50 leading-relaxed">
                     Optimized for instant live duplex telephonic interruption and natural conversation flows.
                   </p>
                 </div>
@@ -451,19 +451,19 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
                   onClick={() => setLatencyMode("studio_hq")}
                   className={`p-4 rounded-2xl border cursor-pointer transition-all ${
                     latencyMode === "studio_hq"
-                      ? "bg-purple-500/15 border-purple-500/40 text-white"
-                      : "bg-black/20 border-white/10 text-white/60 hover:text-white"
+                      ? "bg-purple-500/15 border-purple-500/40 text-slate-900 dark:text-white"
+                      : "bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white"
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-xs flex items-center gap-1.5 text-purple-300">
-                      <Layers className="w-3.5 h-3.5 text-purple-400" /> Studio HQ Master Mode
+                    <span className="font-bold text-xs flex items-center gap-1.5 text-purple-700 dark:text-purple-300">
+                      <Layers className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" /> Studio HQ Master Mode
                     </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-400">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-700 dark:text-purple-400 font-bold">
                       ~220ms TTFB
                     </span>
                   </div>
-                  <p className="text-[11px] text-white/50 leading-relaxed">
+                  <p className="text-[11px] text-slate-500 dark:text-white/50 leading-relaxed">
                     Prioritizes 48kHz studio audio fidelity, emotive breath pauses, and realistic warmth.
                   </p>
                 </div>
@@ -476,7 +476,7 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
             <div className="space-y-6 animate-in fade-in">
               {/* Model Choice */}
               <div>
-                <label className="text-xs font-semibold text-white/70 block mb-2">Select Neural Synthesis Engine</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-2">Select Neural Synthesis Engine</label>
                 <div className="grid grid-cols-3 gap-3">
                   {[
                     { id: "cartesia", name: "Cartesia Sonic 2.0", latency: "95ms", desc: "Fastest stream, zero robotic artifacts" },
@@ -488,17 +488,17 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
                       onClick={() => setSelectedModel(m.id as any)}
                       className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
                         selectedModel === m.id
-                          ? "bg-purple-500/20 border-purple-500/50 text-white shadow-lg shadow-purple-500/10"
-                          : "bg-black/30 border-white/10 text-white/60 hover:text-white"
+                          ? "bg-purple-500/20 border-purple-500/50 text-slate-900 dark:text-white shadow-lg shadow-purple-500/10"
+                          : "bg-slate-50 dark:bg-black/30 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-xs text-purple-300">{m.name}</span>
-                        <span className="font-mono text-[10px] text-emerald-400 bg-emerald-500/20 px-1.5 py-0.5 rounded">
+                        <span className="font-bold text-xs text-purple-700 dark:text-purple-300">{m.name}</span>
+                        <span className="font-mono text-[10px] text-emerald-700 dark:text-emerald-400 bg-emerald-500/20 px-1.5 py-0.5 rounded font-bold">
                           {m.latency}
                         </span>
                       </div>
-                      <p className="text-[10px] text-white/40">{m.desc}</p>
+                      <p className="text-[10px] text-slate-500 dark:text-white/40">{m.desc}</p>
                     </div>
                   ))}
                 </div>
@@ -506,17 +506,17 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
 
               {/* Test Dialogue Input */}
               <div>
-                <label className="text-xs font-semibold text-white/70 block mb-1.5">Interactive Preview Script</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">Interactive Preview Script</label>
                 <textarea
                   rows={3}
                   value={testText}
                   onChange={(e) => setTestText(e.target.value)}
-                  className="w-full p-3.5 rounded-2xl bg-black/40 border border-white/15 text-xs text-white leading-relaxed focus:outline-none focus:border-purple-500 resize-none font-sans"
+                  className="w-full p-3.5 rounded-2xl bg-white dark:bg-black/40 border border-slate-200 dark:border-white/15 text-xs text-slate-900 dark:text-white leading-relaxed focus:outline-none focus:border-purple-500 resize-none font-sans"
                 />
               </div>
 
               {/* Audio Playback Controls */}
-              <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/30 flex items-center justify-between">
+              <div className="p-4 rounded-2xl bg-purple-500/5 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-500/30 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
@@ -533,29 +533,29 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
                     )}
                   </button>
                   <div>
-                    <div className="text-xs font-bold text-white flex items-center gap-2">
+                    <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       <span>{isPlayingAudio ? "Streaming Cloned Speech..." : "Synthesize Voice Sample"}</span>
                       {isPlayingAudio && (
-                        <span className="flex items-center gap-1 text-[10px] text-emerald-400">
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" /> Live Audio
+                        <span className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" /> Live Audio
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-white/50 mt-0.5 font-mono">
+                    <p className="text-[11px] text-slate-500 dark:text-white/50 mt-0.5 font-mono">
                       Engine: {selectedModel.toUpperCase()} • Speed: {speed}x • Pitch: {pitch > 0 ? `+${pitch}` : pitch}Hz
                     </p>
                   </div>
                 </div>
 
-                <div className="text-right text-[11px] text-white/40">
+                <div className="text-right text-[11px] text-slate-500 dark:text-white/40">
                   <span>Zero-Shot Fidelity Score: </span>
-                  <strong className="text-purple-300 font-mono">98.4% Match</strong>
+                  <strong className="text-purple-700 dark:text-purple-300 font-mono">98.4% Match</strong>
                 </div>
               </div>
 
               {saveSuccess && (
-                <div className="p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <div className="p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   Voice persona &ldquo;{voiceName}&rdquo; registered! All agents can now select this voice.
                 </div>
               )}
@@ -564,9 +564,9 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between bg-slate-950/60">
-          <div className="flex items-center gap-2 text-xs text-white/40">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+        <div className="px-6 py-4 border-t border-slate-200 dark:border-white/10 flex items-center justify-between bg-slate-50 dark:bg-slate-950/60">
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-white/40">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>Voice Rights Encrypted: SOC-2 & Voice Biometric Protected</span>
           </div>
 
@@ -574,7 +574,7 @@ export const VoiceCloneStudioModal: React.FC<VoiceCloneStudioModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 dark:text-white/60 dark:hover:text-white dark:hover:bg-white/10 transition-colors"
             >
               Cancel
             </button>

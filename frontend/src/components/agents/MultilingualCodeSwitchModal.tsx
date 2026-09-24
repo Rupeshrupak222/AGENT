@@ -176,7 +176,7 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${
                       activeScenario === sc
                         ? "bg-blue-600 text-white shadow-sm"
-                        : "text-white/50 hover:text-white"
+                        : "text-slate-600 dark:text-white/50 hover:text-slate-900 dark:hover:text-white"
                     }`}
                   >
                     {sc}
@@ -186,7 +186,7 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
             </div>
 
             {/* Dialogue Stream */}
-            <div className="p-4 rounded-2xl bg-slate-950/60 border border-white/5 space-y-3 max-h-56 overflow-y-auto">
+            <div className="p-4 rounded-2xl bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-white/5 space-y-3 max-h-56 overflow-y-auto">
               {scenarios[activeScenario].turns.map((t, idx) => (
                 <div
                   key={idx}
@@ -197,13 +197,13 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
                   <div
                     className={`max-w-[85%] p-3 rounded-2xl text-xs leading-relaxed ${
                       t.speaker.includes("AI")
-                        ? "bg-blue-950/40 border border-blue-500/20 text-blue-100 rounded-tl-none"
-                        : "bg-white/10 text-white rounded-tr-none"
+                        ? "bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-500/20 text-blue-900 dark:text-blue-100 rounded-tl-none"
+                        : "bg-slate-100 dark:bg-white/10 text-slate-800 dark:text-white rounded-tr-none"
                     }`}
                   >
-                    <div className="flex items-center justify-between text-[10px] text-white/40 mb-1">
-                      <span className="font-bold text-blue-400">{t.speaker}</span>
-                      <span className="font-mono px-1.5 py-0.5 rounded bg-white/5">{t.lang}</span>
+                    <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-white/40 mb-1">
+                      <span className="font-bold text-blue-600 dark:text-blue-400">{t.speaker}</span>
+                      <span className="font-mono px-1.5 py-0.5 rounded bg-slate-200/60 dark:bg-white/5">{t.lang}</span>
                     </div>
                     <p>{t.text}</p>
                   </div>
@@ -213,8 +213,8 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
 
             {/* Synthesis audio trigger */}
             <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-white/40">
-                Language Shift Latency: <strong className="text-emerald-400 font-mono">92ms Detection</strong>
+              <span className="text-xs text-slate-500 dark:text-white/40">
+                Language Shift Latency: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">92ms Detection</strong>
               </span>
               <button
                 type="button"
@@ -231,16 +231,16 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
           <div className="grid md:grid-cols-2 gap-4">
             
             {/* Sensitivity & Latency */}
-            <div className="p-5 rounded-2xl bg-black/40 border border-white/10 space-y-4">
-              <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Sliders className="w-3.5 h-3.5 text-blue-400" />
+            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 space-y-4">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <Sliders className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
                 Detection & Sensitivity Controls
               </h4>
 
               <div>
-                <div className="flex justify-between text-xs font-semibold text-white mb-1.5">
+                <div className="flex justify-between text-xs font-semibold text-slate-900 dark:text-white mb-1.5">
                   <span>Language Shift Detection Window</span>
-                  <span className="font-mono text-blue-400">{detectionLatency}ms</span>
+                  <span className="font-mono text-blue-600 dark:text-blue-400">{detectionLatency}ms</span>
                 </div>
                 <input
                   type="range"
@@ -251,7 +251,7 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
                   onChange={(e) => setDetectionLatency(Number(e.target.value))}
                   className="w-full accent-blue-500 cursor-pointer"
                 />
-                <div className="flex justify-between text-[10px] text-white/40 mt-1">
+                <div className="flex justify-between text-[10px] text-slate-500 dark:text-white/40 mt-1">
                   <span>Ultra-Aggressive (60ms)</span>
                   <span>Balanced (110ms)</span>
                   <span>Context-First (240ms)</span>
@@ -259,7 +259,7 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-white/70 block mb-1.5">Switching Cadence Policy</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-white/70 block mb-1.5">Switching Cadence Policy</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: "conservative", label: "Full Sentence" },
@@ -272,8 +272,8 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
                       onClick={() => setSwitchingMode(m.id as any)}
                       className={`py-2 text-[11px] font-bold rounded-xl border transition-all ${
                         switchingMode === m.id
-                          ? "bg-blue-500/20 text-blue-300 border-blue-500/40"
-                          : "bg-black/30 text-white/50 border-white/10 hover:text-white"
+                          ? "bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/40"
+                          : "bg-slate-100 dark:bg-black/30 text-slate-600 dark:text-white/50 border-slate-200 dark:border-white/10 hover:text-slate-900 dark:hover:text-white"
                       }`}
                     >
                       {m.label}
@@ -284,19 +284,19 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
             </div>
 
             {/* Primary & Secondary Dialects */}
-            <div className="p-5 rounded-2xl bg-black/40 border border-white/10 space-y-4">
-              <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Globe className="w-3.5 h-3.5 text-blue-400" />
+            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 space-y-4">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
                 Regional Accent & Colloquialisms
               </h4>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] text-white/60 block mb-1">Primary Base Language</label>
+                  <label className="text-[11px] text-slate-600 dark:text-white/60 block mb-1">Primary Base Language</label>
                   <select
                     value={primaryLang}
                     onChange={(e) => setPrimaryLang(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-xs text-white"
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-black/50 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white"
                   >
                     <option value="English (India)">English (Indian Corporate)</option>
                     <option value="English (US)">English (US West Coast)</option>
@@ -305,11 +305,11 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
                 </div>
 
                 <div>
-                  <label className="text-[11px] text-white/60 block mb-1">Secondary Fallback / Blend</label>
+                  <label className="text-[11px] text-slate-600 dark:text-white/60 block mb-1">Secondary Fallback / Blend</label>
                   <select
                     value={secondaryLang}
                     onChange={(e) => setSecondaryLang(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-xs text-white"
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-black/50 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white"
                   >
                     <option value="Hindi (हिन्दी)">Hindi (हिन्दी)</option>
                     <option value="Spanish (Español)">Spanish (Español)</option>
@@ -319,21 +319,21 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[11px] text-blue-300 leading-relaxed">
+              <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-[11px] text-blue-800 dark:text-blue-300 leading-relaxed">
                 When callers use colloquial phrases (e.g. &ldquo;yaar&rdquo;, &ldquo;arrey&rdquo;, &ldquo;achha&rdquo;), the AI naturally reciprocates with conversational warmth instead of stiff translation.
               </div>
             </div>
           </div>
 
           {/* Section 3: Localized Terminology & Glossary Mappings */}
-          <div className="p-5 rounded-2xl bg-black/40 border border-white/10 space-y-4">
+          <div className="p-5 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <BookOpen className="w-3.5 h-3.5 text-blue-400" />
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
                   Localized Terminology & Substitution Glossary
                 </h4>
-                <p className="text-[11px] text-white/40">
+                <p className="text-[11px] text-slate-500 dark:text-white/40">
                   Custom term overrides ensure financial, technical, or cultural phrases are interpreted accurately.
                 </p>
               </div>
@@ -346,14 +346,14 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
                 placeholder="Source vernacular (e.g. Crores)"
                 value={newSource}
                 onChange={(e) => setNewSource(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-xs text-white"
+                className="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-black/50 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white"
               />
               <input
                 type="text"
                 placeholder="Target definition (e.g. 10 Million)"
                 value={newTarget}
                 onChange={(e) => setNewTarget(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-xs text-white"
+                className="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-black/50 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white"
               />
               <button
                 type="submit"
@@ -365,9 +365,9 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
             </form>
 
             {/* Table */}
-            <div className="rounded-xl border border-white/10 overflow-hidden bg-slate-950/40">
+            <div className="rounded-xl border border-slate-200 dark:border-white/10 overflow-hidden bg-white dark:bg-slate-950/40">
               <table className="w-full text-left text-xs">
-                <thead className="bg-white/5 text-white/60 border-b border-white/10 font-semibold">
+                <thead className="bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-white/60 border-b border-slate-200 dark:border-white/10 font-semibold">
                   <tr>
                     <th className="py-2.5 px-3">Vernacular Term</th>
                     <th className="py-2.5 px-3">Normalized Semantic Interpretation</th>
@@ -375,17 +375,17 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
                     <th className="py-2.5 px-3 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-slate-200 dark:divide-white/5">
                   {glossary.map((g, i) => (
-                    <tr key={i} className="hover:bg-white/[0.02]">
-                      <td className="py-2.5 px-3 font-mono font-bold text-blue-300">{g.source}</td>
-                      <td className="py-2.5 px-3 text-slate-200">{g.target}</td>
-                      <td className="py-2.5 px-3 text-white/40 text-[11px]">{g.dialect}</td>
+                    <tr key={i} className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
+                      <td className="py-2.5 px-3 font-mono font-bold text-blue-600 dark:text-blue-300">{g.source}</td>
+                      <td className="py-2.5 px-3 text-slate-800 dark:text-slate-200">{g.target}</td>
+                      <td className="py-2.5 px-3 text-slate-500 dark:text-white/40 text-[11px]">{g.dialect}</td>
                       <td className="py-2.5 px-3 text-right">
                         <button
                           type="button"
                           onClick={() => setGlossary(glossary.filter((_, idx) => idx !== i))}
-                          className="text-white/40 hover:text-rose-400"
+                          className="text-slate-400 hover:text-rose-500 dark:text-white/40 dark:hover:text-rose-400"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -399,9 +399,9 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between bg-slate-950/60">
-          <div className="flex items-center gap-2 text-xs text-white/40">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+        <div className="px-6 py-4 border-t border-slate-200 dark:border-white/10 flex items-center justify-between bg-slate-50 dark:bg-slate-950/60">
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-white/40">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>Polyglot Voice AI Model v2.4 • Continuous Acoustic Phoneme Mapping</span>
           </div>
 
@@ -409,7 +409,7 @@ export const MultilingualCodeSwitchModal: React.FC<MultilingualCodeSwitchModalPr
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 dark:text-white/60 dark:hover:text-white dark:hover:bg-white/10 transition-colors"
             >
               Close
             </button>

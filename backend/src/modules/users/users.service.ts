@@ -10,12 +10,18 @@ import { AuditService } from '../audit/audit.service';
 import * as bcrypt from 'bcryptjs';
 
 const ROLE_HIERARCHY: Record<Role, number> = {
-  viewer:          1,
-  agent:           2,
   manager:         3,
   company_admin:   4,
   super_admin:     5,
 };
+
+const ALLOWED_AVATAR_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+];
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2 MB
 
 @Injectable()
 export class UsersService {
@@ -39,6 +45,84 @@ export class UsersService {
     });
     if (!u) throw new NotFoundException('User not found');
     return u;
+  }
+
+  /**
+   * Update the signed-in user's own profile photo (avatar).
+   * Any authenticated dashboard role (super_admin / company_admin / manager)
+   * may update their own photo — no @Permissions decorator on the route.
+   * The image is stored as a base64 data URL in the existing `avatar` column.
+   */
+  async updateAvatar(userId: string, tenantId: string, file?: Express.Multer.File) {
+    if (!file || !file.buffer?.length) {
+      throw new BadRequestException('Profile photo file is required');
+    }
+    if (!ALLOWED_AVATAR_MIME_TYPES.includes(file.mimetype)) {
+      throw new BadRequestException('Only JPG, PNG, WebP or GIF images are allowed');
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      throw new BadRequestException('Profile photo must be 2MB or smaller');
+    }
+
+    const dataUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+
+    const updated = await this.prisma.tenantUpdate(
+      this.prisma.user,
+      tenantId,
+      userId,
+      { avatar: dataUrl },
+    );
+
+    this.auditService.log({
+      action: 'PROFILE_PHOTO_UPDATED',
+      resource: 'user',
+      resourceId: userId,
+      details: { size: file.size, mimeType: file.mimetype },
+      tenantId,
+      userId,
+    });
+
+    const { password: _pw, ...safe } = updated as any;
+    return safe;
+  }
+
+  /**
+   * Update the signed-in user's own profile (name, phone, settings).
+   * Any authenticated dashboard role may update their own profile —
+   * no @Permissions decorator on the route.
+   */
+  async updateProfile(
+    userId: string,
+    tenantId: string,
+    data: { name?: string; phone?: string; settings?: Record<string, any> },
+  ) {
+    const update: { name?: string; phone?: string; settings?: Record<string, any> } = {};
+    if (data.name !== undefined) update.name = data.name;
+    if (data.phone !== undefined) update.phone = data.phone;
+    if (data.settings !== undefined) update.settings = data.settings;
+
+    if (Object.keys(update).length === 0) {
+      throw new BadRequestException('Nothing to update');
+    }
+
+    const updated = await this.prisma.tenantUpdate(
+      this.prisma.user,
+      tenantId,
+      userId,
+      update,
+    );
+
+    this.auditService.log({
+      action: 'PROFILE_UPDATED',
+      resource: 'user',
+      resourceId: userId,
+      details: { fields: Object.keys(update) },
+      tenantId,
+      userId,
+    });
+
+    const { password: _pw, ...safe } = updated as any;
+    return safe;
   }
 
   /**

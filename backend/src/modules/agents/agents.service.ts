@@ -24,11 +24,16 @@ export class AgentsService {
       throw new ForbiddenException('Only administrators can assign an operator to an agent');
     }
     const exists = await this.prisma.user.findFirst({
-      where: { id: operatorUserId, tenantId, role: 'agent', isActive: true },
+      where: {
+        id: operatorUserId,
+        tenantId,
+        role: { in: ['manager', 'company_admin'] },
+        isActive: true,
+      },
       select: { id: true },
     });
     if (!exists) {
-      throw new ForbiddenException('Operator must be an active agent-role user in this tenant');
+      throw new ForbiddenException('Operator must be an active manager or company admin in this tenant');
     }
   }
 

@@ -29,7 +29,7 @@ function mockContext(request: any) {
 }
 
 function createPermissionsGuard(request: any, handlerPermissions?: string[]) {
-  const guard = new PermissionsGuard(mockReflector(handlerPermissions) as any);
+  const guard = new PermissionsGuard(mockReflector(handlerPermissions) as any, { isConnected: false } as any);
   const context = mockContext(request);
   return { guard, context };
 }
@@ -40,79 +40,94 @@ function createTenantGuard(request: any) {
   return { guard, context };
 }
 
+// Normalize sync-throwing (TenantGuard) and async-rejecting (PermissionsGuard) behavior.
+async function expectGuardReject(guard: any, context: any, errType: any) {
+  try {
+    await Promise.resolve(guard.canActivate(context));
+  } catch (e) {
+    expect(e).toBeInstanceOf(errType);
+    return;
+  }
+  throw new Error(`Expected guard to reject with ${errType.name}`);
+}
+
+async function expectGuardAllow(guard: any, context: any) {
+  await expect(Promise.resolve(guard.canActivate(context))).resolves.toBe(true);
+}
+
 // ══════════════════════════════════════════════════════════════════
 // CROSS-TENANT IDOR TESTS
 // ══════════════════════════════════════════════════════════════════
 
 describe('Cross-Tenant IDOR Prevention', () => {
   describe('Tenant A user accessing Tenant B resources via route param', () => {
-    it('should DENY company_admin A accessing /tenants/tenant-B-id', () => {
+    it('should DENY company_admin A accessing /tenants/tenant-B-id', async () => {
       const req = createRequest(USERS.companyAdminA, { tenantId: TENANT_B });
       const { guard, context } = createTenantGuard(req);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
 
-    it('should DENY manager A accessing tenant B lead', () => {
+    it('should DENY manager A accessing tenant B lead', async () => {
       const req = createRequest(USERS.managerA, { tenantId: TENANT_B, id: 'lead-b-001' });
       const { guard, context } = createTenantGuard(req);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
 
-    it('should DENY agent A accessing tenant B lead', () => {
+    it('should DENY agent A accessing tenant B lead', async () => {
       const req = createRequest(USERS.agentA, { tenantId: TENANT_B });
       const { guard, context } = createTenantGuard(req);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
 
-    it('should DENY viewer A accessing tenant B resources', () => {
+    it('should DENY viewer A accessing tenant B resources', async () => {
       const req = createRequest(USERS.viewerA, { tenantId: TENANT_B });
       const { guard, context } = createTenantGuard(req);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
   });
 
   describe('Tenant B user accessing Tenant A resources', () => {
-    it('should DENY company_admin B accessing /tenants/tenant-A-id', () => {
+    it('should DENY company_admin B accessing /tenants/tenant-A-id', async () => {
       const req = createRequest(USERS.companyAdminB, { tenantId: TENANT_A });
       const { guard, context } = createTenantGuard(req);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
 
-    it('should DENY agent B accessing tenant A resources', () => {
+    it('should DENY agent B accessing tenant A resources', async () => {
       const req = createRequest(USERS.agentB, { tenantId: TENANT_A });
       const { guard, context } = createTenantGuard(req);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
   });
 
   describe('Super Admin cross-tenant access', () => {
-    it('should ALLOW super_admin to access any tenant via route param', () => {
+    it('should ALLOW super_admin to access any tenant via route param', async () => {
       const req = createRequest(USERS.superAdmin, { tenantId: TENANT_B });
       const { guard, context } = createTenantGuard(req);
-      expect(guard.canActivate(context)).toBe(true);
+      await expectGuardAllow(guard, context);
       expect(req.tenantContext.tenantId).toBe(TENANT_B);
       expect(req.tenantContext.isSuperAdmin).toBe(true);
     });
 
-    it('should ALLOW super_admin to access Tenant A', () => {
+    it('should ALLOW super_admin to access Tenant A', async () => {
       const req = createRequest(USERS.superAdmin, { tenantId: TENANT_A });
       const { guard, context } = createTenantGuard(req);
-      expect(guard.canActivate(context)).toBe(true);
+      await expectGuardAllow(guard, context);
       expect(req.tenantContext.tenantId).toBe(TENANT_A);
     });
   });
 
   describe('Same-tenant access (should be allowed)', () => {
-    it('should ALLOW company_admin A accessing own tenant', () => {
+    it('should ALLOW company_admin A accessing own tenant', async () => {
       const req = createRequest(USERS.companyAdminA, { tenantId: TENANT_A });
       const { guard, context } = createTenantGuard(req);
-      expect(guard.canActivate(context)).toBe(true);
+      await expectGuardAllow(guard, context);
     });
 
-    it('should ALLOW agent A with no route param (uses own tenant)', () => {
+    it('should ALLOW agent A with no route param (uses own tenant)', async () => {
       const req = createRequest(USERS.agentA, {});
       const { guard, context } = createTenantGuard(req);
-      expect(guard.canActivate(context)).toBe(true);
+      await expectGuardAllow(guard, context);
       expect(req.tenantContext.tenantId).toBe(TENANT_A);
     });
   });
@@ -124,117 +139,117 @@ describe('Cross-Tenant IDOR Prevention', () => {
 
 describe('Role Escalation Prevention', () => {
   describe('Viewer cannot perform write operations', () => {
-    it('should DENY viewer creating leads', () => {
+    it('should DENY viewer creating leads', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.viewerA), ['lead:create']);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
 
-    it('should DENY viewer creating AI agents', () => {
+    it('should DENY viewer creating AI agents', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.viewerA), ['ai_agent:create']);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
 
-    it('should DENY viewer managing billing', () => {
+    it('should DENY viewer managing billing', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.viewerA), ['billing:manage']);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
 
-    it('should DENY viewer inviting users', () => {
+    it('should DENY viewer inviting users', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.viewerA), ['team:invite']);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
   });
 
   describe('Agent cannot escalate to Manager permissions', () => {
-    it('should DENY agent creating campaigns', () => {
+    it('should DENY agent creating campaigns', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.agentA), ['campaign:create']);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
 
-    it('should DENY agent importing leads', () => {
+    it('should DENY agent importing leads', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.agentA), ['lead:import']);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
 
-    it('should ALLOW agent initiating calls on assigned leads', () => {
+    it('should DENY agent initiating calls after role consolidation', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.agentA), ['call:initiate']);
-      expect(guard.canActivate(context)).toBe(true);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
 
-    it('should DENY agent monitoring calls', () => {
+    it('should DENY agent monitoring calls', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.agentA), ['call:monitor']);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
 
-    it('should DENY agent managing AI prompts', () => {
+    it('should DENY agent managing AI prompts', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.agentA), ['ai_prompt:update']);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
   });
 
   describe('Manager cannot escalate to Company Admin permissions', () => {
-    it('should DENY manager managing billing', () => {
+    it('should DENY manager managing billing', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.managerA), ['billing:manage']);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
 
-    it('should DENY manager revoking users', () => {
+    it('should DENY manager revoking users', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.managerA), ['team:revoke']);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
 
-    it('should DENY manager changing roles', () => {
+    it('should DENY manager changing roles', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.managerA), ['team:update_role']);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
 
-    it('should DENY manager managing security settings', () => {
+    it('should DENY manager managing security settings', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.managerA), ['security:manage']);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
 
-    it('should DENY manager deleting AI agents', () => {
+    it('should DENY manager deleting AI agents', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.managerA), ['ai_agent:delete']);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
 
-    it('should DENY manager exporting leads', () => {
+    it('should DENY manager exporting leads', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.managerA), ['lead:export']);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
   });
 
   describe('Company Admin cannot access Platform Admin permissions', () => {
-    it('should DENY company_admin creating tenants', () => {
+    it('should DENY company_admin creating tenants', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.companyAdminA), ['platform:tenant_create']);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
 
-    it('should DENY company_admin managing platform telephony', () => {
+    it('should DENY company_admin managing platform telephony', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.companyAdminA), ['platform:telephony']);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
 
-    it('should DENY company_admin managing AI providers', () => {
+    it('should DENY company_admin managing AI providers', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.companyAdminA), ['platform:ai_providers']);
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      await expectGuardReject(guard, context, ForbiddenException);
     });
   });
 
   describe('Super Admin should have all permissions', () => {
-    it('should ALLOW super_admin platform:tenant_create', () => {
+    it('should ALLOW super_admin platform:tenant_create', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.superAdmin), ['platform:tenant_create']);
-      expect(guard.canActivate(context)).toBe(true);
+      await expectGuardAllow(guard, context);
     });
 
-    it('should ALLOW super_admin billing:manage', () => {
+    it('should ALLOW super_admin billing:manage', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.superAdmin), ['billing:manage']);
-      expect(guard.canActivate(context)).toBe(true);
+      await expectGuardAllow(guard, context);
     });
 
-    it('should ALLOW super_admin security:manage', () => {
+    it('should ALLOW super_admin security:manage', async () => {
       const { guard, context } = createPermissionsGuard(createRequest(USERS.superAdmin), ['security:manage']);
-      expect(guard.canActivate(context)).toBe(true);
+      await expectGuardAllow(guard, context);
     });
   });
 });
@@ -244,27 +259,27 @@ describe('Role Escalation Prevention', () => {
 // ══════════════════════════════════════════════════════════════════
 
 describe('Unauthenticated Access Prevention', () => {
-  it('should DENY when no user on request', () => {
+  it('should DENY when no user on request', async () => {
     const { guard, context } = createPermissionsGuard(createRequest(null), ['lead:view']);
-    expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+    await expectGuardReject(guard, context, ForbiddenException);
   });
 
-  it('should DENY when user has no role', () => {
+  it('should DENY when user has no role', async () => {
     const { guard, context } = createPermissionsGuard(
       createRequest({ id: 'user1', tenantId: 't1' }),
       ['lead:view'],
     );
-    expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+    await expectGuardReject(guard, context, ForbiddenException);
   });
 
-  it('should DENY TenantGuard when no user', () => {
+  it('should DENY TenantGuard when no user', async () => {
     const { guard, context } = createTenantGuard(createRequest(null));
-    expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
+    await expectGuardReject(guard, context, UnauthorizedException);
   });
 
-  it('should DENY TenantGuard when no tenantId', () => {
-    const { guard, context } = createTenantGuard(createRequest({ id: 'user1', role: 'agent' }));
-    expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+  it('should DENY TenantGuard when no tenantId', async () => {
+    const { guard, context } = createTenantGuard(createRequest({ id: 'user1', role: 'manager' }));
+    await expectGuardReject(guard, context, ForbiddenException);
   });
 });
 
@@ -273,16 +288,16 @@ describe('Unauthenticated Access Prevention', () => {
 // ══════════════════════════════════════════════════════════════════
 
 describe('Suspended Tenant Prevention', () => {
-  it('should DENY non-super_admin from suspended tenant', () => {
+  it('should DENY non-super_admin from suspended tenant', async () => {
     const req = createRequest({ ...USERS.companyAdminA, tenant: { isActive: false } });
     const { guard, context } = createTenantGuard(req);
-    expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+    await expectGuardReject(guard, context, ForbiddenException);
   });
 
-  it('should ALLOW super_admin even with suspended tenant', () => {
+  it('should ALLOW super_admin even with suspended tenant', async () => {
     const req = createRequest({ ...USERS.superAdmin, tenant: { isActive: false } });
     const { guard, context } = createTenantGuard(req);
-    expect(guard.canActivate(context)).toBe(true);
+    await expectGuardAllow(guard, context);
   });
 });
 
@@ -291,27 +306,27 @@ describe('Suspended Tenant Prevention', () => {
 // ══════════════════════════════════════════════════════════════════
 
 describe('Multi-Permission Requirements', () => {
-  it('should DENY manager when missing ANY of multiple required permissions', () => {
+  it('should DENY manager when missing ANY of multiple required permissions', async () => {
     const { guard, context } = createPermissionsGuard(
       createRequest(USERS.managerA),
       ['lead:view', 'lead:export'],
     );
-    expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+    await expectGuardReject(guard, context, ForbiddenException);
   });
 
-  it('should ALLOW company_admin when having ALL required permissions', () => {
+  it('should ALLOW company_admin when having ALL required permissions', async () => {
     const { guard, context } = createPermissionsGuard(
       createRequest(USERS.companyAdminA),
       ['lead:view', 'lead:create', 'lead:import'],
     );
-    expect(guard.canActivate(context)).toBe(true);
+    await expectGuardAllow(guard, context);
   });
 
-  it('should ALLOW when no permissions required', () => {
+  it('should ALLOW when no permissions required', async () => {
     const { guard, context } = createPermissionsGuard(
       createRequest(USERS.viewerA),
       undefined,
     );
-    expect(guard.canActivate(context)).toBe(true);
+    await expectGuardAllow(guard, context);
   });
 });

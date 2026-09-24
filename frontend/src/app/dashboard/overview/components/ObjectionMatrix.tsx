@@ -226,7 +226,7 @@ export function ObjectionMatrix() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-5 space-y-4 text-slate-900 dark:text-white relative"
+              className="w-full max-w-lg rounded-2xl bg-white dark:bg-[#140b07] border border-slate-200 dark:border-white/10 shadow-2xl p-5 space-y-4 text-slate-900 dark:text-white relative"
             >
               <button
                 onClick={() => setActiveGap(null)}
