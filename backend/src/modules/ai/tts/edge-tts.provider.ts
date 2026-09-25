@@ -56,6 +56,7 @@ export class EdgeTTSProvider implements TextToSpeechProvider {
    */
   async synthesize(text: string, options?: TTSOptions): Promise<SynthesizeResult> {
     const chunks: Buffer[] = [];
+    let timeoutHandle: NodeJS.Timeout | undefined;
     try {
       const synthesisPromise = (async () => {
         for await (const chunk of this.synthesizeStream(text, options)) {
@@ -63,13 +64,15 @@ export class EdgeTTSProvider implements TextToSpeechProvider {
         }
       })();
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Edge-TTS synthesis timeout (2500ms)')), 2500),
-      );
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutHandle = setTimeout(() => reject(new Error('Edge-TTS synthesis timeout (2500ms)')), 2500);
+      });
 
       await Promise.race([synthesisPromise, timeoutPromise]);
     } catch (err: any) {
       this.logger.warn(`EdgeTTS synthesize warning: ${err.message}`);
+    } finally {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
     }
 
     const fullBuffer = chunks.length > 0 ? Buffer.concat(chunks) : Buffer.alloc(0);

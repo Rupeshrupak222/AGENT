@@ -1,13 +1,13 @@
 const SENSITIVE_PATTERNS = [
-  /password/gi,
-  /secret/gi,
-  /token/gi,
-  /api[_-]?key/gi,
-  /auth[_-]?token/gi,
-  /access[_-]?key/gi,
-  /credentials?/gi,
-  /jwt[_-]?secret/gi,
-  /refresh[_-]?secret/gi,
+  /password/i,
+  /secret/i,
+  /token/i,
+  /api[_-]?key/i,
+  /auth[_-]?token/i,
+  /access[_-]?key/i,
+  /credentials?/i,
+  /jwt[_-]?secret/i,
+  /refresh[_-]?secret/i,
 ];
 
 const SENSITIVE_KEY_NAMES = new Set([
@@ -83,9 +83,6 @@ export function redactSecrets(obj: any, depth = 0): any {
 export function redactString(str: string): string {
   if (!str || typeof str !== 'string') return str;
   let result = str;
-  for (const pattern of SENSITIVE_PATTERNS) {
-    pattern.lastIndex = 0;
-  }
   result = result.replace(/(Bearer\s+)[A-Za-z0-9._\-]+/gi, '$1' + MASKED);
   result = result.replace(/Basic\s+[A-Za-z0-9+/=]+/gi, 'Basic ' + MASKED);
   result = result.replace(/([?&](?:apiKey|api_key|token|access_token|secret)=)[^&\s]+/gi, '$1' + MASKED);

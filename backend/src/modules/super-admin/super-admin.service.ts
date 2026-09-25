@@ -509,7 +509,7 @@ export class SuperAdminService {
     return { success: true };
   }
 
-  async getActiveAnnouncements(tenantId: string, userId: string) {
+  async getActiveAnnouncements(tenantId: string, _userId: string) {
     const now = new Date();
     if (!this.prisma.isConnected) return { items: [] };
     const items = await this.prisma.announcement.findMany({
@@ -518,6 +518,12 @@ export class SuperAdminService {
         startsAt: { lte: now },
         AND: [
           { OR: [{ expiresAt: null }, { expiresAt: { gte: now } }] },
+          {
+            OR: [
+              { audience: 'all' },
+              { audience: 'specific', tenantIds: { has: tenantId } },
+            ],
+          },
         ],
       },
       orderBy: { createdAt: 'desc' },

@@ -3,7 +3,7 @@ import {
   HttpException, HttpStatus, Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { redactSecrets } from '../utils/secret-redaction';
+import { redactSecrets, redactString } from '../utils/secret-redaction';
 import { CORRELATION_ID_HEADER } from '../middleware/correlation-id.middleware';
 
 @Catch()
@@ -35,11 +35,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
       timestamp:  new Date().toISOString(),
       path:       request.url,
       method:     request.method,
-      message,
+      message:    redactSecrets(message),
       correlationId,
     };
 
     if (status >= 500) {
+      const error   = exception instanceof Error ? exception.message : 'Unknown error';
+      const stack   = exception instanceof Error ? exception.stack : undefined;
       this.logger.error(
         JSON.stringify({
           event: 'http.error',
@@ -47,8 +49,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
           url: request.url,
           status,
           correlationId,
-          error: exception instanceof Error ? exception.message : 'Unknown error',
-          stack: exception instanceof Error ? exception.stack : undefined,
+          error: redactString(error),
+          stack: stack ? redactString(stack) : undefined,
         }),
       );
     } else {
@@ -59,7 +61,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
           url: request.url,
           status,
           correlationId,
-          message: JSON.stringify(message),
+          message: JSON.stringify(redactSecrets(message)),
         }),
       );
     }
