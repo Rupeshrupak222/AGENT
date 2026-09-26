@@ -79,7 +79,7 @@ describe('Worker / API process separation (Day 26)', () => {
       delete process.env.WORKER_MODE;
       await main();
 
-      expect(createSpy).toHaveBeenCalledWith(AppModule, { bufferLogs: true });
+      expect(createSpy).toHaveBeenCalledWith(AppModule, { bufferLogs: true, rawBody: true });
       expect(ctxSpy).not.toHaveBeenCalled();
       expect(apiApp.listen).toHaveBeenCalled();
       expect(apiApp.useWebSocketAdapter).toHaveBeenCalled();

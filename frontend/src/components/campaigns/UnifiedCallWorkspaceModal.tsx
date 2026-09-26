@@ -273,6 +273,9 @@ export function UnifiedCallWorkspaceModal({
                 agentName={detail.agent?.name}
                 customerName={detail.lead?.name}
                 customerPhone={detail.phone}
+                provider={
+                  typeof detail.metadata?.provider === "string" ? detail.metadata.provider : undefined
+                }
                 onCallEnded={async () => {
                   setMode("intelligence");
                   try {

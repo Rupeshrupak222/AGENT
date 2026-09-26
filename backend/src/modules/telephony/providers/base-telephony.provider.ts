@@ -39,4 +39,17 @@ export abstract class BaseTelephonyProvider implements ITelephonyProvider {
     const now = Math.floor(Date.now() / 1000);
     return Math.abs(now - timestampSeconds) <= maxDriftSeconds;
   }
+
+  protected withMediaStreamToken(streamUrl: string, token?: string): string {
+    if (!token) return streamUrl;
+
+    try {
+      const url = new URL(streamUrl);
+      url.searchParams.set('token', token);
+      return url.toString();
+    } catch {
+      const separator = streamUrl.includes('?') ? '&' : '?';
+      return `${streamUrl}${separator}token=${encodeURIComponent(token)}`;
+    }
+  }
 }

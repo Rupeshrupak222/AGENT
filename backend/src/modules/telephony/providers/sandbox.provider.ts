@@ -36,7 +36,7 @@ export class SandboxTelephonyProvider extends BaseTelephonyProvider {
       status: 'in_progress',
       rawResponse: {
         disposition: 'SANDBOX_ACTIVE',
-        streamUrl: req.mediaStreamUrl,
+        streamUrl: this.withMediaStreamToken(req.mediaStreamUrl, req.mediaStreamToken),
         mode: 'webrtc_sandbox',
       },
     };
@@ -82,11 +82,14 @@ export class SandboxTelephonyProvider extends BaseTelephonyProvider {
   }
 
   generateMediaStreamResponse(config: MediaStreamConfig): string {
+    const tokenParameter = config.mediaStreamToken
+      ? `\n      <Parameter name="mediaStreamToken" value="${this.escapeXml(config.mediaStreamToken)}" />`
+      : '';
     return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Connect>
-    <Stream url="${config.streamUrl}">
-      <Parameter name="callId" value="${config.callId}" />
+    <Stream url="${this.escapeXml(config.streamUrl)}">
+      <Parameter name="callId" value="${this.escapeXml(config.callId)}" />${tokenParameter}
     </Stream>
   </Connect>
 </Response>`;
@@ -94,5 +97,14 @@ export class SandboxTelephonyProvider extends BaseTelephonyProvider {
 
   validateWebhookSignature(_req: WebhookValidationRequest): WebhookValidationResult {
     return { isValid: true };
+  }
+
+  private escapeXml(value: string): string {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
   }
 }

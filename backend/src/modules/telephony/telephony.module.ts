@@ -12,15 +12,18 @@ import { RecordingProcessor } from './processors/recording.processor';
 import { TelephonyProviderRegistry } from './providers/provider-registry.service';
 import { TwilioTelephonyProvider } from './providers/twilio.provider';
 import { ExotelTelephonyProvider } from './providers/exotel.provider';
+import { FrejunTelephonyProvider } from './providers/frejun.provider';
 import { SandboxTelephonyProvider } from './providers/sandbox.provider';
 import { TelephonyMediaGateway } from './gateway/telephony-media.gateway';
 import { AiModule } from '../ai/ai.module';
 import { AudioFormatConverterService } from './services/audio-format-converter.service';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
     PrismaModule,
     ConfigModule,
+    AuthModule,
     forwardRef(() => AiModule),
     StorageModule,
     BullModule.registerQueue({
@@ -37,6 +40,7 @@ import { AudioFormatConverterService } from './services/audio-format-converter.s
     TelephonyProviderRegistry,
     TwilioTelephonyProvider,
     ExotelTelephonyProvider,
+    FrejunTelephonyProvider,
     SandboxTelephonyProvider,
     TelephonyMediaGateway,
     AudioFormatConverterService,
@@ -48,6 +52,7 @@ import { AudioFormatConverterService } from './services/audio-format-converter.s
     RecordingQueueService,
     RecordingProcessor,
     TelephonyProviderRegistry,
+    FrejunTelephonyProvider,
     SandboxTelephonyProvider,
     TelephonyMediaGateway,
     AudioFormatConverterService,

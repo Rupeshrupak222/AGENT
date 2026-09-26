@@ -168,7 +168,7 @@ async function main() {
       name:     'Arjun Mehta',
       email:    'agent@acmecorp.com',
       password: pwd,
-      role:     'agent',
+      role:     'manager',
       phone:    '+91 98765 67890',
       tenantId: tenant.id,
       settings: {

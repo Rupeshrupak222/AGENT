@@ -98,12 +98,15 @@ export class ExotelTelephonyProvider extends BaseTelephonyProvider {
   }
 
   async handleIncomingCall(req: IncomingCallRequest): Promise<IncomingCallResponse> {
-    const streamUrl = (req.rawPayload.StreamUrl as string) || `wss://${req.headers?.host || 'localhost:3001'}/telephony/stream`;
+    const streamUrl = this.withMediaStreamToken(
+      (req.rawPayload.StreamUrl as string) || `wss://${req.headers?.host || 'localhost:3001'}/telephony/stream`,
+      req.mediaStreamToken,
+    );
     const response = JSON.stringify({
       status: 'success',
       action: 'connect_stream',
       streamUrl,
-      callId: req.providerCallId,
+      callId: req.callId || req.providerCallId,
     });
 
     return {
@@ -185,7 +188,7 @@ export class ExotelTelephonyProvider extends BaseTelephonyProvider {
   generateMediaStreamResponse(config: MediaStreamConfig): string {
     return JSON.stringify({
       action: 'stream',
-      url: config.streamUrl,
+      url: this.withMediaStreamToken(config.streamUrl, config.mediaStreamToken),
       callId: config.callId,
     });
   }
@@ -196,58 +199,78 @@ export class ExotelTelephonyProvider extends BaseTelephonyProvider {
       return { isValid: false, reason: 'PROVIDER_NOT_CONFIGURED' };
     }
 
-    // Exotel sends Authorization header with Basic auth of api_key:api_token
-    const authHeader = req.headers['authorization'] as string;
+    const signatureHeader = this.headerValue(req, 'x-exotel-signature')
+      || this.headerValue(req, 'x-cqa-signature')
+      || this.headerValue(req, 'x-signature');
+
+    if (signatureHeader) {
+      if (typeof req.rawBody !== 'string') {
+        return { isValid: false, reason: 'MISSING_RAW_BODY' };
+      }
+      const provided = this.stripDigestPrefix(signatureHeader);
+
+      const candidates = [
+        crypto.createHmac('sha256', this.apiToken).update(req.rawBody, 'utf-8').digest('base64'),
+        crypto.createHmac('sha256', this.apiToken).update(req.rawBody, 'utf-8').digest('hex'),
+        crypto.createHmac('sha1', this.apiToken).update(req.rawBody, 'utf-8').digest('base64'),
+      ];
+
+      const matched = candidates.some((expected) => this.safeCompare(provided, expected));
+      return matched ? { isValid: true } : { isValid: false, reason: 'SIGNATURE_MISMATCH' };
+    }
+
+    const authHeader = this.headerValue(req, 'authorization');
     if (!authHeader) {
       return { isValid: false, reason: 'MISSING_EXOTEL_SIGNATURE' };
     }
 
-    try {
-      // Exotel sends Basic auth: base64(apiKey:apiToken)
-      if (authHeader.startsWith('Basic ')) {
-        const decoded = Buffer.from(authHeader.slice(6), 'base64').toString('utf-8');
-        const [providedKey, providedToken] = decoded.split(':');
-
-        if (!providedKey || !providedToken) {
-          return { isValid: false, reason: 'MALFORMED_AUTH_HEADER' };
-        }
-
-        // Timing-safe comparison of both apiKey and apiToken
-        const keyMatch = crypto.timingSafeEqual(
-          Buffer.from(providedKey),
-          Buffer.from(this.apiKey),
-        );
-        const tokenMatch = crypto.timingSafeEqual(
-          Buffer.from(providedToken),
-          Buffer.from(this.apiToken),
-        );
-
-        if (keyMatch && tokenMatch) {
-          return { isValid: true };
-        }
-
-        return { isValid: false, reason: 'CREDENTIAL_MISMATCH' };
+    if (authHeader.startsWith('Basic ')) {
+      const decoded = Buffer.from(authHeader.slice(6), 'base64').toString('utf-8');
+      const separatorIndex = decoded.indexOf(':');
+      if (separatorIndex <= 0) {
+        return { isValid: false, reason: 'MALFORMED_AUTH_HEADER' };
       }
+      const providedKey = decoded.slice(0, separatorIndex);
+      const providedToken = decoded.slice(separatorIndex + 1);
 
-      // Fallback: check for bearer token matching apiToken
-      if (authHeader.startsWith('Bearer ')) {
-        const providedToken = authHeader.slice(7);
-        const tokenMatch = crypto.timingSafeEqual(
-          Buffer.from(providedToken),
-          Buffer.from(this.apiToken),
-        );
-
-        if (tokenMatch) {
-          return { isValid: true };
-        }
-
-        return { isValid: false, reason: 'TOKEN_MISMATCH' };
+      if (this.safeCompare(providedKey, this.apiKey) && this.safeCompare(providedToken, this.apiToken)) {
+        return { isValid: true };
       }
-
-      return { isValid: false, reason: 'UNSUPPORTED_AUTH_SCHEME' };
-    } catch (err: any) {
-      return { isValid: false, reason: `VALIDATION_ERROR: ${err.message}` };
+      return { isValid: false, reason: 'CREDENTIAL_MISMATCH' };
     }
+
+    if (authHeader.startsWith('Bearer ')) {
+      if (this.safeCompare(authHeader.slice(7), this.apiToken)) {
+        return { isValid: true };
+      }
+      return { isValid: false, reason: 'TOKEN_MISMATCH' };
+    }
+
+    return { isValid: false, reason: 'UNSUPPORTED_AUTH_SCHEME' };
+  }
+
+  private stripDigestPrefix(signature: string): string {
+    const separatorIndex = signature.indexOf('=');
+    if (separatorIndex <= 0) {
+      return signature;
+    }
+    const algorithm = signature.slice(0, separatorIndex).toLowerCase();
+    return /^(sha-?\d+|hmac-sha-?\d+|v1)$/.test(algorithm) ? signature.slice(separatorIndex + 1) : signature;
+  }
+
+  private headerValue(req: WebhookValidationRequest, name: string): string | undefined {
+    const raw = req.headers?.[name];
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    return typeof value === 'string' && value.length > 0 ? value : undefined;
+  }
+
+  private safeCompare(provided: string, expected: string): boolean {
+    const providedBuf = Buffer.from(provided, 'utf-8');
+    const expectedBuf = Buffer.from(expected, 'utf-8');
+    if (providedBuf.length !== expectedBuf.length) {
+      return false;
+    }
+    return crypto.timingSafeEqual(providedBuf, expectedBuf);
   }
 
   private mapExotelStatus(exotelStatus: string): NormalizedCallStatus {

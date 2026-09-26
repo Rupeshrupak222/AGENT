@@ -1,5 +1,7 @@
 import { NormalizedCallEvent, NormalizedCallStatus } from './call-lifecycle.interface';
 
+export const MEDIA_STREAM_TOKEN_TYPE = 'telephony:media-stream';
+
 export interface CreateOutboundCallRequest {
   tenantId: string;
   callId: string;
@@ -7,6 +9,7 @@ export interface CreateOutboundCallRequest {
   toNumber: string;
   statusCallbackUrl: string;
   mediaStreamUrl: string;
+  mediaStreamToken?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -24,6 +27,11 @@ export interface IncomingCallRequest {
   provider: string;
   rawPayload: Record<string, unknown>;
   headers?: Record<string, string>;
+  callId?: string;
+  mediaStreamToken?: string;
+  rawBody?: string;
+  requestUrl?: string;
+  method?: string;
 }
 
 export interface IncomingCallResponse {
@@ -34,6 +42,7 @@ export interface IncomingCallResponse {
 export interface MediaStreamConfig {
   streamUrl: string;
   callId: string;
+  mediaStreamToken?: string;
   track?: 'inbound_track' | 'outbound_track' | 'both_tracks';
   customParameters?: Record<string, string>;
 }

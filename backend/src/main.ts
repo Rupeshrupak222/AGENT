@@ -57,7 +57,7 @@ async function bootstrap() {
     process.exit(1);
   }
 
-  const app    = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app    = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
   const config = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
   const port   = config.get<number>('PORT', 3001);

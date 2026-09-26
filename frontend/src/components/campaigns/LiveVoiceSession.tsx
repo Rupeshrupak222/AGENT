@@ -22,6 +22,7 @@ import {
   Users,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuthStore } from "@/store/auth.store";
 
 export type SupervisorMode = "caller" | "listen" | "whisper" | "barge_in";
 
@@ -30,6 +31,7 @@ interface LiveVoiceSessionProps {
   agentName?: string;
   customerName?: string;
   customerPhone?: string;
+  provider?: string;
   initialSupervisorMode?: SupervisorMode;
   onCallEnded?: () => void;
 }
@@ -77,11 +79,15 @@ export function LiveVoiceSession({
   agentName = "AI Voice Agent",
   customerName = "Customer",
   customerPhone,
-  initialSupervisorMode = "caller",
+  provider,
+  initialSupervisorMode = "listen",
   onCallEnded,
 }: LiveVoiceSessionProps) {
   const [isConnected, setIsConnected] = useState(false);
-  const [supervisorMode, setSupervisorMode] = useState<SupervisorMode>(initialSupervisorMode);
+  const callerPersonaAvailable = (provider || "").toLowerCase() === "sandbox";
+  const resolvedInitialMode: SupervisorMode =
+    initialSupervisorMode === "caller" && !callerPersonaAvailable ? "listen" : initialSupervisorMode;
+  const [supervisorMode, setSupervisorMode] = useState<SupervisorMode>(resolvedInitialMode);
   const [isBargedIn, setIsBargedIn] = useState(false);
   const [supervisorNotice, setSupervisorNotice] = useState<string | null>(null);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
@@ -95,12 +101,19 @@ export function LiveVoiceSession({
   const [audioError, setAudioError] = useState<string | null>(null);
 
   const socketRef = useRef<Socket | null>(null);
+  const supervisorModeRef = useRef<SupervisorMode>(supervisorMode);
+  const ownsCallerStreamRef = useRef(false);
+  const startCallerStreamRef = useRef<(() => void) | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const scheduledTimeRef = useRef<number>(0);
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    supervisorModeRef.current = supervisorMode;
+  }, [supervisorMode]);
 
   // Auto-scroll transcript list
   useEffect(() => {
@@ -199,7 +212,14 @@ export function LiveVoiceSession({
       ? process.env.NEXT_PUBLIC_API_URL.replace("/api/v1", "")
       : "http://localhost:3001";
 
+    const initialToken = useAuthStore.getState().accessToken;
+    if (!initialToken) {
+      setAudioError("Authentication required for live voice sessions");
+      return;
+    }
+
     const socket = io(`${wsUrl}/telephony/stream`, {
+      auth: { token: initialToken },
       transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: 5,
@@ -207,30 +227,54 @@ export function LiveVoiceSession({
 
     socketRef.current = socket;
 
-    socket.on("connect", () => {
-      setIsConnected(true);
-      if (supervisorMode === "caller") {
-        // Send stream initiation handshake for direct caller testing
-        const streamSid = `browser-${callId}`;
-        socket.emit("start", {
+    const joinAsSupervisor = (mode: SupervisorMode) => {
+      socket.emit(
+        "supervisor:join",
+        { callId, mode },
+        (response: any) => {
+          if (response?.success === false || response?.error) {
+            setAudioError(response?.error || "Supervisor access denied for this call");
+          }
+        }
+      );
+    };
+
+    const startCallerStream = () => {
+      if (!callerPersonaAvailable || ownsCallerStreamRef.current) return;
+      const streamSid = `browser-${callId}`;
+      ownsCallerStreamRef.current = true;
+      socket.emit("start", {
+        streamSid,
+        callSid: callId,
+        start: {
           streamSid,
           callSid: callId,
-          start: {
-            streamSid,
-            callSid: callId,
-            customParameters: {
-              callId,
-              tenantId: "default-tenant",
-            },
+          customParameters: {
+            callId,
           },
-        });
+        },
+      });
+    };
+
+    startCallerStreamRef.current = startCallerStream;
+
+    socket.on("connect", () => {
+      const activeToken = useAuthStore.getState().accessToken;
+      if (activeToken) {
+        socket.auth = { token: activeToken };
+      }
+      setIsConnected(true);
+      if (supervisorModeRef.current === "caller" && callerPersonaAvailable) {
+        startCallerStream();
       } else {
-        // Join call room as supervisor
-        socket.emit("supervisor:join", {
-          callId,
-          mode: supervisorMode,
-          name: "Supervisor (Portal)",
-        });
+        joinAsSupervisor(supervisorModeRef.current);
+      }
+    });
+
+    socket.io.on("reconnect_attempt", () => {
+      const activeToken = useAuthStore.getState().accessToken;
+      if (activeToken) {
+        socket.auth = { token: activeToken };
       }
     });
 
@@ -265,13 +309,13 @@ export function LiveVoiceSession({
 
     // Supervisor monitoring audio channels (caller + agent streams)
     socket.on("supervisor:caller_audio", (payload: any) => {
-      if (supervisorMode !== "caller" && payload?.payload) {
+      if (supervisorModeRef.current !== "caller" && payload?.payload) {
         playIncomingMuLaw(payload.payload);
       }
     });
 
     socket.on("supervisor:agent_audio", (payload: any) => {
-      if (supervisorMode !== "caller" && payload?.payload) {
+      if (supervisorModeRef.current !== "caller" && payload?.payload) {
         playIncomingMuLaw(payload.payload);
       }
     });
@@ -299,9 +343,17 @@ export function LiveVoiceSession({
       setIsConnected(false);
     });
 
+    socket.on("connect_error", (error) => {
+      setIsConnected(false);
+      setAudioError(`Live voice connection failed: ${error.message}`);
+    });
+
     return () => {
-      if (supervisorMode === "caller") {
+      socket.io.off("reconnect_attempt");
+      startCallerStreamRef.current = null;
+      if (ownsCallerStreamRef.current) {
         socket.emit("stop", { callSid: callId });
+        ownsCallerStreamRef.current = false;
       }
       socket.disconnect();
       stopAllAIAudio();
@@ -312,7 +364,7 @@ export function LiveVoiceSession({
         audioCtxRef.current.close().catch(() => {});
       }
     };
-  }, [callId, supervisorMode, playIncomingMuLaw, stopAllAIAudio]);
+  }, [callId, callerPersonaAvailable, playIncomingMuLaw, stopAllAIAudio]);
 
   // Microphone capture and streaming
   const startMicrophone = async () => {
@@ -364,7 +416,8 @@ export function LiveVoiceSession({
         const base64Payload = btoa(binary);
 
         if (socketRef.current && socketRef.current.connected) {
-          if (supervisorMode === "caller") {
+          const activeMode = supervisorModeRef.current;
+          if (activeMode === "caller" && ownsCallerStreamRef.current) {
             socketRef.current.emit("media", {
               event: "media",
               streamSid: `browser-${callId}`,
@@ -373,7 +426,7 @@ export function LiveVoiceSession({
                 timestamp: Date.now().toString(),
               },
             });
-          } else if (supervisorMode === "barge_in" || supervisorMode === "whisper") {
+          } else if (activeMode === "barge_in" || activeMode === "whisper") {
             socketRef.current.emit("supervisor:audio", {
               callId,
               payload: base64Payload,
@@ -419,19 +472,41 @@ export function LiveVoiceSession({
   };
 
   const handleSetSupervisorMode = (newMode: SupervisorMode) => {
+    if (newMode === "caller" && !callerPersonaAvailable) {
+      setSupervisorNotice("Caller persona is reserved for sandbox calls on a live carrier stream");
+      setTimeout(() => setSupervisorNotice(null), 4000);
+      return;
+    }
+
+    supervisorModeRef.current = newMode;
     setSupervisorMode(newMode);
     if (!socketRef.current) return;
 
     if (newMode === "caller") {
       setIsBargedIn(false);
+      if (ownsCallerStreamRef.current || !socketRef.current.connected) {
+        return;
+      }
+      startCallerStreamRef.current?.();
       return;
     }
 
-    socketRef.current.emit("supervisor:join", {
-      callId,
-      mode: newMode,
-      name: "Supervisor (Portal)",
-    });
+    if (ownsCallerStreamRef.current) {
+      ownsCallerStreamRef.current = false;
+      socketRef.current.emit("stop", { callSid: callId });
+    }
+
+    socketRef.current.emit(
+      "supervisor:join",
+      { callId, mode: newMode },
+      (response: any) => {
+        if (response?.success === false || response?.error) {
+          supervisorModeRef.current = "listen";
+          setSupervisorMode("listen");
+          setAudioError(response?.error || "Supervisor access denied for this call");
+        }
+      }
+    );
 
     socketRef.current.emit("supervisor:set_mode", {
       callId,
@@ -456,7 +531,12 @@ export function LiveVoiceSession({
 
   const handleEndCall = () => {
     if (socketRef.current) {
-      socketRef.current.emit("stop", { callSid: callId });
+      if (ownsCallerStreamRef.current) {
+        socketRef.current.emit("stop", { callSid: callId });
+        ownsCallerStreamRef.current = false;
+      } else {
+        socketRef.current.emit("supervisor:release", { callId });
+      }
     }
     stopMicrophone();
     stopAllAIAudio();
@@ -552,11 +632,17 @@ export function LiveVoiceSession({
           <button
             type="button"
             onClick={() => handleSetSupervisorMode("caller")}
+            disabled={!callerPersonaAvailable}
+            title={
+              callerPersonaAvailable
+                ? "Act as the caller (sandbox sessions only)"
+                : "Unavailable: the caller side is owned by the telephony carrier on live calls"
+            }
             className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
               supervisorMode === "caller"
                 ? "bg-slate-700 text-white border border-slate-600 shadow-sm"
                 : "bg-slate-200/80 text-slate-700 hover:text-slate-900 hover:bg-slate-300 dark:bg-slate-800/60 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800"
-            }`}
+            } disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-200/80 dark:disabled:hover:bg-slate-800/60`}
           >
             <User className="w-3.5 h-3.5" /> Caller Persona
           </button>

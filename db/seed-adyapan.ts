@@ -24,7 +24,7 @@ async function main() {
   }
 
   const admin = await prisma.user.findFirst({
-    where: { tenantId: tenant.id, role: 'super_admin' },
+    where: { tenantId: tenant.id },
   });
 
   // ── 1. Create / Upsert Adyapan AI Agent ──────────────────────────

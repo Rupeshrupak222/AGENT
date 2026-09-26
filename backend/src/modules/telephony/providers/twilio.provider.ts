@@ -57,6 +57,7 @@ export class TwilioTelephonyProvider extends BaseTelephonyProvider {
       const twiml = this.generateMediaStreamResponse({
         streamUrl: req.mediaStreamUrl,
         callId: req.callId,
+        mediaStreamToken: req.mediaStreamToken,
       });
 
       const params = new URLSearchParams({
@@ -110,7 +111,8 @@ export class TwilioTelephonyProvider extends BaseTelephonyProvider {
     const streamUrl = (req.rawPayload.StreamUrl as string) || `wss://${host}/telephony/stream`;
     const xml = this.generateMediaStreamResponse({
       streamUrl,
-      callId: req.providerCallId,
+      callId: req.callId || req.providerCallId,
+      mediaStreamToken: req.mediaStreamToken,
     });
 
     return {
@@ -209,11 +211,14 @@ export class TwilioTelephonyProvider extends BaseTelephonyProvider {
   }
 
   generateMediaStreamResponse(config: MediaStreamConfig): string {
+    const tokenParameter = config.mediaStreamToken
+      ? `\n            <Parameter name="mediaStreamToken" value="${this.escapeXml(config.mediaStreamToken)}" />`
+      : '';
     return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Connect>
-        <Stream url="${config.streamUrl}">
-            <Parameter name="callId" value="${config.callId}" />
+        <Stream url="${this.escapeXml(config.streamUrl)}">
+            <Parameter name="callId" value="${this.escapeXml(config.callId)}" />${tokenParameter}
         </Stream>
     </Connect>
 </Response>`;
@@ -244,18 +249,31 @@ export class TwilioTelephonyProvider extends BaseTelephonyProvider {
       }
     }
 
-    const signature = req.headers?.['x-twilio-signature'] as string;
-    if (!signature) {
+    const rawSignature = req.headers?.['x-twilio-signature'] as string;
+    if (!rawSignature) {
       return { isValid: false, reason: 'MISSING_TWILIO_SIGNATURE' };
     }
+    const signature = rawSignature.startsWith('sha1=') ? rawSignature.slice('sha1='.length) : rawSignature;
 
     try {
-      // Twilio signature verification algorithm:
-      // Sort keys alphabetically, append key + value to full URL, compute HMAC-SHA1 with authToken
-      const keys = Object.keys(req.payload).sort();
+      // Twilio signs the exact bytes it sent. Form-encoded callbacks are signed over
+      // the URL plus alphabetically sorted parameters; JSON callbacks (bodySHA256) are
+      // signed over the URL plus the raw body, which re-serialization cannot reproduce.
+      const contentTypeHeader = req.headers?.['content-type'];
+      const contentType = Array.isArray(contentTypeHeader) ? contentTypeHeader[0] : contentTypeHeader;
+      const usesRawBody =
+        typeof req.rawBody === 'string' &&
+        typeof contentType === 'string' &&
+        contentType.toLowerCase().includes('application/json');
+
       let data = req.requestUrl;
-      for (const key of keys) {
-        data += `${key}${req.payload[key]}`;
+      if (usesRawBody) {
+        data += req.rawBody as string;
+      } else {
+        const keys = Object.keys(req.payload).sort();
+        for (const key of keys) {
+          data += `${key}${req.payload[key]}`;
+        }
       }
 
       const expectedSignature = crypto
@@ -275,6 +293,15 @@ export class TwilioTelephonyProvider extends BaseTelephonyProvider {
     } catch (err: any) {
       return { isValid: false, reason: `VALIDATION_ERROR: ${err.message}` };
     }
+  }
+
+  private escapeXml(value: string): string {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
   }
 
   private mapTwilioStatus(twilioStatus: string): NormalizedCallStatus {

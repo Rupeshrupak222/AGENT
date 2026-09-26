@@ -198,10 +198,14 @@ export class RecordingProcessor implements OnModuleInit {
         if (!host.endsWith('.twilio.com') && host !== 'api.twilio.com') {
           return { isValid: false, reason: 'INVALID_TWILIO_HOSTNAME' };
         }
+      } else if (provider === 'frejun') {
+        if (!host.endsWith('.frejun.com') && host !== 'frejun.com' && !host.endsWith('.amazonaws.com')) {
+          return { isValid: false, reason: 'INVALID_FREJUN_HOSTNAME' };
+        }
       } else if (provider === 'mock' || provider === 'dev') {
         return { isValid: true };
       } else {
-        if (!host.endsWith('.twilio.com') && !host.endsWith('.exotel.com')) {
+        if (!host.endsWith('.twilio.com') && !host.endsWith('.exotel.com') && !host.endsWith('.frejun.com')) {
           return { isValid: false, reason: 'UNTRUSTED_TELEPHONY_HOST' };
         }
       }

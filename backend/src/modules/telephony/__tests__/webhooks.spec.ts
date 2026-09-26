@@ -1,16 +1,20 @@
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { TwilioTelephonyProvider } from '../providers/twilio.provider';
 import { ExotelTelephonyProvider } from '../providers/exotel.provider';
+import { FrejunTelephonyProvider } from '../providers/frejun.provider';
 import { SandboxTelephonyProvider } from '../providers/sandbox.provider';
 import { TelephonyService } from '../services/telephony.service';
 import { TelephonyProviderRegistry } from '../providers/provider-registry.service';
 import { AudioSessionService } from '../services/audio-session.service';
 import { CallInsightsService } from '../services/call-insights.service';
+import { MEDIA_STREAM_TOKEN_TYPE } from '../interfaces/telephony-provider.interface';
 
 describe('Webhook Processing, State Machine & Idempotency', () => {
   let twilioProvider: TwilioTelephonyProvider;
   let exotelProvider: ExotelTelephonyProvider;
+  let frejunProvider: FrejunTelephonyProvider;
   let sandboxProvider: SandboxTelephonyProvider;
   let registry: TelephonyProviderRegistry;
   let audioSessionService: AudioSessionService;
@@ -34,14 +38,22 @@ describe('Webhook Processing, State Machine & Idempotency', () => {
         if (key === 'TWILIO_ACCOUNT_SID') return 'AC_TEST_123';
         if (key === 'TWILIO_AUTH_TOKEN') return testAuthToken;
         if (key === 'TWILIO_PHONE_NUMBER') return '+15551234567';
+        if (key === 'JWT_SECRET') return testAuthToken;
         return defaultVal;
       }),
     } as any;
 
     twilioProvider = new TwilioTelephonyProvider(configService);
     exotelProvider = new ExotelTelephonyProvider(configService);
+    frejunProvider = new FrejunTelephonyProvider(configService);
     sandboxProvider = new SandboxTelephonyProvider();
-    registry = new TelephonyProviderRegistry(configService, twilioProvider, exotelProvider, sandboxProvider);
+    registry = new TelephonyProviderRegistry(
+      configService,
+      twilioProvider,
+      exotelProvider,
+      frejunProvider,
+      sandboxProvider,
+    );
     audioSessionService = new AudioSessionService();
 
     mockPrisma = {
@@ -53,6 +65,7 @@ describe('Webhook Processing, State Machine & Idempotency', () => {
           status: 'ringing',
           startedAt: new Date(Date.now() - 60000),
         }),
+        create: jest.fn(),
         update: jest.fn().mockResolvedValue({ id: 'call-100' }),
       },
     };
@@ -63,6 +76,7 @@ describe('Webhook Processing, State Machine & Idempotency', () => {
       registry,
       audioSessionService,
       new CallInsightsService(),
+      new JwtService({ secret: testAuthToken }),
     );
   });
 
@@ -129,6 +143,83 @@ describe('Webhook Processing, State Machine & Idempotency', () => {
   });
 
   describe('Webhook Security & Signature Verification', () => {
+    it('should reject an unsigned incoming call webhook before creating media access', async () => {
+      const payload = {
+        CallSid: 'CA_UNSIGNED_INBOUND',
+        From: '+15550001111',
+        To: '+15550002222',
+      };
+
+      await expect(
+        telephonyService.handleIncomingCallWebhook('twilio', {
+          providerCallId: payload.CallSid,
+          fromNumber: payload.From,
+          toNumber: payload.To,
+          provider: 'twilio',
+          rawPayload: payload,
+          headers: { host: 'example.com' },
+          requestUrl: 'https://example.com/api/v1/telephony/webhooks/incoming/twilio',
+          method: 'POST',
+        }),
+      ).rejects.toThrow('Incoming webhook signature validation failed: MISSING_TWILIO_SIGNATURE');
+      expect(mockPrisma.call.create).not.toHaveBeenCalled();
+    });
+
+    it('should issue a short-lived purpose-bound stream token for a verified inbound call', async () => {
+      const payload = {
+        CallSid: 'CA_VERIFIED_INBOUND',
+        From: '+15550001111',
+        To: '+15550002222',
+      };
+      const requestUrl = 'https://example.com/api/v1/telephony/webhooks/incoming/twilio';
+      const signature = generateTwilioSignature(requestUrl, payload, testAuthToken);
+      mockPrisma.tenant = {
+        findFirst: jest.fn().mockResolvedValue({ id: 'tenant-1' }),
+      };
+      mockPrisma.aIAgent = {
+        findFirst: jest.fn().mockResolvedValue({ id: 'agent-1' }),
+      };
+      mockPrisma.lead = {
+        findFirst: jest.fn().mockResolvedValue({ id: 'lead-1' }),
+        create: jest.fn(),
+      };
+      mockPrisma.call.create = jest.fn().mockResolvedValue({
+        id: 'call-db-inbound',
+        tenantId: 'tenant-1',
+      });
+
+      const response = await telephonyService.handleIncomingCallWebhook('twilio', {
+        providerCallId: payload.CallSid,
+        fromNumber: payload.From,
+        toNumber: payload.To,
+        provider: 'twilio',
+        rawPayload: payload,
+        headers: {
+          host: 'example.com',
+          'x-twilio-signature': signature,
+        },
+        rawBody: JSON.stringify(payload),
+        requestUrl,
+        method: 'POST',
+      });
+      const encodedToken = response.instruction.match(
+        /name="mediaStreamToken" value="([^"]+)"/,
+      )?.[1];
+      const tokenPayload = new JwtService({ secret: testAuthToken }).verify(
+        decodeURIComponent(encodedToken || ''),
+      );
+
+      expect(tokenPayload).toEqual(
+        expect.objectContaining({
+          type: MEDIA_STREAM_TOKEN_TYPE,
+          tenantId: 'tenant-1',
+          callId: 'call-db-inbound',
+          provider: 'twilio',
+        }),
+      );
+      expect(response.instruction).toContain('<Parameter name="callId" value="call-db-inbound" />');
+    });
+
     it('should reject callback with missing signature', async () => {
       const payload = { CallSid: 'CA_TEST', CallStatus: 'ringing' };
       const validationReq = {

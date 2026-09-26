@@ -1,7 +1,9 @@
 import * as crypto from 'crypto';
+import { JwtService } from '@nestjs/jwt';
 import { TelephonyService } from '../services/telephony.service';
 import { TwilioTelephonyProvider } from '../providers/twilio.provider';
 import { ExotelTelephonyProvider } from '../providers/exotel.provider';
+import { FrejunTelephonyProvider } from '../providers/frejun.provider';
 import { SandboxTelephonyProvider } from '../providers/sandbox.provider';
 import { TelephonyProviderRegistry } from '../providers/provider-registry.service';
 import { AudioSessionService } from '../services/audio-session.service';
@@ -10,6 +12,7 @@ import { RecordingQueueService } from '../services/recording-queue.service';
 describe('Recording Webhook Architecture & Idempotency', () => {
   let twilioProvider: TwilioTelephonyProvider;
   let exotelProvider: ExotelTelephonyProvider;
+  let frejunProvider: FrejunTelephonyProvider;
   let sandboxProvider: SandboxTelephonyProvider;
   let registry: TelephonyProviderRegistry;
   let audioSessionService: AudioSessionService;
@@ -40,8 +43,15 @@ describe('Recording Webhook Architecture & Idempotency', () => {
 
     twilioProvider = new TwilioTelephonyProvider(configService);
     exotelProvider = new ExotelTelephonyProvider(configService);
+    frejunProvider = new FrejunTelephonyProvider(configService);
     sandboxProvider = new SandboxTelephonyProvider();
-    registry = new TelephonyProviderRegistry(configService, twilioProvider, exotelProvider, sandboxProvider);
+    registry = new TelephonyProviderRegistry(
+      configService,
+      twilioProvider,
+      exotelProvider,
+      frejunProvider,
+      sandboxProvider,
+    );
     audioSessionService = new AudioSessionService();
 
     mockQueueService = {
@@ -78,6 +88,7 @@ describe('Recording Webhook Architecture & Idempotency', () => {
       registry,
       audioSessionService,
       {} as any, // CallInsightsService (not exercised by recording webhooks)
+      new JwtService({ secret: testAuthToken }),
       mockQueueService as any,
     );
   });

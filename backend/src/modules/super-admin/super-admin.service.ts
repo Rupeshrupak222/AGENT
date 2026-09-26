@@ -226,6 +226,7 @@ export class SuperAdminService {
       return [
         { provider: 'twilio', name: 'Twilio', isEnabled: false, healthStatus: 'unknown' },
         { provider: 'exotel', name: 'Exotel', isEnabled: false, healthStatus: 'unknown' },
+        { provider: 'frejun', name: 'Frejun', isEnabled: false, healthStatus: 'unknown' },
         { provider: 'sandbox', name: 'Sandbox', isEnabled: true, healthStatus: 'healthy' },
       ];
     }

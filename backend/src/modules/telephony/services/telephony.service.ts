@@ -7,6 +7,7 @@ import {
   Optional,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { CallStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TelephonyProviderRegistry } from '../providers/provider-registry.service';
@@ -16,6 +17,7 @@ import { RecordingQueueService } from './recording-queue.service';
 import {
   IncomingCallRequest,
   IncomingCallResponse,
+  MEDIA_STREAM_TOKEN_TYPE,
   WebhookValidationRequest,
 } from '../interfaces/telephony-provider.interface';
 import { NormalizedCallStatus } from '../interfaces/call-lifecycle.interface';
@@ -39,6 +41,7 @@ export class TelephonyService {
     private registry: TelephonyProviderRegistry,
     private audioSessionService: AudioSessionService,
     private callInsightsService: CallInsightsService,
+    private jwtService: JwtService,
     @Optional() private recordingQueueService?: RecordingQueueService,
   ) {}
 
@@ -69,6 +72,7 @@ export class TelephonyService {
     const host = this.configService.get<string>('API_HOST', 'localhost:3001');
     const statusCallbackUrl = `https://${host}/api/v1/telephony/webhooks/status/${provider.name}`;
     const mediaStreamUrl = `wss://${host}/telephony/stream`;
+    const mediaStreamToken = await this.createMediaStreamToken(tenantId, callId, provider.name);
 
     this.logger.log(`Dispatching outbound call ${callId} via provider [${provider.name}] to ${toNumber}`);
 
@@ -79,6 +83,7 @@ export class TelephonyService {
       toNumber,
       statusCallbackUrl,
       mediaStreamUrl,
+      mediaStreamToken,
     });
 
     // Honest disposition: a provider that is not configured (or otherwise failed to
@@ -135,13 +140,25 @@ export class TelephonyService {
     req: IncomingCallRequest,
   ): Promise<IncomingCallResponse> {
     const provider = this.registry.get(providerName);
+    const validation = provider.validateWebhookSignature({
+      rawBody: req.rawBody,
+      payload: req.rawPayload,
+      headers: req.headers || {},
+      requestUrl: req.requestUrl || '',
+      method: req.method || 'POST',
+    });
+
+    if (!validation.isValid) {
+      this.logger.warn(`Rejected incoming call webhook from [${providerName}]: ${validation.reason}`);
+      throw new BadRequestException(`Incoming webhook signature validation failed: ${validation.reason}`);
+    }
 
     this.logger.log(`Received incoming call webhook from [${providerName}] for caller ${req.fromNumber}`);
 
-    // Try to identify tenant by caller or assign to default tenant
     let tenantId = 'default-tenant';
     let agentId = 'default-agent';
     let leadId = 'inbound-lead';
+    let callId: string | undefined;
 
     try {
       const tenant = await this.prisma.tenant.findFirst();
@@ -152,7 +169,6 @@ export class TelephonyService {
       });
       if (agent) agentId = agent.id;
 
-      // Find or create lead
       let lead = await this.prisma.lead.findFirst({
         where: { tenantId, phone: req.fromNumber },
       });
@@ -170,7 +186,6 @@ export class TelephonyService {
       }
       leadId = lead.id;
 
-      // Create inbound call record
       const call = await this.prisma.call.create({
         data: {
           tenantId,
@@ -186,10 +201,10 @@ export class TelephonyService {
           },
         },
       });
+      callId = call.id;
 
-      // Prepare AudioSession
       this.audioSessionService.createSession({
-        callId: call.id,
+        callId,
         tenantId,
         agentId,
         leadId,
@@ -197,10 +212,20 @@ export class TelephonyService {
         direction: 'inbound',
       });
     } catch (err: any) {
-      this.logger.warn(`Database offline or error creating inbound call record: ${err.message}`);
+      this.logger.warn(`Database error creating inbound call record: ${err.message}`);
+      throw new ServiceUnavailableException('Unable to initialize authenticated media stream');
     }
 
-    return provider.handleIncomingCall(req);
+    if (!callId) {
+      throw new ServiceUnavailableException('Unable to initialize authenticated media stream');
+    }
+
+    const mediaStreamToken = await this.createMediaStreamToken(tenantId, callId, providerName);
+    return provider.handleIncomingCall({
+      ...req,
+      callId,
+      mediaStreamToken,
+    });
   }
 
   /**
@@ -534,6 +559,37 @@ export class TelephonyService {
       default:
         return 'queued';
     }
+  }
+
+  private mediaStreamSecret(): string {
+    const secret = this.configService.get<string>('JWT_SECRET');
+    if (secret) return secret;
+
+    if (this.configService.get<string>('NODE_ENV') === 'production') {
+      throw new Error('JWT_SECRET is required in production');
+    }
+
+    return 'adyapan-dev-jwt-secret-key-change-in-production-2026';
+  }
+
+  private async createMediaStreamToken(
+    tenantId: string,
+    callId: string,
+    provider: string,
+  ): Promise<string> {
+    return this.jwtService.signAsync(
+      {
+        type: MEDIA_STREAM_TOKEN_TYPE,
+        sub: callId,
+        tenantId,
+        callId,
+        provider,
+      },
+      {
+        secret: this.mediaStreamSecret(),
+        expiresIn: '10m',
+      },
+    );
   }
 
   private recordEventProcessed(eventId: string) {

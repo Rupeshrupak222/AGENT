@@ -12,6 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
+import { RawBodyRequest } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -28,10 +29,23 @@ import {
   TelephonySystemStatusDto,
 } from './dto/webhook-event.dto';
 
+type TelephonyWebhookRequest = RawBodyRequest<Request>;
+
 @ApiTags('Telephony')
 @Controller('telephony')
 export class TelephonyController {
   constructor(private readonly telephonyService: TelephonyService) {}
+
+  private static rawBodyOf(req: TelephonyWebhookRequest, body: any): string {
+    if (typeof req.rawBody === 'string') return req.rawBody;
+    if (Buffer.isBuffer(req.rawBody)) return req.rawBody.toString('utf-8');
+    if (typeof body === 'string') return body;
+    return JSON.stringify(body ?? {});
+  }
+
+  private static requestUrlOf(req: Request): string {
+    return `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+  }
 
   @Get('status')
   @Public()
@@ -62,11 +76,11 @@ export class TelephonyController {
   @Public()
   @Post('webhooks/incoming/:provider')
   @ApiOperation({ summary: 'Provider inbound call webhook (TwiML / XML / JSON)' })
-  @ApiParam({ name: 'provider', enum: ['twilio', 'exotel'] })
+  @ApiParam({ name: 'provider', enum: ['twilio', 'exotel', 'frejun'] })
   async handleIncoming(
     @Param('provider') provider: string,
     @Body() body: any,
-    @Req() req: Request,
+    @Req() req: TelephonyWebhookRequest,
     @Res() res: Response,
   ) {
     const fromNumber = body.From || body.CallFrom || body.caller || '';
@@ -82,6 +96,9 @@ export class TelephonyController {
         provider,
         rawPayload: body,
         headers: req.headers as Record<string, string>,
+        rawBody: TelephonyController.rawBodyOf(req, body),
+        requestUrl: TelephonyController.requestUrlOf(req),
+        method: req.method,
       },
     );
 
@@ -93,23 +110,22 @@ export class TelephonyController {
   @Post('webhooks/status/:provider')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Provider call status callback webhook (signature verified and idempotent)' })
-  @ApiParam({ name: 'provider', enum: ['twilio', 'exotel'] })
+  @ApiParam({ name: 'provider', enum: ['twilio', 'exotel', 'frejun'] })
   @ApiResponse({ status: 200, type: WebhookAcknowledgementDto })
   async handleStatusCallback(
     @Param('provider') provider: string,
     @Body() body: any,
-    @Req() req: Request,
+    @Req() req: TelephonyWebhookRequest,
     @Headers() headers: Record<string, string>,
   ): Promise<WebhookAcknowledgementDto> {
-    const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
-
     return this.telephonyService.handleStatusCallbackWebhook(
       provider,
       body,
       {
         payload: body,
         headers,
-        requestUrl: fullUrl,
+        rawBody: TelephonyController.rawBodyOf(req, body),
+        requestUrl: TelephonyController.requestUrlOf(req),
         method: req.method,
       },
     );
@@ -119,7 +135,7 @@ export class TelephonyController {
   @Post('webhooks/media/:provider')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Provider media stream webhook acknowledgment' })
-  @ApiParam({ name: 'provider', enum: ['twilio', 'exotel'] })
+  @ApiParam({ name: 'provider', enum: ['twilio', 'exotel', 'frejun'] })
   handleMediaWebhook(
     @Param('provider') provider: string,
     @Body() body: any,
@@ -131,22 +147,21 @@ export class TelephonyController {
   @Post('webhooks/recording/:provider')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Provider recording callback webhook (signature verified and non-blocking async queueing)' })
-  @ApiParam({ name: 'provider', enum: ['twilio', 'exotel'] })
+  @ApiParam({ name: 'provider', enum: ['twilio', 'exotel', 'frejun'] })
   async handleRecordingWebhook(
     @Param('provider') provider: string,
     @Body() body: any,
-    @Req() req: Request,
+    @Req() req: TelephonyWebhookRequest,
     @Headers() headers: Record<string, string>,
   ) {
-    const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
-
     return this.telephonyService.handleRecordingWebhook(
       provider,
       body,
       {
         payload: body,
         headers,
-        requestUrl: fullUrl,
+        rawBody: TelephonyController.rawBodyOf(req, body),
+        requestUrl: TelephonyController.requestUrlOf(req),
         method: req.method,
       },
     );

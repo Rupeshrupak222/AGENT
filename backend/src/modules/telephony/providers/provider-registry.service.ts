@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { ITelephonyProvider } from '../interfaces/telephony-provider.interface';
 import { TwilioTelephonyProvider } from './twilio.provider';
 import { ExotelTelephonyProvider } from './exotel.provider';
+import { FrejunTelephonyProvider } from './frejun.provider';
 import { SandboxTelephonyProvider } from './sandbox.provider';
 
 @Injectable()
@@ -14,10 +15,12 @@ export class TelephonyProviderRegistry {
     private configService: ConfigService,
     private twilioProvider: TwilioTelephonyProvider,
     private exotelProvider: ExotelTelephonyProvider,
+    private frejunProvider: FrejunTelephonyProvider,
     private sandboxProvider: SandboxTelephonyProvider,
   ) {
     this.register(this.twilioProvider);
     this.register(this.exotelProvider);
+    this.register(this.frejunProvider);
     this.register(this.sandboxProvider);
   }
 
@@ -46,6 +49,11 @@ export class TelephonyProviderRegistry {
     // If Exotel has live credentials, use it
     if (this.exotelProvider.isConfigured) {
       return this.exotelProvider;
+    }
+
+    // If Frejun has live credentials, use it
+    if (this.frejunProvider.isConfigured) {
+      return this.frejunProvider;
     }
 
     // Graceful fallback to Sandbox provider for development & WebRTC voice testing

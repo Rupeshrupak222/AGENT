@@ -10,7 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 
 const PHONE_STATUSES = ['available', 'assigned', 'inactive'];
-const PHONE_PROVIDERS = ['twilio', 'exotel', 'sandbox'];
+const PHONE_PROVIDERS = ['twilio', 'exotel', 'frejun', 'sandbox'];
 
 @Injectable()
 export class PhoneNumbersService {
