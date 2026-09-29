@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, Volume2, PhoneCall, CheckCircle2, ShieldCheck, Zap } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, PhoneCall, CheckCircle2, ShieldCheck, Zap, FastForward } from "lucide-react";
 
 interface Scenario {
   id: string;
@@ -89,36 +89,77 @@ export function VoiceDemoSection() {
   const [activeTab, setActiveTab] = useState<string>("realestate");
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [activeLine, setActiveLine] = useState<number>(0);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentScenario = scenarios.find((s) => s.id === activeTab) || scenarios[0];
+
+  const stopAudio = useCallback(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+  }, []);
+
+  const speakTranscriptLine = useCallback((text: string, isAI: boolean) => {
+    if (!soundEnabled || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = (isAI ? 1.05 : 1.0) * playbackSpeed;
+      utterance.pitch = isAI ? 1.15 : 0.95;
+      utterance.lang = "en-IN";
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      // SpeechSynthesis gracefully ignored if blocked
+    }
+  }, [soundEnabled, playbackSpeed]);
 
   useEffect(() => {
     // Reset playback on tab change
     setIsPlaying(false);
     setActiveLine(0);
+    stopAudio();
     if (timerRef.current) clearInterval(timerRef.current);
-  }, [activeTab]);
+  }, [activeTab, stopAudio]);
+
+  const advanceLine = useCallback((current: number) => {
+    setActiveLine(current);
+    const line = currentScenario.transcript[current];
+    if (line) {
+      speakTranscriptLine(line.text, line.speaker === "ai");
+    }
+  }, [currentScenario, speakTranscriptLine]);
 
   function togglePlay() {
     if (isPlaying) {
       setIsPlaying(false);
+      stopAudio();
       if (timerRef.current) clearInterval(timerRef.current);
     } else {
       setIsPlaying(true);
-      // Play simulated speech progression
       let current = activeLine >= currentScenario.transcript.length - 1 ? 0 : activeLine;
-      setActiveLine(current);
+      advanceLine(current);
 
+      const intervalMs = Math.round(3200 / playbackSpeed);
       timerRef.current = setInterval(() => {
         current += 1;
         if (current < currentScenario.transcript.length) {
-          setActiveLine(current);
+          advanceLine(current);
         } else {
           setIsPlaying(false);
+          stopAudio();
           if (timerRef.current) clearInterval(timerRef.current);
         }
-      }, 3200);
+      }, intervalMs);
+    }
+  }
+
+  function handleLineClick(index: number) {
+    setActiveLine(index);
+    const line = currentScenario.transcript[index];
+    if (line) {
+      speakTranscriptLine(line.text, line.speaker === "ai");
     }
   }
 
@@ -212,32 +253,68 @@ export function VoiceDemoSection() {
               </div>
             </div>
 
-            {/* Dynamic Soundwave Visualizer */}
-            <div className="flex items-center gap-1.5 h-8 px-4 py-2 rounded-2xl bg-[#F5EDE4]/70 border border-[#DDB892]/40">
-              <Volume2 className="w-4 h-4 text-[#8B5A2B] mr-1" />
-              {[40, 75, 55, 90, 65, 80, 45, 95, 60, 70, 85, 50, 65].map((h, i) => (
-                <motion.div
-                  key={i}
-                  animate={
-                    isPlaying
-                      ? {
-                          height: [`${Math.max(15, (h * 0.3))}px`, `${Math.min(26, (h * 0.35))}px`, `${Math.max(10, (h * 0.2))}px`]
-                        }
-                      : { height: "6px" }
-                  }
-                  transition={{
-                    duration: 0.6,
-                    repeat: isPlaying ? Infinity : 0,
-                    delay: i * 0.05,
-                    ease: "easeInOut"
-                  }}
-                  className="w-1 rounded-full"
-                  style={{ background: isPlaying ? "#8B5A2B" : "#B08968" }}
-                />
-              ))}
-              <span className="text-[11px] font-mono text-[#6F4428] font-bold ml-1.5">
-                {isPlaying ? "LIVE" : "READY"}
-              </span>
+            {/* Controls & Soundwave Visualizer */}
+            <div className="flex items-center gap-2">
+              {/* Audio Speech Mute/Unmute */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (soundEnabled) stopAudio();
+                  setSoundEnabled(!soundEnabled);
+                }}
+                className={`p-2 rounded-xl border text-xs flex items-center gap-1 transition-all ${
+                  soundEnabled
+                    ? "bg-[#F5EDE4] text-[#6F4428] border-[#DDB892]"
+                    : "bg-slate-100 text-slate-400 border-slate-200"
+                }`}
+                title={soundEnabled ? "Mute audio synthesis" : "Enable speech synthesis"}
+                aria-label={soundEnabled ? "Mute speech" : "Unmute speech"}
+              >
+                {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                <span className="text-[10px] font-semibold hidden sm:inline">
+                  {soundEnabled ? "Voice ON" : "Muted"}
+                </span>
+              </button>
+
+              {/* Playback Speed Cycle */}
+              <button
+                type="button"
+                onClick={() => {
+                  const nextSpeed = playbackSpeed === 1 ? 1.25 : playbackSpeed === 1.25 ? 1.5 : 1;
+                  setPlaybackSpeed(nextSpeed);
+                }}
+                className="px-2.5 py-1.5 rounded-xl border border-[#DDB892]/60 bg-[#F5EDE4]/70 text-[#6F4428] text-[10px] font-mono font-bold hover:bg-[#F5EDE4] transition-colors"
+                title="Change playback speed"
+              >
+                {playbackSpeed}x
+              </button>
+
+              {/* Dynamic Soundwave Visualizer */}
+              <div className="flex items-center gap-1.5 h-8 px-3.5 py-1.5 rounded-2xl bg-[#F5EDE4]/70 border border-[#DDB892]/40">
+                {[40, 75, 55, 90, 65, 80, 45, 95, 60, 70, 85, 50, 65].map((h, i) => (
+                  <motion.div
+                    key={i}
+                    animate={
+                      isPlaying
+                        ? {
+                            height: [`${Math.max(15, (h * 0.3))}px`, `${Math.min(26, (h * 0.35))}px`, `${Math.max(10, (h * 0.2))}px`]
+                          }
+                        : { height: "6px" }
+                    }
+                    transition={{
+                      duration: 0.6,
+                      repeat: isPlaying ? Infinity : 0,
+                      delay: i * 0.05,
+                      ease: "easeInOut"
+                    }}
+                    className="w-1 rounded-full"
+                    style={{ background: isPlaying ? "#8B5A2B" : "#B08968" }}
+                  />
+                ))}
+                <span className="text-[10px] font-mono text-[#6F4428] font-bold ml-1">
+                  {isPlaying ? "LIVE" : "READY"}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -252,13 +329,15 @@ export function VoiceDemoSection() {
                 <motion.div
                   key={idx}
                   initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: hasPassed ? 1 : 0.4, y: 0 }}
+                  animate={{ opacity: hasPassed ? 1 : 0.45, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className={`flex gap-3 ${isAI ? "justify-start" : "justify-end"}`}
+                  onClick={() => handleLineClick(idx)}
+                  className={`flex gap-3 cursor-pointer group ${isAI ? "justify-start" : "justify-end"}`}
+                  title="Click to play from this line"
                 >
                   {isAI && (
                     <div
-                      className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold shadow-xs mt-1"
+                      className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold shadow-xs mt-1 transition-transform group-hover:scale-105"
                       style={{ background: "linear-gradient(135deg, #B08968 0%, #8B5A2B 50%, #6F4428 100%)" }}
                     >
                       AI
@@ -269,20 +348,20 @@ export function VoiceDemoSection() {
                     className={`max-w-[82%] sm:max-w-[70%] rounded-2xl px-4 py-3 text-xs sm:text-sm leading-relaxed transition-all duration-200 border ${
                       isAI
                         ? isCurrent
-                          ? "bg-[#F5EDE4] text-slate-900 border-[#8B5A2B] shadow-md ring-2 ring-[#8B5A2B]/20"
-                          : "bg-white text-slate-800 border-slate-200/80 shadow-xs"
-                        : "bg-slate-900 text-white border-slate-900 shadow-xs"
+                          ? "bg-[#F5EDE4] text-slate-900 border-[#8B5A2B] shadow-md ring-2 ring-[#8B5A2B]/20 scale-[1.01]"
+                          : "bg-white text-slate-800 border-slate-200/80 shadow-xs hover:border-[#8B5A2B]/50"
+                        : "bg-slate-900 text-white border-slate-900 shadow-xs hover:border-slate-700"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-3 mb-1 text-[10px] opacity-70">
                       <span className="font-semibold">{isAI ? currentScenario.agentName : "Customer (Prospect)"}</span>
-                      <span>{line.time}</span>
+                      <span className="font-mono">{line.time}</span>
                     </div>
                     <p>{line.text}</p>
                   </div>
 
                   {!isAI && (
-                    <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center bg-slate-800 text-white text-xs font-bold shadow-xs mt-1">
+                    <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center bg-slate-800 text-white text-xs font-bold shadow-xs mt-1 transition-transform group-hover:scale-105">
                       User
                     </div>
                   )}

@@ -69,10 +69,12 @@ export default function SettingsPage() {
 
   // Telephony & Carriers
   const [carriers, setCarriers] = useState([
-    { id: "twilio", name: "Twilio Elastic SIP Trunk", role: "Primary Active", latency: 18, channels: "128 / 250", status: "Healthy" },
-    { id: "exotel", name: "Exotel Direct Voice Trunk", role: "Secondary Standby", latency: 34, channels: "84 / 150", status: "Healthy" },
+    { id: "frejun", name: "Frejun Cloud Telephony", role: "India Priority (DLT)", latency: 24, channels: "200 / 300", status: "Healthy" },
+    { id: "twilio", name: "Twilio Elastic SIP Trunk", role: "Global Enterprise Route", latency: 18, channels: "128 / 250", status: "Healthy" },
+    { id: "exotel", name: "Exotel Direct Voice Trunk", role: "Domestic Backup", latency: 34, channels: "84 / 150", status: "Healthy" },
     { id: "sandbox", name: "WebRTC Dev Sandbox", role: "Local Interactive Provider", latency: 12, channels: "10 / 50", status: "Staging Ready" },
   ]);
+  const [activeCarrierId, setActiveCarrierId] = useState("frejun");
   const [didNumbers, setDidNumbers] = useState<PhoneNumberItem[]>([]);
   const [loadingTelephony, setLoadingTelephony] = useState(false);
   const [newDidNumber, setNewDidNumber] = useState("+1");
@@ -663,25 +665,39 @@ export default function SettingsPage() {
               </div>
 
               {/* Carrier Cards */}
-              <div className="grid sm:grid-cols-3 gap-3">
-                {carriers.map((c) => (
-                  <div key={c.id} className="p-4 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50/50 dark:bg-white/[0.02] space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">{c.name}</span>
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {carriers.map((c) => {
+                  const isActive = activeCarrierId === c.id;
+                  return (
+                    <div
+                      key={c.id}
+                      onClick={() => {
+                        setActiveCarrierId(c.id);
+                        setHasUnsavedChanges(true);
+                      }}
+                      className={`p-4 rounded-xl border transition-all cursor-pointer space-y-2 ${
+                        isActive
+                          ? "border-indigo-500/80 bg-indigo-50/40 dark:bg-indigo-950/20 shadow-xs ring-1 ring-indigo-500/30"
+                          : "border-slate-200 dark:border-white/[0.08] bg-slate-50/50 dark:bg-white/[0.02] hover:border-slate-300 dark:hover:border-white/20"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white truncate">{c.name}</span>
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0 ml-1" />
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
+                        <p>Role: <span className="text-slate-700 dark:text-slate-300 font-medium">{c.role}</span></p>
+                        <p>Latency: <span className="font-mono font-bold text-emerald-500">{c.latency}ms</span></p>
+                        <p>Channels: <span className="font-mono text-slate-700 dark:text-slate-300">{c.channels}</span></p>
+                      </div>
+                      <div className="pt-2 border-t border-slate-200 dark:border-white/[0.04] flex items-center justify-between">
+                        <Badge variant={isActive ? "blue" : "green"} rounded="sm" size="sm" className="w-full justify-center text-[10px]">
+                          {isActive ? "★ Active Outbound Route" : "✓ Verified Standby"}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
-                      <p>Role: <span className="text-slate-700 dark:text-slate-300 font-medium">{c.role}</span></p>
-                      <p>Latency: <span className="font-mono font-bold text-emerald-500">{c.latency}ms</span></p>
-                      <p>Channels: <span className="font-mono text-slate-700 dark:text-slate-300">{c.channels}</span></p>
-                    </div>
-                    <div className="pt-2 border-t border-slate-200 dark:border-white/[0.04]">
-                      <Badge variant="green" rounded="sm" size="sm" className="w-full justify-center text-[10px]">
-                        ✓ Verified Connection
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* DID Number Provisioning */}

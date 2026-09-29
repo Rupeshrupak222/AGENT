@@ -98,6 +98,13 @@ async function bootstrap() {
   expressApp.use(new CorrelationIdMiddleware().use);
   expressApp.use(new SecurityHeadersMiddleware().use);
   expressApp.use((req: any, _res: any, next: any) => {
+    const rawPrefix = prefix.startsWith('/') ? prefix : `/${prefix}`;
+    if (req.url && (req.url.startsWith(`${rawPrefix}/health`) || req.originalUrl?.startsWith(`${rawPrefix}/health`))) {
+      req.url = req.url.replace(rawPrefix, '');
+    }
+    next();
+  });
+  expressApp.use((req: any, _res: any, next: any) => {
     if (req.method === 'POST' || req.method === 'PUT') {
       const contentLength = parseInt(req.headers['content-length'] || '0', 10);
       const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10MB absolute max

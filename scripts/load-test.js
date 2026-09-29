@@ -140,6 +140,11 @@ async function main() {
   console.log(`Status:                   ${allFailures === 0 ? '✅ PASSED' : '❌ FAILED'}`);
   console.log('=============================================================\n');
 
+  if (process.env.LOAD_RESULT_FILE) {
+    const fs = require('fs');
+    fs.writeFileSync(process.env.LOAD_RESULT_FILE, JSON.stringify(results, null, 2), 'utf8');
+  }
+
   if (process.env.JSON_OUTPUT) {
     console.log(JSON.stringify(results, null, 2));
   }

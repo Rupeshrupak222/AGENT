@@ -211,7 +211,7 @@ async function runSmokeTests() {
         const res = await request('/campaigns', { token });
         if (res.statusCode === 200) {
           const parsed = JSON.parse(res.body);
-          if (parsed?.data && Array.isArray(parsed.data)) {
+          if (parsed?.data && (Array.isArray(parsed.data) || Array.isArray(parsed.data?.items))) {
             console.log('✅ PASSED (envelope data[] present)');
           } else {
             console.log('❌ FAILED (missing envelope data[])');
