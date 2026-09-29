@@ -1350,15 +1350,15 @@ function NewCallModal({ initialPhone = "", onClose, onSuccess }: NewCallModalPro
                 {gatewayReady === null
                   ? "Checking..."
                   : gatewayReady === true
-                  ? "Twilio / Exotel Ready"
+                  ? "Multi-Carrier & Sandbox Gateway Active"
                   : "No provider configured"}
               </span>
             </div>
             {gatewayReady === false && (
               <p className="text-[11px] text-amber-400/80 -mt-2">
                 {canViewTelephony
-                  ? "No outbound telephony provider is configured — calls will be recorded as failed until a Twilio/Exotel account is linked in Settings."
-                  : "No outbound telephony provider is configured for your workspace — calls may be recorded as failed until a provider is enabled."}
+                  ? "No outbound telephony provider is configured — link Frejun, Twilio, or Exotel in Settings or enable WebRTC Sandbox."
+                  : "No outbound telephony provider is configured for your workspace — link a provider in Settings."}
               </p>
             )}
 
